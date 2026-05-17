@@ -1,0 +1,10 @@
+{
+  "package": "test~std~sys~windows~file_handles$lit",
+  "std_sys_windows_file_handles_dir_s3^s3": "artifacts/std-sys-windows-file-handles-dir",
+  "std_sys_windows_file_handles_file_s3^s3": "artifacts/std-sys-windows-file-handles.txt",
+  "std_sys_windows_file_handles_prefix_s3^s3": "base",
+  "std_sys_windows_file_handles_suffix_s3^s3": "++",
+  "std_sys_windows_file_handles_expected_s3^s3": "base++",
+  "std_sys_windows_file_handles_pipe_a_s3^s3": "pipe-a",
+  "std_sys_windows_file_handles_pipe_b_s3^s3": "pipe-b"
+}

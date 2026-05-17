@@ -1,0 +1,38 @@
+{program test~generic~stress~walk@main
+  (class <generic ChainNode T>
+    (property [value T])
+    (property [next <union unit <ChainNode T>>])
+    (constructor ([value0 T] [next0 <union unit <ChainNode T>>]) in
+      {
+        (cm_set self value value0)
+        (cm_set self next next0)
+      }
+    )
+  )
+  (function <generic step_or_stay T> ([node <ChainNode T>]) to <ChainNode T> in
+    (match node.next ([empty unit] node) ([next_node <ChainNode T>] next_node))
+  )
+  (function <generic walk_last T> ([start <ChainNode T>] [steps i5]) to T in
+    {
+      (var [current <ChainNode T>] start)
+      (var [remaining i5] steps)
+      (while
+        (gt remaining $0^i5)
+        in
+        {
+          (var_set current (<step_or_stay T> current))
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      current.value
+    }
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [tail <ChainNode i5>] (class_new <ChainNode i5> $31^i5 unit))
+      (var [mid <ChainNode i5>] (class_new <ChainNode i5> $29^i5 tail))
+      (var [head <ChainNode i5>] (class_new <ChainNode i5> $13^i5 mid))
+      (add (<walk_last i5> head $2^i5) (<walk_last i5> head $1^i5))
+    }
+  )
+}

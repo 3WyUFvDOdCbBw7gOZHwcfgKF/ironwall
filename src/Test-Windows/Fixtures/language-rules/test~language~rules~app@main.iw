@@ -1,0 +1,54 @@
+{program test~language~rules~app@main
+  (import test~language~rules~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [single_union i5] (score_union (<collapse_union i5> $7^i5)))
+      (var [bool_union i5] (score_union (<collapse_union i5> true)))
+      (var [scored_i5 i5] (score $6^i5))
+      (var [scored_bool i5] (score true))
+      (var [nested_i5 i5] (nested_union_score $14^i5))
+      (var [nested_bool i5] (nested_union_score (wrap_inner_bool false)))
+      (var [nested_f5 i5] (nested_union_score (wrap_inner_f5 $1p5^f5)))
+      (var [single_box <Bucket i5>] (<pack i5> $5^i5))
+      (var [pair_box <Bucket i5 bool>] (<pack i5 bool> $8^i5 true))
+      (var [default_box MultiCtor] (class_new MultiCtor))
+      (var [int_box MultiCtor] (class_new MultiCtor $17^i5))
+      (var [bool_box MultiCtor] (class_new MultiCtor true))
+      (var [fresh <array MultiCtor>] (array_new <array MultiCtor> $3^i5 int_box))
+      (add
+        single_union
+        (add
+          bool_union
+          (add
+            scored_i5
+            (add
+              scored_bool
+              (add
+                nested_i5
+                (add
+                  nested_bool
+                  (add
+                    nested_f5
+                    (add
+                      (measure single_box)
+                      (add
+                        (measure pair_box)
+                        (add
+                          default_box.value
+                          (add
+                            int_box.value
+                            (add bool_box.value (cm_get (array_get fresh $1^i5) value))
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

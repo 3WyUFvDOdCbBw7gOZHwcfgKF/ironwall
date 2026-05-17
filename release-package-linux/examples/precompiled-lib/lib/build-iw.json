@@ -1,0 +1,11 @@
+{
+  "mode": "pack-lib",
+  "directories": [
+    {
+      "path": "src"
+    }
+  ],
+  "output": "../dist/example-precompiled-lib.tgz",
+  "precompiledLibs": [],
+  "ffiLibs": []
+}

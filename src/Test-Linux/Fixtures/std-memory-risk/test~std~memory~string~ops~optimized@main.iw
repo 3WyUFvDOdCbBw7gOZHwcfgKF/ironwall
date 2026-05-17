@@ -1,0 +1,82 @@
+{program test~std~memory~string~ops~optimized@main
+  (import std~array)
+  (import std~string)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+
+  (function build_parts ([alpha StringS3] [beta StringS3] [gamma StringS3] [empty StringS3]) to <Array StringS3> in
+    {
+      (var [builder <ArrayBuilder StringS3>] (<array_builder_new StringS3> empty))
+      (var [index i5] $0^i5)
+      (while (lt index $256^i5) in
+        {
+          (if (eq (mod index $3^i5) $0^i5)
+            then (builder.append alpha)
+            else
+              (if (eq (mod index $3^i5) $1^i5)
+                then (builder.append beta)
+                else (builder.append gamma)
+              )
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      (builder.build)
+    }
+  )
+
+  (function normalized_join_round ([parts <Array StringS3>] [comma StringS3] [pipe StringS3] [empty StringS3]) to StringS3 in
+    {
+      (var [joined StringS3] (string_join comma parts))
+      (var [segments <Array StringS3>] (string_split joined comma))
+      (var [builder <ArrayBuilder StringS3>] (<array_builder_new StringS3> empty))
+      (var [index i5] $0^i5)
+      (var [segment_count i5] (<Array_len StringS3> segments))
+      (while (lt index segment_count) in
+        {
+          (var [trimmed StringS3] (string_trim (segments.get index)))
+          (builder.append (string_slice trimmed $1^i5 (sub $0^i5 $1^i5)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (string_join pipe (builder.build))
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [empty StringS3] (class_new StringS3 $empty_s3^s3))
+      (var [comma StringS3] (class_new StringS3 $comma_s3^s3))
+      (var [pipe StringS3] (class_new StringS3 $pipe_s3^s3))
+      (var [alpha_padded StringS3] (class_new StringS3 $padded_alpha_s3^s3))
+      (var [beta_padded StringS3] (class_new StringS3 $padded_beta_s3^s3))
+      (var [gamma_padded StringS3] (class_new StringS3 $padded_gamma_s3^s3))
+      (var [alpha StringS3] (class_new StringS3 $alpha_s3^s3))
+      (var [parts <Array StringS3>] (build_parts alpha_padded beta_padded gamma_padded empty))
+      (var [last StringS3] empty)
+      (var [length_sum i5] $0^i5)
+      (var [round i5] $0^i5)
+      (while (lt round $32^i5) in
+        {
+          (var [round_result StringS3] (normalized_join_round parts comma pipe empty))
+          (var_set last round_result)
+          (var_set length_sum (add length_sum (string_len round_result)))
+          (var_set round (add round $1^i5))
+        }
+      )
+      (add
+        (score (eq length_sum $46400^i5))
+        (add
+          (score (eq (string_len last) $1450^i5))
+          (add
+            (score (eq (last.count pipe) $255^i5))
+            (add
+              (score (last.startswith alpha))
+              (score (last.endswith alpha))
+            )
+          )
+        )
+      )
+    }
+  )
+}

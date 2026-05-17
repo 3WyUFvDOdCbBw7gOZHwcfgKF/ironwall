@@ -1,0 +1,109 @@
+{program test~std~sys~windows~spawn_stdio@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function s3_equals ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if
+        (neq left_length (s3_length right))
+        then
+        false
+        else
+        {
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index left_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get left index) (s3_get right index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+  (function s3_array2 ([first s3] [second s3]) to <array s3> in
+    {
+      (var [result <array s3>] (array_new <array s3> $2^i5 first))
+      (array_set result $1^i5 second)
+      result
+    }
+  )
+  (function empty_s3_array () to <array s3> in
+    (array_new <array s3> $0^i5 $std_sys_windows_spawn_stdio_empty_s3^s3)
+  )
+  (function pipe_read_fd ([pipe_fds <array i5>]) to i5 in (array_get pipe_fds $0^i5))
+  (function pipe_write_fd ([pipe_fds <array i5>]) to i5 in (array_get pipe_fds $1^i5))
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [stdin_pipe <array i5>] (sys_pipe_create))
+      (var [stdin_child SysProcess]
+        (sys_process_spawn_stdio_s3
+          $std_sys_windows_cmd_path_s3^s3
+          (s3_array2 $std_sys_windows_slash_c_s3^s3 $std_sys_windows_stdin_command_s3^s3)
+          (empty_s3_array)
+          (pipe_read_fd stdin_pipe)
+          (sys_stdout_handle)
+          (sys_stderr_handle)
+        )
+      )
+      (var [stdin_pid i5] (sys_process_id stdin_child))
+      (sys_fd_close (pipe_read_fd stdin_pipe))
+      (sys_fd_write_s3 (pipe_write_fd stdin_pipe) $std_sys_windows_spawn_stdio_input_s3^s3)
+      (sys_fd_close (pipe_write_fd stdin_pipe))
+      (var [stdin_exit_code i5] (sys_process_wait stdin_child))
+      (sys_process_close stdin_child)
+
+      (var [stdout_pipe <array i5>] (sys_pipe_create))
+      (var [stdout_child SysProcess]
+        (sys_process_spawn_stdio_s3
+          $std_sys_windows_cmd_path_s3^s3
+          (s3_array2 $std_sys_windows_slash_c_s3^s3 $std_sys_windows_stdout_command_s3^s3)
+          (empty_s3_array)
+          (sys_stdin_handle)
+          (pipe_write_fd stdout_pipe)
+          (sys_stderr_handle)
+        )
+      )
+      (var [stdout_pid i5] (sys_process_id stdout_child))
+      (sys_fd_close (pipe_write_fd stdout_pipe))
+      (var [output s3] (sys_fd_read_s3 (pipe_read_fd stdout_pipe) $128^i5))
+      (sys_fd_close (pipe_read_fd stdout_pipe))
+      (var [stdout_exit_code i5] (sys_process_wait stdout_child))
+      (sys_process_close stdout_child)
+      (add
+        (score (gt stdin_pid $0^i5))
+        (add
+          (score (eq stdin_exit_code $0^i5))
+          (add
+            (score (gt stdout_pid $0^i5))
+            (add
+              (score (eq stdout_exit_code $0^i5))
+              (score (s3_equals output $std_sys_windows_stdout_expected_s3^s3))
+            )
+          )
+        )
+      )
+    }
+  )
+}

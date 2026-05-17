@@ -1,0 +1,172 @@
+{program app~linear~algebra~conjugate~gradient@main
+  (import app~linear~algebra~shared)
+  (import std~io)
+
+  (function dot_vector ([left <array f5>] [right <array f5>] [size i5]) to f5 in
+    {
+      (var [index i5] $0^i5)
+      (var [sum f5] $0p0^f5)
+      (while (lt index size) in
+        {
+          (var_set sum (add sum (mul (vector_get left index) (vector_get right index))))
+          (var_set index (add index $1^i5))
+        }
+      )
+      sum
+    }
+  )
+
+  (function mat_vec_mul ([matrix <array f5>] [size i5] [vector <array f5>] [target <array f5>]) to unit in
+    {
+      (var [row i5] $0^i5)
+      (while (lt row size) in
+        {
+          (var [sum f5] $0p0^f5)
+          (var [col i5] $0^i5)
+          (while (lt col size) in
+            {
+              (var_set sum (add sum (mul (matrix_get matrix size row col) (vector_get vector col))))
+              (var_set col (add col $1^i5))
+            }
+          )
+          (vector_set target row sum)
+          (var_set row (add row $1^i5))
+        }
+      )
+    }
+  )
+
+  (function build_matrix_a ([size i5]) to <array f5> in
+    {
+      (var [result <array f5>] (zero_matrix size))
+      (var [index i5] $0^i5)
+      (while (lt index size) in
+        {
+          (if (lt index $50^i5)
+            then (matrix_set result size index index $2p0^f5)
+            else (matrix_set result size index index $5p0^f5)
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function build_vector_b ([matrix <array f5>] [size i5]) to <array f5> in
+    {
+      (var [result <array f5>] (zero_vector size))
+      (var [index i5] $0^i5)
+      (while (lt index size) in
+        {
+          (vector_set result index (matrix_get matrix size index index))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function conjugate_gradient_solve ([matrix <array f5>] [size i5] [b <array f5>] [x <array f5>] [max_iterations i5]) to i5 in
+    {
+      (var [r <array f5>] (zero_vector size))
+      (var [p <array f5>] (zero_vector size))
+      (var [ap <array f5>] (zero_vector size))
+      (copy_f5_array b r)
+      (copy_f5_array r p)
+
+      (var [rs_old f5] (dot_vector r r size))
+      (var [iterations i5] $0^i5)
+      (while (and (lt iterations max_iterations) (gt rs_old $0p0000001^f5)) in
+        {
+          (mat_vec_mul matrix size p ap)
+          (var [alpha f5] (div rs_old (dot_vector p ap size)))
+          (var [index i5] $0^i5)
+          (while (lt index size) in
+            {
+              (vector_set x index (add (vector_get x index) (mul alpha (vector_get p index))))
+              (vector_set r index (sub (vector_get r index) (mul alpha (vector_get ap index))))
+              (var_set index (add index $1^i5))
+            }
+          )
+
+          (var [rs_new f5] (dot_vector r r size))
+          (var_set iterations (add iterations $1^i5))
+          (if (gt rs_new $0p0000001^f5)
+            then
+              {
+                (var [beta f5] (div rs_new rs_old))
+                (var [update i5] $0^i5)
+                (while (lt update size) in
+                  {
+                    (vector_set p update (add (vector_get r update) (mul beta (vector_get p update))))
+                    (var_set update (add update $1^i5))
+                  }
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set rs_old rs_new)
+        }
+      )
+      iterations
+    }
+  )
+
+  (function residual_error ([matrix <array f5>] [size i5] [x <array f5>] [b <array f5>]) to f5 in
+    {
+      (var [ax <array f5>] (zero_vector size))
+      (mat_vec_mul matrix size x ax)
+      (var [diff_sum f5] $0p0^f5)
+      (var [index i5] $0^i5)
+      (while (lt index size) in
+        {
+          (var [diff f5] (sub (vector_get b index) (vector_get ax index)))
+          (var_set diff_sum (add diff_sum (mul diff diff)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      diff_sum
+    }
+  )
+
+  (function cg_demo_metrics ([size i5]) to <array i5> in
+    {
+      (var [matrix <array f5>] (build_matrix_a size))
+      (var [b <array f5>] (build_vector_b matrix size))
+      (var [x <array f5>] (zero_vector size))
+      (var [iterations i5] (conjugate_gradient_solve matrix size b x size))
+      (var [x_sum f5] $0p0^f5)
+      (var [index i5] $0^i5)
+      (while (lt index size) in
+        {
+          (var_set x_sum (add x_sum (vector_get x index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [metrics <array i5>] (array_new <array i5> $5^i5 $0^i5))
+      (array_set metrics $0^i5 iterations)
+      (array_set metrics $1^i5 (scaled_i5 x_sum $1000p0^f5))
+      (array_set metrics $2^i5 (scaled_i5 (vector_get x $0^i5) $1000p0^f5))
+      (array_set metrics $3^i5 (scaled_i5 (vector_get x (sub size $1^i5)) $1000p0^f5))
+      (array_set metrics $4^i5 (scaled_i5 (residual_error matrix size x b) $1000000p0^f5))
+      metrics
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [metrics <array i5>] (cg_demo_metrics $100^i5))
+
+      (println $app_linear_algebra_cg_ok_s3^s3)
+      (print_i5_line $app_linear_algebra_iterations_s3^s3 (array_get metrics $0^i5))
+      (print_i5_line $app_linear_algebra_x_sum_x1000_s3^s3 (array_get metrics $1^i5))
+      (print_i5_line $app_linear_algebra_x0_x1000_s3^s3 (array_get metrics $2^i5))
+      (print_i5_line $app_linear_algebra_x_last_x1000_s3^s3 (array_get metrics $3^i5))
+      (print_i5_line $app_linear_algebra_residual_x1e6_s3^s3 (array_get metrics $4^i5))
+      $0^i5
+    }
+  )
+}

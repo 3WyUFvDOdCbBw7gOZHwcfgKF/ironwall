@@ -1,0 +1,2180 @@
+{program ray~tracer@main
+  (import std~array)
+  (import std~gc)
+  (import std~math)
+  (import std~string)
+  (import std~linux~sys)
+
+  (class Vec3
+    (property [x f5])
+    (property [y f5])
+    (property [z f5])
+    (constructor () in
+      {
+        (cm_set self x $0p0^f5)
+        (cm_set self y $0p0^f5)
+        (cm_set self z $0p0^f5)
+      }
+    )
+    (constructor ([x0 f5] [y0 f5] [z0 f5]) in
+      {
+        (cm_set self x x0)
+        (cm_set self y y0)
+        (cm_set self z z0)
+      }
+    )
+  )
+
+  (class Ray
+    (property [origin Vec3])
+    (property [direction Vec3])
+    (constructor ([origin0 Vec3] [direction0 Vec3]) in
+      {
+        (cm_set self origin origin0)
+        (cm_set self direction direction0)
+      }
+    )
+  )
+
+  (class Aabb
+    (property [min Vec3])
+    (property [max Vec3])
+    (constructor ([min0 Vec3] [max0 Vec3]) in
+      {
+        (cm_set self min min0)
+        (cm_set self max max0)
+      }
+    )
+  )
+
+  (class Camera
+    (property [origin Vec3])
+    (property [lower_left Vec3])
+    (property [horizontal Vec3])
+    (property [vertical Vec3])
+    (constructor ([origin0 Vec3] [lower_left0 Vec3] [horizontal0 Vec3] [vertical0 Vec3]) in
+      {
+        (cm_set self origin origin0)
+        (cm_set self lower_left lower_left0)
+        (cm_set self horizontal horizontal0)
+        (cm_set self vertical vertical0)
+      }
+    )
+  )
+
+  (class DiffuseMaterial
+    (property [albedo Vec3])
+    (constructor ([albedo0 Vec3]) in
+      {
+        (cm_set self albedo albedo0)
+      }
+    )
+  )
+
+  (class MirrorMaterial
+    (property [albedo Vec3])
+    (property [reflectivity f5])
+    (constructor ([albedo0 Vec3] [reflectivity0 f5]) in
+      {
+        (cm_set self albedo albedo0)
+        (cm_set self reflectivity reflectivity0)
+      }
+    )
+  )
+
+  (class CheckerMaterial
+    (property [albedo_a Vec3])
+    (property [albedo_b Vec3])
+    (property [scale f5])
+    (constructor ([albedo_a0 Vec3] [albedo_b0 Vec3] [scale0 f5]) in
+      {
+        (cm_set self albedo_a albedo_a0)
+        (cm_set self albedo_b albedo_b0)
+        (cm_set self scale scale0)
+      }
+    )
+  )
+
+  (class SurfaceMaterial
+    (property [kind <union DiffuseMaterial MirrorMaterial CheckerMaterial>])
+    (constructor ([kind0 <union DiffuseMaterial MirrorMaterial CheckerMaterial>]) in
+      {
+        (cm_set self kind kind0)
+      }
+    )
+  )
+
+  (class Sphere
+    (property [center Vec3])
+    (property [radius f5])
+    (property [material SurfaceMaterial])
+    (constructor ([center0 Vec3] [radius0 f5] [material0 SurfaceMaterial]) in
+      {
+        (cm_set self center center0)
+        (cm_set self radius radius0)
+        (cm_set self material material0)
+      }
+    )
+  )
+
+  (class BoxShape
+    (property [center Vec3])
+    (property [half_extent Vec3])
+    (property [material SurfaceMaterial])
+    (constructor ([center0 Vec3] [half_extent0 Vec3] [material0 SurfaceMaterial]) in
+      {
+        (cm_set self center center0)
+        (cm_set self half_extent half_extent0)
+        (cm_set self material material0)
+      }
+    )
+  )
+
+  (class Plane
+    (property [point Vec3])
+    (property [normal Vec3])
+    (property [material SurfaceMaterial])
+    (constructor ([point0 Vec3] [normal0 Vec3] [material0 SurfaceMaterial]) in
+      {
+        (cm_set self point point0)
+        (cm_set self normal normal0)
+        (cm_set self material material0)
+      }
+    )
+  )
+
+  (class FaceIndex
+    (property [a i5])
+    (property [b i5])
+    (property [c i5])
+    (constructor () in
+      {
+        (cm_set self a $0^i5)
+        (cm_set self b $0^i5)
+        (cm_set self c $0^i5)
+      }
+    )
+    (constructor ([a0 i5] [b0 i5] [c0 i5]) in
+      {
+        (cm_set self a a0)
+        (cm_set self b b0)
+        (cm_set self c c0)
+      }
+    )
+  )
+
+  (class Triangle
+    (property [a Vec3])
+    (property [b Vec3])
+    (property [c Vec3])
+    (property [ab Vec3])
+    (property [ac Vec3])
+    (property [normal Vec3])
+    (property [bounds Aabb])
+    (property [center Vec3])
+    (constructor () in
+      {
+        (var [zero_vec Vec3] (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5))
+        (var [zero_bounds Aabb] (class_new Aabb zero_vec zero_vec))
+        (cm_set self a zero_vec)
+        (cm_set self b zero_vec)
+        (cm_set self c zero_vec)
+        (cm_set self ab zero_vec)
+        (cm_set self ac zero_vec)
+        (cm_set self normal zero_vec)
+        (cm_set self bounds zero_bounds)
+        (cm_set self center zero_vec)
+      }
+    )
+    (constructor ([a0 Vec3] [b0 Vec3] [c0 Vec3] [ab0 Vec3] [ac0 Vec3] [normal0 Vec3] [bounds0 Aabb] [center0 Vec3]) in
+      {
+        (cm_set self a a0)
+        (cm_set self b b0)
+        (cm_set self c c0)
+        (cm_set self ab ab0)
+        (cm_set self ac ac0)
+        (cm_set self normal normal0)
+        (cm_set self bounds bounds0)
+        (cm_set self center center0)
+      }
+    )
+  )
+
+  (class TransformSpec
+    (property [center_shift Vec3])
+    (property [scale_value f5])
+    (property [yaw f5])
+    (property [offset Vec3])
+    (constructor ([center_shift0 Vec3] [scale_value0 f5] [yaw0 f5] [offset0 Vec3]) in
+      {
+        (cm_set self center_shift center_shift0)
+        (cm_set self scale_value scale_value0)
+        (cm_set self yaw yaw0)
+        (cm_set self offset offset0)
+      }
+    )
+  )
+
+  (class HitRange
+    (property [t_min f5])
+    (property [t_max f5])
+    (constructor ([t_min0 f5] [t_max0 f5]) in
+      {
+        (cm_set self t_min t_min0)
+        (cm_set self t_max t_max0)
+      }
+    )
+  )
+
+  (class BvhLeaf
+    (property [bounds Aabb])
+    (property [indices <Array i5>])
+    (constructor ([bounds0 Aabb] [indices0 <Array i5>]) in
+      {
+        (cm_set self bounds bounds0)
+        (cm_set self indices indices0)
+      }
+    )
+  )
+
+  (class BvhBranch
+    (property [bounds Aabb])
+    (property [left <union BvhLeaf BvhBranch>])
+    (property [right <union BvhLeaf BvhBranch>])
+    (constructor ([bounds0 Aabb] [left0 <union BvhLeaf BvhBranch>] [right0 <union BvhLeaf BvhBranch>]) in
+      {
+        (cm_set self bounds bounds0)
+        (cm_set self left left0)
+        (cm_set self right right0)
+      }
+    )
+  )
+
+  (class MeshShape
+    (property [bounds Aabb])
+    (property [root <union BvhLeaf BvhBranch>])
+    (property [triangles <Array Triangle>])
+    (property [material SurfaceMaterial])
+    (constructor ([bounds0 Aabb] [root0 <union BvhLeaf BvhBranch>] [triangles0 <Array Triangle>] [material0 SurfaceMaterial]) in
+      {
+        (cm_set self bounds bounds0)
+        (cm_set self root root0)
+        (cm_set self triangles triangles0)
+        (cm_set self material material0)
+      }
+    )
+  )
+
+  (class SceneObject
+    (property [kind <union Sphere BoxShape Plane MeshShape>])
+    (constructor () in
+      {
+        (cm_set self kind
+          (class_new Plane
+            (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5)
+            (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5)
+            (class_new SurfaceMaterial
+              (class_new DiffuseMaterial (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5))
+            )
+          )
+        )
+      }
+    )
+    (constructor ([kind0 <union Sphere BoxShape Plane MeshShape>]) in
+      {
+        (cm_set self kind kind0)
+      }
+    )
+  )
+
+  (class DirectionalLight
+    (property [direction Vec3])
+    (property [color Vec3])
+    (property [intensity f5])
+    (constructor ([direction0 Vec3] [color0 Vec3] [intensity0 f5]) in
+      {
+        (cm_set self direction direction0)
+        (cm_set self color color0)
+        (cm_set self intensity intensity0)
+      }
+    )
+  )
+
+  (class PointLight
+    (property [position Vec3])
+    (property [color Vec3])
+    (property [intensity f5])
+    (constructor ([position0 Vec3] [color0 Vec3] [intensity0 f5]) in
+      {
+        (cm_set self position position0)
+        (cm_set self color color0)
+        (cm_set self intensity intensity0)
+      }
+    )
+  )
+
+  (class SceneLight
+    (property [kind <union DirectionalLight PointLight>])
+    (constructor () in
+      {
+        (cm_set self kind
+          (class_new DirectionalLight
+            (class_new Vec3 $0p0^f5 (sub $0p0^f5 $1p0^f5) $0p0^f5)
+            (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5)
+            $0p0^f5
+          )
+        )
+      }
+    )
+    (constructor ([kind0 <union DirectionalLight PointLight>]) in
+      {
+        (cm_set self kind kind0)
+      }
+    )
+  )
+
+  (class LightSample
+    (property [direction Vec3])
+    (property [color Vec3])
+    (property [max_distance f5])
+    (constructor ([direction0 Vec3] [color0 Vec3] [max_distance0 f5]) in
+      {
+        (cm_set self direction direction0)
+        (cm_set self color color0)
+        (cm_set self max_distance max_distance0)
+      }
+    )
+  )
+
+  (class HitRecord
+    (property [distance f5])
+    (property [position Vec3])
+    (property [normal Vec3])
+    (property [material SurfaceMaterial])
+    (constructor ([distance0 f5] [position0 Vec3] [normal0 Vec3] [material0 SurfaceMaterial]) in
+      {
+        (cm_set self distance distance0)
+        (cm_set self position position0)
+        (cm_set self normal normal0)
+        (cm_set self material material0)
+      }
+    )
+  )
+
+  (class ObjCounts
+    (property [vertex_count i5])
+    (property [face_count i5])
+    (constructor ([vertex_count0 i5] [face_count0 i5]) in
+      {
+        (cm_set self vertex_count vertex_count0)
+        (cm_set self face_count face_count0)
+      }
+    )
+  )
+
+  (class ObjModel
+    (property [vertices <Array Vec3>])
+    (property [faces <Array FaceIndex>])
+    (constructor ([vertices0 <Array Vec3>] [faces0 <Array FaceIndex>]) in
+      {
+        (cm_set self vertices vertices0)
+        (cm_set self faces faces0)
+      }
+    )
+  )
+
+  (class IndexSplit
+    (property [left <Array i5>])
+    (property [right <Array i5>])
+    (constructor ([left0 <Array i5>] [right0 <Array i5>]) in
+      {
+        (cm_set self left left0)
+        (cm_set self right right0)
+      }
+    )
+  )
+
+  (class RenderConfig
+    (property [obj_path s3])
+    (property [output_path s3])
+    (property [width i5])
+    (property [height i5])
+    (constructor ([obj_path0 s3] [output_path0 s3] [width0 i5] [height0 i5]) in
+      {
+        (cm_set self obj_path obj_path0)
+        (cm_set self output_path output_path0)
+        (cm_set self width width0)
+        (cm_set self height height0)
+      }
+    )
+  )
+
+  (class SceneBundle
+    (property [camera Camera])
+    (property [objects <Array SceneObject>])
+    (property [lights <Array SceneLight>])
+    (constructor ([camera0 Camera] [objects0 <Array SceneObject>] [lights0 <Array SceneLight>]) in
+      {
+        (cm_set self camera camera0)
+        (cm_set self objects objects0)
+        (cm_set self lights lights0)
+      }
+    )
+  )
+
+  (function char_of ([value s3]) to c3 in
+    (s3_get value $0^i5)
+  )
+
+  (function i5_abs ([value i5]) to i5 in
+    (if (lt value $0^i5) then (sub $0^i5 value) else value)
+  )
+
+  (function f5_min ([left f5] [right f5]) to f5 in
+    (if (lt left right) then left else right)
+  )
+
+  (function f5_max ([left f5] [right f5]) to f5 in
+    (if (gt left right) then left else right)
+  )
+
+  (function f5_clamp ([value f5] [lower f5] [upper f5]) to f5 in
+    (if (lt value lower)
+      then lower
+      else
+        (if (gt value upper)
+          then upper
+          else value
+        )
+    )
+  )
+
+  (function vec3_zero () to Vec3 in
+    (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5)
+  )
+
+  (function vec_add ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3
+      (add left.x right.x)
+      (add left.y right.y)
+      (add left.z right.z)
+    )
+  )
+
+  (function vec_sub ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3
+      (sub left.x right.x)
+      (sub left.y right.y)
+      (sub left.z right.z)
+    )
+  )
+
+  (function vec_scale ([value Vec3] [factor f5]) to Vec3 in
+    (class_new Vec3
+      (mul value.x factor)
+      (mul value.y factor)
+      (mul value.z factor)
+    )
+  )
+
+  (function vec_hadamard ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3
+      (mul left.x right.x)
+      (mul left.y right.y)
+      (mul left.z right.z)
+    )
+  )
+
+  (function vec_neg ([value Vec3]) to Vec3 in
+    (class_new Vec3
+      (sub $0p0^f5 value.x)
+      (sub $0p0^f5 value.y)
+      (sub $0p0^f5 value.z)
+    )
+  )
+
+  (function vec_dot ([left Vec3] [right Vec3]) to f5 in
+    (add
+      (mul left.x right.x)
+      (add
+        (mul left.y right.y)
+        (mul left.z right.z)
+      )
+    )
+  )
+
+  (function vec_cross ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3
+      (sub (mul left.y right.z) (mul left.z right.y))
+      (sub (mul left.z right.x) (mul left.x right.z))
+      (sub (mul left.x right.y) (mul left.y right.x))
+    )
+  )
+
+  (function vec_length ([value Vec3]) to f5 in
+    (sqrt (vec_dot value value))
+  )
+
+  (function vec_normalize ([value Vec3]) to Vec3 in
+    {
+      (var [length_value f5] (vec_length value))
+      (if (lt length_value $0p000001^f5)
+        then value
+        else (vec_scale value (div $1p0^f5 length_value))
+      )
+    }
+  )
+
+  (function vec_min ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3
+      (f5_min left.x right.x)
+      (f5_min left.y right.y)
+      (f5_min left.z right.z)
+    )
+  )
+
+  (function vec_max ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3
+      (f5_max left.x right.x)
+      (f5_max left.y right.y)
+      (f5_max left.z right.z)
+    )
+  )
+
+  (function vec_component ([value Vec3] [axis i5]) to f5 in
+    (if (eq axis $0^i5)
+      then value.x
+      else
+        (if (eq axis $1^i5)
+          then value.y
+          else value.z
+        )
+    )
+  )
+
+  (function vec_lerp ([left Vec3] [right Vec3] [amount f5]) to Vec3 in
+    (vec_add
+      (vec_scale left (sub $1p0^f5 amount))
+      (vec_scale right amount)
+    )
+  )
+
+  (function reflect ([direction Vec3] [normal Vec3]) to Vec3 in
+    (vec_sub direction (vec_scale normal (mul $2p0^f5 (vec_dot direction normal))))
+  )
+
+  (function ray_at ([ray Ray] [distance f5]) to Vec3 in
+    (vec_add ray.origin (vec_scale ray.direction distance))
+  )
+
+  (function aabb_from_point ([point Vec3]) to Aabb in
+    (class_new Aabb point point)
+  )
+
+  (function aabb_include_point ([bounds Aabb] [point Vec3]) to Aabb in
+    (class_new Aabb (vec_min bounds.min point) (vec_max bounds.max point))
+  )
+
+  (function aabb_union ([left Aabb] [right Aabb]) to Aabb in
+    (class_new Aabb
+      (vec_min left.min right.min)
+      (vec_max left.max right.max)
+    )
+  )
+
+  (function aabb_max_extent_axis ([bounds Aabb]) to i5 in
+    {
+      (var [extent_x f5] (sub bounds.max.x bounds.min.x))
+      (var [extent_y f5] (sub bounds.max.y bounds.min.y))
+      (var [extent_z f5] (sub bounds.max.z bounds.min.z))
+      (if (ge extent_x extent_y)
+        then
+          (if (ge extent_x extent_z) then $0^i5 else $2^i5)
+        else
+          (if (ge extent_y extent_z) then $1^i5 else $2^i5)
+      )
+    }
+  )
+
+  (function aabb_hit ([bounds Aabb] [ray Ray] [start_t f5] [end_t f5]) to bool in
+    {
+      (var [dir_x f5] ray.direction.x)
+      (var [box_min_x f5] bounds.min.x)
+      (var [box_max_x f5] bounds.max.x)
+      (var [t_min_x f5] start_t)
+      (var [t_max_x f5] end_t)
+      (var [x_ok bool] true)
+      (if (lt (abs dir_x) $0p000001^f5)
+        then
+          {
+            (var_set x_ok (and (ge ray.origin.x box_min_x) (le ray.origin.x box_max_x)))
+            unit
+          }
+        else
+          {
+            (var [inv_dir_x f5] (div $1p0^f5 dir_x))
+            (var [raw_tx0 f5] (mul (sub box_min_x ray.origin.x) inv_dir_x))
+            (var [raw_tx1 f5] (mul (sub box_max_x ray.origin.x) inv_dir_x))
+            (var [near_tx f5] (f5_min raw_tx0 raw_tx1))
+            (var [far_tx f5] (f5_max raw_tx0 raw_tx1))
+            (var_set t_min_x (f5_max t_min_x near_tx))
+            (var_set t_max_x (f5_min t_max_x far_tx))
+            unit
+          }
+      )
+      (if (or (not x_ok) (gt t_min_x t_max_x))
+        then false
+        else
+          {
+            (var [dir_y f5] ray.direction.y)
+            (var [box_min_y f5] bounds.min.y)
+            (var [box_max_y f5] bounds.max.y)
+            (var [t_min_y f5] t_min_x)
+            (var [t_max_y f5] t_max_x)
+            (var [y_ok bool] true)
+            (if (lt (abs dir_y) $0p000001^f5)
+              then
+                {
+                  (var_set y_ok (and (ge ray.origin.y box_min_y) (le ray.origin.y box_max_y)))
+                  unit
+                }
+              else
+                {
+                  (var [inv_dir_y f5] (div $1p0^f5 dir_y))
+                  (var [raw_ty0 f5] (mul (sub box_min_y ray.origin.y) inv_dir_y))
+                  (var [raw_ty1 f5] (mul (sub box_max_y ray.origin.y) inv_dir_y))
+                  (var [near_ty f5] (f5_min raw_ty0 raw_ty1))
+                  (var [far_ty f5] (f5_max raw_ty0 raw_ty1))
+                  (var_set t_min_y (f5_max t_min_y near_ty))
+                  (var_set t_max_y (f5_min t_max_y far_ty))
+                  unit
+                }
+            )
+            (if (or (not y_ok) (gt t_min_y t_max_y))
+              then false
+              else
+                {
+                  (var [dir_z f5] ray.direction.z)
+                  (var [box_min_z f5] bounds.min.z)
+                  (var [box_max_z f5] bounds.max.z)
+                  (var [t_min_z f5] t_min_y)
+                  (var [t_max_z f5] t_max_y)
+                  (var [z_ok bool] true)
+                  (if (lt (abs dir_z) $0p000001^f5)
+                    then
+                      {
+                        (var_set z_ok (and (ge ray.origin.z box_min_z) (le ray.origin.z box_max_z)))
+                        unit
+                      }
+                    else
+                      {
+                        (var [inv_dir_z f5] (div $1p0^f5 dir_z))
+                        (var [raw_tz0 f5] (mul (sub box_min_z ray.origin.z) inv_dir_z))
+                        (var [raw_tz1 f5] (mul (sub box_max_z ray.origin.z) inv_dir_z))
+                        (var [near_tz f5] (f5_min raw_tz0 raw_tz1))
+                        (var [far_tz f5] (f5_max raw_tz0 raw_tz1))
+                        (var_set t_min_z (f5_max t_min_z near_tz))
+                        (var_set t_max_z (f5_min t_max_z far_tz))
+                        unit
+                      }
+                  )
+                  (and z_ok (le t_min_z t_max_z))
+                }
+            )
+          }
+      )
+    }
+  )
+
+  (function degrees_to_radians ([value f5]) to f5 in
+    (div (mul value (pi_f5)) $180p0^f5)
+  )
+
+  (function make_camera ([look_from Vec3] [look_at Vec3] [up_hint Vec3] [fov_y_degrees f5] [aspect_ratio f5]) to Camera in
+    {
+      (var [theta f5] (degrees_to_radians fov_y_degrees))
+      (var [half_angle f5] (mul theta $0p5^f5))
+      (var [half_height f5] (div (sin half_angle) (cos half_angle)))
+      (var [half_width f5] (mul aspect_ratio half_height))
+      (var [w_basis Vec3] (vec_normalize (vec_sub look_from look_at)))
+      (var [u_basis Vec3] (vec_normalize (vec_cross up_hint w_basis)))
+      (var [v_basis Vec3] (vec_cross w_basis u_basis))
+      (var [horizontal Vec3] (vec_scale u_basis (mul $2p0^f5 half_width)))
+      (var [vertical Vec3] (vec_scale v_basis (mul $2p0^f5 half_height)))
+      (var [lower_left Vec3]
+        (vec_sub
+          (vec_sub
+            (vec_sub look_from (vec_scale u_basis half_width))
+            (vec_scale v_basis half_height)
+          )
+          w_basis
+        )
+      )
+      (class_new Camera look_from lower_left horizontal vertical)
+    }
+  )
+
+  (function camera_ray ([camera Camera] [u f5] [v f5]) to Ray in
+    {
+      (var [point_on_plane Vec3]
+        (vec_add
+          camera.lower_left
+          (vec_add
+            (vec_scale camera.horizontal u)
+            (vec_scale camera.vertical v)
+          )
+        )
+      )
+      (class_new Ray camera.origin (vec_normalize (vec_sub point_on_plane camera.origin)))
+    }
+  )
+
+  (function digit_char ([value i5]) to c3 in
+    (if (eq value $0^i5)
+      then (char_of $digit0_s3^s3)
+      else
+        (if (eq value $1^i5)
+          then (char_of $digit1_s3^s3)
+          else
+            (if (eq value $2^i5)
+              then (char_of $digit2_s3^s3)
+              else
+                (if (eq value $3^i5)
+                  then (char_of $digit3_s3^s3)
+                  else
+                    (if (eq value $4^i5)
+                      then (char_of $digit4_s3^s3)
+                      else
+                        (if (eq value $5^i5)
+                          then (char_of $digit5_s3^s3)
+                          else
+                            (if (eq value $6^i5)
+                              then (char_of $digit6_s3^s3)
+                              else
+                                (if (eq value $7^i5)
+                                  then (char_of $digit7_s3^s3)
+                                  else
+                                    (if (eq value $8^i5)
+                                      then (char_of $digit8_s3^s3)
+                                      else (char_of $digit9_s3^s3)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function count_decimal_digits_nonnegative ([value i5]) to i5 in
+    (if (lt value $10^i5)
+      then $1^i5
+      else (add $1^i5 (count_decimal_digits_nonnegative (div value $10^i5)))
+    )
+  )
+
+  (function fill_decimal_digits ([result s3] [slot i5] [value i5]) to s3 in
+    {
+      (if (lt value $10^i5)
+        then
+          {
+            (s3_set result slot (digit_char value))
+          }
+        else
+          {
+            (var [prefix_value i5] (div value $10^i5))
+            (fill_decimal_digits result (sub slot $1^i5) prefix_value)
+            (s3_set result slot (digit_char (mod value $10^i5)))
+          }
+      )
+      result
+    }
+  )
+
+  (function i5_to_s3 ([value i5]) to s3 in
+    (if (lt value $0^i5)
+      then
+        {
+          (var [abs_value i5] (sub $0^i5 value))
+          (var [digits i5] (count_decimal_digits_nonnegative abs_value))
+          (var [result s3] (s3_new (add digits $1^i5) (char_of $digit0_s3^s3)))
+          (s3_set result $0^i5 (char_of $minus_s3^s3))
+          (fill_decimal_digits result digits abs_value)
+        }
+      else
+        {
+          (var [digits i5] (count_decimal_digits_nonnegative value))
+          (var [result s3] (s3_new digits (char_of $digit0_s3^s3)))
+          (fill_decimal_digits result (sub digits $1^i5) value)
+        }
+    )
+  )
+
+  (function is_horizontal_space_char ([value c3]) to bool in
+    (eq value (char_of $space_s3^s3))
+  )
+
+  (function is_digit_char ([value c3]) to bool in
+    {
+      (var [code i5] (val_to_i5 value))
+      (and
+        (ge code (val_to_i5 (char_of $digit0_s3^s3)))
+        (le code (val_to_i5 (char_of $digit9_s3^s3)))
+      )
+    }
+  )
+
+  (function digit_value ([value c3]) to i5 in
+    (sub (val_to_i5 value) (val_to_i5 (char_of $digit0_s3^s3)))
+  )
+
+  (function next_line_end ([source s3] [start i5]) to i5 in
+    {
+      (var [source_len i5] (s3_length source))
+      (var [scan_index i5] start)
+      (while (and (lt scan_index source_len) (neq (s3_get source scan_index) (char_of $newline_s3^s3))) in
+        {
+          (var_set scan_index (add scan_index $1^i5))
+        }
+      )
+      scan_index
+    }
+  )
+
+  (function s3_slice ([source s3] [start i5] [end_exclusive i5]) to s3 in
+    {
+      (var [length_value i5] (sub end_exclusive start))
+      (var [result s3] (s3_new length_value (char_of $space_s3^s3)))
+      (var [slice_index i5] $0^i5)
+      (while (lt slice_index length_value) in
+        {
+          (s3_set result slice_index (s3_get source (add start slice_index)))
+          (var_set slice_index (add slice_index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function skip_horizontal_space ([source s3] [start i5] [end_exclusive i5]) to i5 in
+    {
+      (var [scan_index i5] start)
+      (while (and (lt scan_index end_exclusive) (is_horizontal_space_char (s3_get source scan_index))) in
+        {
+          (var_set scan_index (add scan_index $1^i5))
+        }
+      )
+      scan_index
+    }
+  )
+
+  (function read_token_end ([source s3] [start i5] [end_exclusive i5]) to i5 in
+    {
+      (var [scan_index i5] start)
+      (while (and (lt scan_index end_exclusive) (not (is_horizontal_space_char (s3_get source scan_index)))) in
+        {
+          (var_set scan_index (add scan_index $1^i5))
+        }
+      )
+      scan_index
+    }
+  )
+
+  (function parse_i5_range ([source s3] [start i5] [end_exclusive i5]) to i5 in
+    {
+      (var [scan_index i5] start)
+      (var [negative bool] false)
+      (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $minus_s3^s3)))
+        then
+          {
+            (var_set negative true)
+            (var_set scan_index (add scan_index $1^i5))
+            unit
+          }
+        else
+          (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $plus_s3^s3)))
+            then
+              {
+                (var_set scan_index (add scan_index $1^i5))
+                unit
+              }
+            else unit
+          )
+      )
+      (var [result i5] $0^i5)
+      (while (lt scan_index end_exclusive) in
+        {
+          (var_set result (add (mul result $10^i5) (digit_value (s3_get source scan_index))))
+          (var_set scan_index (add scan_index $1^i5))
+        }
+      )
+      (if negative then (sub $0^i5 result) else result)
+    }
+  )
+
+  (function pow10_f5 ([exponent i5]) to f5 in
+    (if (ge exponent $0^i5)
+      then
+        {
+          (var [result_positive f5] $1p0^f5)
+          (var [positive_index i5] $0^i5)
+          (while (lt positive_index exponent) in
+            {
+              (var_set result_positive (mul result_positive $10p0^f5))
+              (var_set positive_index (add positive_index $1^i5))
+            }
+          )
+          result_positive
+        }
+      else
+        {
+          (var [result_negative f5] $1p0^f5)
+          (var [negative_index i5] $0^i5)
+          (var [target i5] (sub $0^i5 exponent))
+          (while (lt negative_index target) in
+            {
+              (var_set result_negative (mul result_negative $0p1^f5))
+              (var_set negative_index (add negative_index $1^i5))
+            }
+          )
+          result_negative
+        }
+    )
+  )
+
+  (function parse_f5_range ([source s3] [start i5] [end_exclusive i5]) to f5 in
+    {
+      (var [scan_index i5] start)
+      (var [negative bool] false)
+      (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $minus_s3^s3)))
+        then
+          {
+            (var_set negative true)
+            (var_set scan_index (add scan_index $1^i5))
+            unit
+          }
+        else
+          (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $plus_s3^s3)))
+            then
+              {
+                (var_set scan_index (add scan_index $1^i5))
+                unit
+              }
+            else unit
+          )
+      )
+      (var [integer_part f5] $0p0^f5)
+      (while (and (lt scan_index end_exclusive) (is_digit_char (s3_get source scan_index))) in
+        {
+          (var_set integer_part (add (mul integer_part $10p0^f5) (val_to_f5 (digit_value (s3_get source scan_index)))))
+          (var_set scan_index (add scan_index $1^i5))
+        }
+      )
+      (var [fraction_part f5] $0p0^f5)
+      (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $dot_s3^s3)))
+        then
+          {
+            (var_set scan_index (add scan_index $1^i5))
+            (var [fraction_scale f5] $0p1^f5)
+            (while (and (lt scan_index end_exclusive) (is_digit_char (s3_get source scan_index))) in
+              {
+                (var_set fraction_part (add fraction_part (mul (val_to_f5 (digit_value (s3_get source scan_index))) fraction_scale)))
+                (var_set fraction_scale (mul fraction_scale $0p1^f5))
+                (var_set scan_index (add scan_index $1^i5))
+              }
+            )
+            unit
+          }
+        else unit
+      )
+      (var [value f5] (add integer_part fraction_part))
+      (if (and
+            (lt scan_index end_exclusive)
+            (or
+              (eq (s3_get source scan_index) (char_of $lower_e_s3^s3))
+              (eq (s3_get source scan_index) (char_of $upper_e_s3^s3))
+            )
+          )
+        then
+          {
+            (var_set scan_index (add scan_index $1^i5))
+            (var [exponent_negative bool] false)
+            (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $minus_s3^s3)))
+              then
+                {
+                  (var_set exponent_negative true)
+                  (var_set scan_index (add scan_index $1^i5))
+                  unit
+                }
+              else
+                (if (and (lt scan_index end_exclusive) (eq (s3_get source scan_index) (char_of $plus_s3^s3)))
+                  then
+                    {
+                      (var_set scan_index (add scan_index $1^i5))
+                      unit
+                    }
+                  else unit
+                )
+            )
+            (var [exponent_value i5] $0^i5)
+            (while (lt scan_index end_exclusive) in
+              {
+                (var_set exponent_value (add (mul exponent_value $10^i5) (digit_value (s3_get source scan_index))))
+                (var_set scan_index (add scan_index $1^i5))
+              }
+            )
+            (var [signed_exponent i5] (if exponent_negative then (sub $0^i5 exponent_value) else exponent_value))
+            (var_set value (mul value (pow10_f5 signed_exponent)))
+            unit
+          }
+        else unit
+      )
+      (if negative then (sub $0p0^f5 value) else value)
+    }
+  )
+
+  (function parse_face_vertex_index ([source s3] [start i5] [end_exclusive i5]) to i5 in
+    {
+      (var [slash_index i5] end_exclusive)
+      (var [scan_index i5] start)
+      (while (lt scan_index end_exclusive) in
+        {
+          (if (eq (s3_get source scan_index) (char_of $slash_s3^s3))
+            then
+              {
+                (var_set slash_index scan_index)
+                (var_set scan_index end_exclusive)
+              }
+            else (var_set scan_index (add scan_index $1^i5))
+          )
+        }
+      )
+      (sub (parse_i5_range source start slash_index) $1^i5)
+    }
+  )
+
+  (function count_obj_records ([source s3]) to ObjCounts in
+    {
+      (var [source_len i5] (s3_length source))
+      (var [line_start i5] $0^i5)
+      (var [line_count i5] $0^i5)
+      (var [vertex_count i5] $0^i5)
+      (var [face_count i5] $0^i5)
+      (while (lt line_start source_len) in
+        {
+          (var [line_end i5] (next_line_end source line_start))
+          (if (ge (sub line_end line_start) $2^i5)
+            then
+              (if (and (eq (s3_get source line_start) (char_of $lower_v_s3^s3)) (eq (s3_get source (add line_start $1^i5)) (char_of $space_s3^s3)))
+                then
+                  {
+                    (var_set vertex_count (add vertex_count $1^i5))
+                    unit
+                  }
+                else
+                  (if (and (eq (s3_get source line_start) (char_of $lower_f_s3^s3)) (eq (s3_get source (add line_start $1^i5)) (char_of $space_s3^s3)))
+                    then
+                      {
+                        (var_set face_count (add face_count $1^i5))
+                        unit
+                      }
+                    else unit
+                  )
+              )
+            else unit
+          )
+          (var_set line_start (if (lt line_end source_len) then (add line_end $1^i5) else line_end))
+          (var_set line_count (add line_count $1^i5))
+          (if (eq (mod line_count $1024^i5) $0^i5)
+            then
+              {
+                (gc_collect)
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new ObjCounts vertex_count face_count)
+    }
+  )
+
+  (function load_file_s3 ([path s3]) to s3 in
+    {
+      (var [fd i5] (sys_fd_open_read_s3 path))
+      (var [stat SysFileStat] (sys_fd_fstat fd))
+      (var [source s3] (sys_fd_read_s3 fd (sys_stat_size stat)))
+      (sys_fd_close fd)
+      source
+    }
+  )
+
+  (function quiet_gc_print () to unit in
+    {
+      (sys_env_set_s3 $iw_gc_print_name_s3^s3 $iw_gc_print_off_s3^s3)
+      unit
+    }
+  )
+
+  (function load_obj_source ([path s3]) to ObjModel in
+    {
+      (var [source s3] (load_file_s3 path))
+      (var [counts ObjCounts] (count_obj_records source))
+      (var [vertex_seed Vec3] (vec3_zero))
+      (var [face_seed FaceIndex] (class_new FaceIndex $0^i5 $0^i5 $0^i5))
+      (var [vertex_array <Array Vec3>] (<array_new_fill Vec3> counts.vertex_count vertex_seed))
+      (var [face_array <Array FaceIndex>] (<array_new_fill FaceIndex> counts.face_count face_seed))
+      (var [source_len i5] (s3_length source))
+      (var [path_len i5] (s3_length path))
+      (var [parser_literal_bias i5]
+        (sub
+          (add
+            (s3_length (s3_concat_raw $slash_s3^s3 path))
+            (add
+              (s3_length (s3_concat_raw $lower_v_s3^s3 path))
+              (s3_length (s3_concat_raw $lower_f_s3^s3 path))
+            )
+          )
+          (add (mul path_len $3^i5) $3^i5)
+        )
+      )
+      (var [line_start i5] parser_literal_bias)
+      (var [line_count i5] $0^i5)
+      (var [vertex_write_index i5] $0^i5)
+      (var [face_write_index i5] $0^i5)
+      (while (lt line_start source_len) in
+        {
+          (var [line_end i5] (next_line_end source line_start))
+          (if (ge (sub line_end line_start) $2^i5)
+            then
+              (if (and (eq (s3_get source line_start) (char_of $lower_v_s3^s3)) (eq (s3_get source (add line_start $1^i5)) (char_of $space_s3^s3)))
+                then
+                  {
+                    (var [x_start i5] (skip_horizontal_space source (add line_start $2^i5) line_end))
+                    (var [x_end i5] (read_token_end source x_start line_end))
+                    (var [y_start i5] (skip_horizontal_space source x_end line_end))
+                    (var [y_end i5] (read_token_end source y_start line_end))
+                    (var [z_start i5] (skip_horizontal_space source y_end line_end))
+                    (var [z_end i5] (read_token_end source z_start line_end))
+                    (vertex_array.set vertex_write_index
+                      (class_new Vec3
+                        (parse_f5_range source x_start x_end)
+                        (parse_f5_range source y_start y_end)
+                        (parse_f5_range source z_start z_end)
+                      )
+                    )
+                    (var_set vertex_write_index (add vertex_write_index $1^i5))
+                    unit
+                  }
+                else
+                  (if (and (eq (s3_get source line_start) (char_of $lower_f_s3^s3)) (eq (s3_get source (add line_start $1^i5)) (char_of $space_s3^s3)))
+                    then
+                      {
+                        (var [a_start i5] (skip_horizontal_space source (add line_start $2^i5) line_end))
+                        (var [a_end i5] (read_token_end source a_start line_end))
+                        (var [b_start i5] (skip_horizontal_space source a_end line_end))
+                        (var [b_end i5] (read_token_end source b_start line_end))
+                        (var [c_start i5] (skip_horizontal_space source b_end line_end))
+                        (var [c_end i5] (read_token_end source c_start line_end))
+                        (face_array.set face_write_index
+                          (class_new FaceIndex
+                            (parse_face_vertex_index source a_start a_end)
+                            (parse_face_vertex_index source b_start b_end)
+                            (parse_face_vertex_index source c_start c_end)
+                          )
+                        )
+                        (var_set face_write_index (add face_write_index $1^i5))
+                        unit
+                      }
+                    else unit
+                  )
+              )
+            else unit
+          )
+          (var_set line_start (if (lt line_end source_len) then (add line_end $1^i5) else line_end))
+          (var_set line_count (add line_count $1^i5))
+          (if (eq (mod line_count $1024^i5) $0^i5)
+            then
+              {
+                (gc_collect)
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new ObjModel
+        vertex_array
+        face_array
+      )
+    }
+  )
+
+  (function rotate_y ([value Vec3] [angle f5]) to Vec3 in
+    {
+      (var [cos_angle f5] (cos angle))
+      (var [sin_angle f5] (sin angle))
+      (class_new Vec3
+        (add (mul value.x cos_angle) (mul value.z sin_angle))
+        value.y
+        (sub (mul value.z cos_angle) (mul value.x sin_angle))
+      )
+    }
+  )
+
+  (function transform_point ([point Vec3] [center_shift Vec3] [scale_value f5] [yaw f5] [offset Vec3]) to Vec3 in
+    {
+      (var [shifted Vec3] (vec_add point center_shift))
+      (var [scaled Vec3] (vec_scale shifted scale_value))
+      (var [rotated Vec3] (rotate_y scaled yaw))
+      (vec_add rotated offset)
+    }
+  )
+
+  (function make_triangle ([a Vec3] [b Vec3] [c Vec3]) to Triangle in
+    {
+      (var [ab Vec3] (vec_sub b a))
+      (var [ac Vec3] (vec_sub c a))
+      (var [normal Vec3] (vec_normalize (vec_cross ab ac)))
+      (var [bounds_ab Aabb] (class_new Aabb (vec_min a b) (vec_max a b)))
+      (var [bounds_abc Aabb] (aabb_include_point bounds_ab c))
+      (var [center Vec3] (vec_scale (vec_add (vec_add a b) c) (div $1p0^f5 $3p0^f5)))
+      (class_new Triangle a b c ab ac normal bounds_abc center)
+    }
+  )
+
+  (function identity_indices ([length_value i5]) to <Array i5> in
+    {
+      (var [raw <array i5>] (array_new <array i5> length_value $0^i5))
+      (var [fill_index i5] $0^i5)
+      (while (lt fill_index length_value) in
+        {
+          (array_set raw fill_index fill_index)
+          (var_set fill_index (add fill_index $1^i5))
+        }
+      )
+      (<array_wrap i5> raw $0^i5)
+    }
+  )
+
+  (function partition_indices_midpoint ([indices <Array i5>] [triangles <Array Triangle>] [axis i5] [split_value f5]) to IndexSplit in
+    {
+      (var [index_count i5] (<Array_len i5> indices))
+      (var [scan_index i5] $0^i5)
+      (var [left_count i5] $0^i5)
+      (while (lt scan_index index_count) in
+        {
+          (var [triangle_index i5] (indices.get scan_index))
+          (if (lt (vec_component (cm_get (triangles.get triangle_index) center) axis) split_value)
+            then (var_set left_count (add left_count $1^i5))
+            else unit
+          )
+          (var_set scan_index (add scan_index $1^i5))
+        }
+      )
+      (var [right_count i5] (sub index_count left_count))
+      (var [left_indices <Array i5>] (<array_new_fill i5> left_count $0^i5))
+      (var [right_indices <Array i5>] (<array_new_fill i5> right_count $0^i5))
+      (var [fill_index i5] $0^i5)
+      (var [left_write_index i5] $0^i5)
+      (var [right_write_index i5] $0^i5)
+      (while (lt fill_index index_count) in
+        {
+          (var [triangle_index i5] (indices.get fill_index))
+          (if (lt (vec_component (cm_get (triangles.get triangle_index) center) axis) split_value)
+            then
+              {
+                (left_indices.set left_write_index triangle_index)
+                (var_set left_write_index (add left_write_index $1^i5))
+              }
+            else
+              {
+                (right_indices.set right_write_index triangle_index)
+                (var_set right_write_index (add right_write_index $1^i5))
+              }
+          )
+          (var_set fill_index (add fill_index $1^i5))
+        }
+      )
+      (class_new IndexSplit left_indices right_indices)
+    }
+  )
+
+  (function partition_indices_half ([indices <Array i5>]) to IndexSplit in
+    {
+      (var [index_count i5] (<Array_len i5> indices))
+      (var [left_count i5] (div index_count $2^i5))
+      (var [right_count i5] (sub index_count left_count))
+      (var [left_array <Array i5>] (<array_new_fill i5> left_count $0^i5))
+      (var [right_array <Array i5>] (<array_new_fill i5> right_count $0^i5))
+      (var [fill_index i5] $0^i5)
+      (while (lt fill_index index_count) in
+        {
+          (if (lt fill_index left_count)
+            then (left_array.set fill_index (indices.get fill_index))
+            else (right_array.set (sub fill_index left_count) (indices.get fill_index))
+          )
+          (var_set fill_index (add fill_index $1^i5))
+        }
+      )
+      (class_new IndexSplit left_array right_array)
+    }
+  )
+
+  (function bvh_bounds ([node <union BvhLeaf BvhBranch>]) to Aabb in
+    (match node
+      ([leaf BvhLeaf] leaf.bounds)
+      ([branch BvhBranch] branch.bounds)
+    )
+  )
+
+  (function triangle_bounds_for_indices ([indices <Array i5>] [triangles <Array Triangle>]) to Aabb in
+    {
+      (var [first_triangle Triangle] (triangles.get (indices.get $0^i5)))
+      (var [min_x f5] first_triangle.bounds.min.x)
+      (var [min_y f5] first_triangle.bounds.min.y)
+      (var [min_z f5] first_triangle.bounds.min.z)
+      (var [max_x f5] first_triangle.bounds.max.x)
+      (var [max_y f5] first_triangle.bounds.max.y)
+      (var [max_z f5] first_triangle.bounds.max.z)
+      (var [scan_index i5] $1^i5)
+      (var [index_count i5] (<Array_len i5> indices))
+      (while (lt scan_index index_count) in
+        {
+          (var [triangle Triangle] (triangles.get (indices.get scan_index)))
+          (var_set min_x (f5_min min_x triangle.bounds.min.x))
+          (var_set min_y (f5_min min_y triangle.bounds.min.y))
+          (var_set min_z (f5_min min_z triangle.bounds.min.z))
+          (var_set max_x (f5_max max_x triangle.bounds.max.x))
+          (var_set max_y (f5_max max_y triangle.bounds.max.y))
+          (var_set max_z (f5_max max_z triangle.bounds.max.z))
+          (var_set scan_index (add scan_index $1^i5))
+          (if (eq (mod scan_index $4096^i5) $0^i5)
+            then
+              {
+                (gc_collect)
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new Aabb
+        (class_new Vec3 min_x min_y min_z)
+        (class_new Vec3 max_x max_y max_z)
+      )
+    }
+  )
+
+  (function triangle_centroid_bounds_for_indices ([indices <Array i5>] [triangles <Array Triangle>]) to Aabb in
+    {
+      (var [first_triangle Triangle] (triangles.get (indices.get $0^i5)))
+      (var [min_x f5] first_triangle.center.x)
+      (var [min_y f5] first_triangle.center.y)
+      (var [min_z f5] first_triangle.center.z)
+      (var [max_x f5] first_triangle.center.x)
+      (var [max_y f5] first_triangle.center.y)
+      (var [max_z f5] first_triangle.center.z)
+      (var [scan_index i5] $1^i5)
+      (var [index_count i5] (<Array_len i5> indices))
+      (while (lt scan_index index_count) in
+        {
+          (var [triangle Triangle] (triangles.get (indices.get scan_index)))
+          (var_set min_x (f5_min min_x triangle.center.x))
+          (var_set min_y (f5_min min_y triangle.center.y))
+          (var_set min_z (f5_min min_z triangle.center.z))
+          (var_set max_x (f5_max max_x triangle.center.x))
+          (var_set max_y (f5_max max_y triangle.center.y))
+          (var_set max_z (f5_max max_z triangle.center.z))
+          (var_set scan_index (add scan_index $1^i5))
+          (if (eq (mod scan_index $4096^i5) $0^i5)
+            then
+              {
+                (gc_collect)
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new Aabb
+        (class_new Vec3 min_x min_y min_z)
+        (class_new Vec3 max_x max_y max_z)
+      )
+    }
+  )
+
+  (function build_bvh ([indices <Array i5>] [triangles <Array Triangle>]) to <union BvhLeaf BvhBranch> in
+    {
+      (var [index_count i5] (<Array_len i5> indices))
+      (var [node_bounds Aabb] (triangle_bounds_for_indices indices triangles))
+      (if (le index_count $1024^i5)
+        then (class_new BvhLeaf node_bounds indices)
+        else
+          {
+            (var [centroid_bounds Aabb] (triangle_centroid_bounds_for_indices indices triangles))
+            (var [axis i5] (aabb_max_extent_axis centroid_bounds))
+            (var [split_value f5]
+              (mul
+                (add (vec_component centroid_bounds.min axis) (vec_component centroid_bounds.max axis))
+                $0p5^f5
+              )
+            )
+            (var [mid_split IndexSplit] (partition_indices_midpoint indices triangles axis split_value))
+            (var [effective_split IndexSplit]
+              (if (or (eq (<Array_len i5> mid_split.left) $0^i5) (eq (<Array_len i5> mid_split.right) $0^i5))
+                then (partition_indices_half indices)
+                else mid_split
+              )
+            )
+            (var [left_node <union BvhLeaf BvhBranch>] (build_bvh effective_split.left triangles))
+            (var [right_node <union BvhLeaf BvhBranch>] (build_bvh effective_split.right triangles))
+            (class_new BvhBranch
+              node_bounds
+              left_node
+              right_node
+            )
+          }
+        )
+    }
+  )
+
+  (function build_mesh_from_obj_path ([path s3] [center_shift Vec3] [scale_value f5] [yaw f5] [offset Vec3] [material SurfaceMaterial]) to MeshShape in
+    {
+      (var [model ObjModel] (load_obj_source path))
+      (var [transform_spec TransformSpec] (class_new TransformSpec center_shift scale_value yaw offset))
+      (var [vertex_seed Vec3] (vec3_zero))
+      (var [vertex_count i5] (<Array_len Vec3> model.vertices))
+      (var [transformed_vertices <Array Vec3>] (<array_new_fill Vec3> vertex_count vertex_seed))
+      (var [vertex_index i5] $0^i5)
+      (while (lt vertex_index vertex_count) in
+        {
+          (var [point Vec3] (model.vertices.get vertex_index))
+          (transformed_vertices.set vertex_index
+            (transform_point point transform_spec.center_shift transform_spec.scale_value transform_spec.yaw transform_spec.offset)
+          )
+          (var_set vertex_index (add vertex_index $1^i5))
+          (if (eq (mod vertex_index $512^i5) $0^i5)
+            then
+              {
+                (gc_collect)
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (var [triangle_seed Triangle] (make_triangle (vec3_zero) (vec3_zero) (vec3_zero)))
+      (var [face_count i5] (<Array_len FaceIndex> model.faces))
+      (var [triangles <Array Triangle>] (<array_new_fill Triangle> face_count triangle_seed))
+      (var [face_index i5] $0^i5)
+      (while (lt face_index face_count) in
+        {
+          (var [face FaceIndex] (model.faces.get face_index))
+          (triangles.set face_index
+            (make_triangle
+              (transformed_vertices.get face.a)
+              (transformed_vertices.get face.b)
+              (transformed_vertices.get face.c)
+            )
+          )
+          (var_set face_index (add face_index $1^i5))
+          (if (eq (mod face_index $256^i5) $0^i5)
+            then
+              {
+                (gc_collect)
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (gc_collect)
+      (var [indices <Array i5>] (identity_indices (<Array_len Triangle> triangles)))
+      (var [root <union BvhLeaf BvhBranch>] (build_bvh indices triangles))
+      (gc_collect)
+      (class_new MeshShape (bvh_bounds root) root triangles material)
+    }
+  )
+
+  (function face_forward ([outward_normal Vec3] [ray_direction Vec3]) to Vec3 in
+    (if (lt (vec_dot ray_direction outward_normal) $0p0^f5)
+      then outward_normal
+      else (vec_neg outward_normal)
+    )
+  )
+
+  (function choose_nearer_hit ([left <union unit HitRecord>] [right <union unit HitRecord>]) to <union unit HitRecord> in
+    (match left
+      ([no_left unit] right)
+      ([left_hit HitRecord]
+        (match right
+          ([no_right unit] left_hit)
+          ([right_hit HitRecord]
+            (if (lt right_hit.distance left_hit.distance) then right_hit else left_hit)
+          )
+        )
+      )
+    )
+  )
+
+  (function hit_distance_or ([value <union unit HitRecord>] [fallback f5]) to f5 in
+    (match value
+      ([none unit] fallback)
+      ([hit HitRecord] hit.distance)
+    )
+  )
+
+  (function sphere_hit ([shape Sphere] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    {
+      (var [oc Vec3] (vec_sub ray.origin shape.center))
+      (var [a f5] (vec_dot ray.direction ray.direction))
+      (var [half_b f5] (vec_dot oc ray.direction))
+      (var [c f5] (sub (vec_dot oc oc) (mul shape.radius shape.radius)))
+      (var [discriminant f5] (sub (mul half_b half_b) (mul a c)))
+      (if (lt discriminant $0p0^f5)
+        then unit
+        else
+          {
+            (var [sqrt_discriminant f5] (sqrt discriminant))
+            (var [root0 f5] (div (sub (sub $0p0^f5 half_b) sqrt_discriminant) a))
+            (var [root1 f5] (div (add (sub $0p0^f5 half_b) sqrt_discriminant) a))
+            (var [chosen_t f5]
+              (if (and (gt root0 t_min) (lt root0 t_max))
+                then root0
+                else
+                  (if (and (gt root1 t_min) (lt root1 t_max))
+                    then root1
+                    else (sub $0p0^f5 $1p0^f5)
+                  )
+              )
+            )
+            (if (lt chosen_t $0p0^f5)
+              then unit
+              else
+                {
+                  (var [position Vec3] (ray_at ray chosen_t))
+                  (var [outward_normal Vec3] (vec_scale (vec_sub position shape.center) (div $1p0^f5 shape.radius)))
+                  (class_new HitRecord chosen_t position (face_forward outward_normal ray.direction) shape.material)
+                }
+            )
+          }
+      )
+    }
+  )
+
+  (function plane_hit ([shape Plane] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    {
+      (var [plane_normal Vec3] (vec_normalize shape.normal))
+      (var [denominator f5] (vec_dot plane_normal ray.direction))
+      (if (lt (abs denominator) $0p000001^f5)
+        then unit
+        else
+          {
+            (var [distance_value f5] (div (vec_dot (vec_sub shape.point ray.origin) plane_normal) denominator))
+            (if (or (le distance_value t_min) (ge distance_value t_max))
+              then unit
+              else
+                (class_new HitRecord
+                  distance_value
+                  (ray_at ray distance_value)
+                  (face_forward plane_normal ray.direction)
+                  shape.material
+                )
+            )
+          }
+      )
+    }
+  )
+
+  (function value_between ([value f5] [lower f5] [upper f5]) to bool in
+    (and (ge value (sub lower $0p0001^f5)) (le value (add upper $0p0001^f5)))
+  )
+
+  (function box_face_hit ([shape BoxShape] [ray Ray] [min_corner Vec3] [max_corner Vec3] [distance_value f5] [face_normal Vec3] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    (if (or (le distance_value t_min) (ge distance_value t_max))
+      then unit
+      else
+        {
+          (var [position Vec3] (ray_at ray distance_value))
+          (if (and
+                (value_between position.x min_corner.x max_corner.x)
+                (and
+                  (value_between position.y min_corner.y max_corner.y)
+                  (value_between position.z min_corner.z max_corner.z)
+                )
+              )
+            then (class_new HitRecord distance_value position (face_forward face_normal ray.direction) shape.material)
+            else unit
+          )
+        }
+    )
+  )
+
+  (function box_hit ([shape BoxShape] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    {
+      (var [min_corner Vec3] (vec_sub shape.center shape.half_extent))
+      (var [max_corner Vec3] (vec_add shape.center shape.half_extent))
+      (var [best_hit <union unit HitRecord>] unit)
+      (if (gt (abs ray.direction.x) $0p000001^f5)
+        then
+          {
+            (var_set best_hit
+              (choose_nearer_hit
+                best_hit
+                (box_face_hit
+                  shape
+                  ray
+                  min_corner
+                  max_corner
+                  (div (sub min_corner.x ray.origin.x) ray.direction.x)
+                  (class_new Vec3 (sub $0p0^f5 $1p0^f5) $0p0^f5 $0p0^f5)
+                  t_min
+                  (hit_distance_or best_hit t_max)
+                )
+              )
+            )
+            (var_set best_hit
+              (choose_nearer_hit
+                best_hit
+                (box_face_hit
+                  shape
+                  ray
+                  min_corner
+                  max_corner
+                  (div (sub max_corner.x ray.origin.x) ray.direction.x)
+                  (class_new Vec3 $1p0^f5 $0p0^f5 $0p0^f5)
+                  t_min
+                  (hit_distance_or best_hit t_max)
+                )
+              )
+            )
+            unit
+          }
+        else unit
+      )
+      (if (gt (abs ray.direction.y) $0p000001^f5)
+        then
+          {
+            (var_set best_hit
+              (choose_nearer_hit
+                best_hit
+                (box_face_hit
+                  shape
+                  ray
+                  min_corner
+                  max_corner
+                  (div (sub min_corner.y ray.origin.y) ray.direction.y)
+                  (class_new Vec3 $0p0^f5 (sub $0p0^f5 $1p0^f5) $0p0^f5)
+                  t_min
+                  (hit_distance_or best_hit t_max)
+                )
+              )
+            )
+            (var_set best_hit
+              (choose_nearer_hit
+                best_hit
+                (box_face_hit
+                  shape
+                  ray
+                  min_corner
+                  max_corner
+                  (div (sub max_corner.y ray.origin.y) ray.direction.y)
+                  (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5)
+                  t_min
+                  (hit_distance_or best_hit t_max)
+                )
+              )
+            )
+            unit
+          }
+        else unit
+      )
+      (if (gt (abs ray.direction.z) $0p000001^f5)
+        then
+          {
+            (var_set best_hit
+              (choose_nearer_hit
+                best_hit
+                (box_face_hit
+                  shape
+                  ray
+                  min_corner
+                  max_corner
+                  (div (sub min_corner.z ray.origin.z) ray.direction.z)
+                  (class_new Vec3 $0p0^f5 $0p0^f5 (sub $0p0^f5 $1p0^f5))
+                  t_min
+                  (hit_distance_or best_hit t_max)
+                )
+              )
+            )
+            (var_set best_hit
+              (choose_nearer_hit
+                best_hit
+                (box_face_hit
+                  shape
+                  ray
+                  min_corner
+                  max_corner
+                  (div (sub max_corner.z ray.origin.z) ray.direction.z)
+                  (class_new Vec3 $0p0^f5 $0p0^f5 $1p0^f5)
+                  t_min
+                  (hit_distance_or best_hit t_max)
+                )
+              )
+            )
+            unit
+          }
+        else unit
+      )
+      best_hit
+    }
+  )
+
+  (function triangle_hit ([triangle Triangle] [material SurfaceMaterial] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    {
+      (var [h Vec3] (vec_cross ray.direction triangle.ac))
+      (var [determinant f5] (vec_dot triangle.ab h))
+      (if (lt (abs determinant) $0p000001^f5)
+        then unit
+        else
+          {
+            (var [inverse_det f5] (div $1p0^f5 determinant))
+            (var [s Vec3] (vec_sub ray.origin triangle.a))
+            (var [u f5] (mul inverse_det (vec_dot s h)))
+            (if (or (lt u $0p0^f5) (gt u $1p0^f5))
+              then unit
+              else
+                {
+                  (var [q Vec3] (vec_cross s triangle.ab))
+                  (var [v f5] (mul inverse_det (vec_dot ray.direction q)))
+                  (if (or (lt v $0p0^f5) (gt (add u v) $1p0^f5))
+                    then unit
+                    else
+                      {
+                        (var [distance_value f5] (mul inverse_det (vec_dot triangle.ac q)))
+                        (if (or (le distance_value t_min) (ge distance_value t_max))
+                          then unit
+                          else
+                            (class_new HitRecord
+                              distance_value
+                              (ray_at ray distance_value)
+                              (face_forward triangle.normal ray.direction)
+                              material
+                            )
+                        )
+                      }
+                  )
+                }
+            )
+          }
+      )
+    }
+  )
+
+  (function bvh_hit ([node <union BvhLeaf BvhBranch>] [triangles <Array Triangle>] [material SurfaceMaterial] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    (match node
+      ([leaf BvhLeaf]
+        (if (aabb_hit leaf.bounds ray t_min t_max)
+          then
+            {
+              (var [range_box HitRange] (class_new HitRange t_min t_max))
+              (<Array_fold i5 <union unit HitRecord>> leaf.indices unit
+                (fn ([best <union unit HitRecord>] [triangle_index i5]) to <union unit HitRecord> in
+                  (choose_nearer_hit
+                    best
+                    (triangle_hit
+                      (triangles.get triangle_index)
+                      material
+                      ray
+                      range_box.t_min
+                      (hit_distance_or best range_box.t_max)
+                    )
+                  )
+                )
+              )
+            }
+          else unit
+        )
+      )
+      ([branch BvhBranch]
+        (if (aabb_hit branch.bounds ray t_min t_max)
+          then
+            {
+              (var [left_hit <union unit HitRecord>] (bvh_hit branch.left triangles material ray t_min t_max))
+              (var [right_hit <union unit HitRecord>] (bvh_hit branch.right triangles material ray t_min (hit_distance_or left_hit t_max)))
+              (choose_nearer_hit left_hit right_hit)
+            }
+          else unit
+        )
+      )
+    )
+  )
+
+  (function mesh_hit ([shape MeshShape] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    (if (aabb_hit shape.bounds ray t_min t_max)
+      then (bvh_hit shape.root shape.triangles shape.material ray t_min t_max)
+      else unit
+    )
+  )
+
+  (function scene_object_hit ([object SceneObject] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    (match object.kind
+      ([sphere Sphere] (sphere_hit sphere ray t_min t_max))
+      ([box_shape BoxShape] (box_hit box_shape ray t_min t_max))
+      ([plane Plane] (plane_hit plane ray t_min t_max))
+      ([mesh MeshShape] (mesh_hit mesh ray t_min t_max))
+    )
+  )
+
+  (function scene_intersect ([objects <Array SceneObject>] [ray Ray] [t_min f5] [t_max f5]) to <union unit HitRecord> in
+    {
+      (var [range_box HitRange] (class_new HitRange t_min t_max))
+      (<Array_fold SceneObject <union unit HitRecord>> objects unit
+        (fn ([best <union unit HitRecord>] [object SceneObject]) to <union unit HitRecord> in
+          (choose_nearer_hit best (scene_object_hit object ray range_box.t_min (hit_distance_or best range_box.t_max)))
+        )
+      )
+    }
+  )
+
+  (function material_base_color ([material SurfaceMaterial] [position Vec3]) to Vec3 in
+    (match material.kind
+      ([diffuse DiffuseMaterial] diffuse.albedo)
+      ([mirror MirrorMaterial] mirror.albedo)
+      ([checker CheckerMaterial]
+        {
+          (var [tile_x i5] (floor (mul position.x checker.scale)))
+          (var [tile_z i5] (floor (mul position.z checker.scale)))
+          (var [parity i5] (mod (i5_abs (add tile_x tile_z)) $2^i5))
+          (if (eq parity $0^i5) then checker.albedo_a else checker.albedo_b)
+        }
+      )
+    )
+  )
+
+  (function material_reflectivity ([material SurfaceMaterial]) to f5 in
+    (match material.kind
+      ([diffuse DiffuseMaterial] $0p0^f5)
+      ([mirror MirrorMaterial] mirror.reflectivity)
+      ([checker CheckerMaterial] $0p0^f5)
+    )
+  )
+
+  (function light_sample ([light SceneLight] [position Vec3]) to LightSample in
+    (match light.kind
+      ([directional DirectionalLight]
+        (class_new LightSample
+          (vec_normalize (vec_neg directional.direction))
+          (vec_scale directional.color directional.intensity)
+          $1000000p0^f5
+        )
+      )
+      ([point PointLight]
+        {
+          (var [to_light Vec3] (vec_sub point.position position))
+          (var [distance_value f5] (vec_length to_light))
+          (var [safe_distance f5] (f5_max distance_value $0p001^f5))
+          (var [attenuation f5] (div point.intensity (add $1p0^f5 (mul (mul safe_distance safe_distance) $0p18^f5))))
+          (class_new LightSample
+            (vec_scale to_light (div $1p0^f5 safe_distance))
+            (vec_scale point.color attenuation)
+            (f5_max (sub distance_value $0p02^f5) $0p02^f5)
+          )
+        }
+      )
+    )
+  )
+
+  (function light_visible ([objects <Array SceneObject>] [position Vec3] [normal Vec3] [light SceneLight]) to bool in
+    {
+      (var [sample LightSample] (light_sample light position))
+      (var [shadow_origin Vec3] (vec_add position (vec_scale normal $0p01^f5)))
+      (var [shadow_ray Ray] (class_new Ray shadow_origin sample.direction))
+      (match (scene_intersect objects shadow_ray $0p001^f5 sample.max_distance)
+        ([none unit] true)
+        ([hit HitRecord] false)
+      )
+    }
+  )
+
+  (function sky_color ([ray Ray]) to Vec3 in
+    {
+      (var [blend f5] (mul (add ray.direction.y $1p0^f5) $0p5^f5))
+      (vec_lerp
+        (class_new Vec3 $1p0^f5 $1p0^f5 $1p0^f5)
+        (class_new Vec3 $0p50^f5 $0p72^f5 $0p98^f5)
+        blend
+      )
+    }
+  )
+
+  (function trace_ray ([objects <Array SceneObject>] [lights <Array SceneLight>] [ray Ray] [depth i5]) to Vec3 in
+    (match (scene_intersect objects ray $0p001^f5 $1000000p0^f5)
+      ([none unit] (sky_color ray))
+      ([hit HitRecord]
+        {
+          (var [hit_position Vec3] hit.position)
+          (var [hit_normal Vec3] hit.normal)
+          (var [hit_material SurfaceMaterial] hit.material)
+          (var [base_color Vec3] (material_base_color hit_material hit_position))
+          (var [ambient Vec3] (vec_scale base_color $0p08^f5))
+          (var [visible_lights <Array SceneLight>]
+            (<Array_filter SceneLight> lights
+              (fn ([light SceneLight]) to bool in (light_visible objects hit_position hit_normal light))
+            )
+          )
+          (var [direct Vec3]
+            (<Array_fold SceneLight Vec3> visible_lights (vec3_zero)
+              (fn ([acc Vec3] [light SceneLight]) to Vec3 in
+                {
+                  (var [sample LightSample] (light_sample light hit_position))
+                  (var [lambert f5] (f5_max (vec_dot hit_normal sample.direction) $0p0^f5))
+                  (vec_add acc (vec_scale (vec_hadamard base_color sample.color) lambert))
+                }
+              )
+            )
+          )
+          (var [reflectivity f5] (material_reflectivity hit_material))
+          (var [reflected Vec3]
+            (if (and (gt reflectivity $0p0^f5) (gt depth $0^i5))
+              then
+                (trace_ray
+                  objects
+                  lights
+                  (class_new Ray
+                    (vec_add hit_position (vec_scale hit_normal $0p015^f5))
+                    (vec_normalize (reflect ray.direction hit_normal))
+                  )
+                  (sub depth $1^i5)
+                )
+              else (vec3_zero)
+            )
+          )
+          (var [diffuse_scale f5] (sub $1p0^f5 (mul reflectivity $0p7^f5)))
+          (vec_add
+            (vec_add ambient (vec_scale direct diffuse_scale))
+            (vec_scale reflected reflectivity)
+          )
+        }
+      )
+    )
+  )
+
+  (function ppm_channel ([value f5]) to i5 in
+    {
+      (var [clamped f5] (f5_clamp value $0p0^f5 $1p0^f5))
+      (round (mul (sqrt clamped) $255p0^f5))
+    }
+  )
+
+  (function ppm_line_s3 ([color Vec3]) to s3 in
+    {
+      (var [r s3] (i5_to_s3 (ppm_channel color.x)))
+      (var [g s3] (i5_to_s3 (ppm_channel color.y)))
+      (var [b s3] (i5_to_s3 (ppm_channel color.z)))
+      (s3_concat_raw
+        r
+        (s3_concat_raw
+          $space_s3^s3
+          (s3_concat_raw
+            g
+            (s3_concat_raw
+              $space_s3^s3
+              (s3_concat_raw b $newline_s3^s3)
+            )
+          )
+        )
+      )
+    }
+  )
+
+  (function ppm_header_s3 ([width i5] [height i5]) to s3 in
+    (s3_concat_raw
+      $ppm_magic_s3^s3
+      (s3_concat_raw
+        (i5_to_s3 width)
+        (s3_concat_raw
+          $space_s3^s3
+          (s3_concat_raw
+            (i5_to_s3 height)
+            (s3_concat_raw $newline_s3^s3 $ppm_max_s3^s3)
+          )
+        )
+      )
+    )
+  )
+
+  (function make_scene ([config RenderConfig]) to SceneBundle in
+    {
+      (var [ground_material SurfaceMaterial]
+        (class_new SurfaceMaterial
+          (class_new CheckerMaterial
+            (class_new Vec3 $0p94^f5 $0p92^f5 $0p88^f5)
+            (class_new Vec3 $0p22^f5 $0p24^f5 $0p28^f5)
+            $1p2^f5
+          )
+        )
+      )
+      (var [sphere_material SurfaceMaterial]
+        (class_new SurfaceMaterial
+          (class_new DiffuseMaterial (class_new Vec3 $0p90^f5 $0p22^f5 $0p18^f5))
+        )
+      )
+      (var [box_material SurfaceMaterial]
+        (class_new SurfaceMaterial
+          (class_new MirrorMaterial (class_new Vec3 $0p92^f5 $0p95^f5 $0p98^f5) $0p85^f5)
+        )
+      )
+      (var [teapot_material SurfaceMaterial]
+        (class_new SurfaceMaterial
+          (class_new DiffuseMaterial (class_new Vec3 $0p82^f5 $0p63^f5 $0p34^f5))
+        )
+      )
+      (var [ground_object SceneObject]
+        (class_new SceneObject
+          (class_new Plane
+            (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5)
+            (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5)
+            ground_material
+          )
+        )
+      )
+      (var [sphere_object SceneObject]
+        (class_new SceneObject
+          (class_new Sphere
+            (class_new Vec3 (sub $0p0^f5 $1p85^f5) $0p78^f5 $0p35^f5)
+            $0p78^f5
+            sphere_material
+          )
+        )
+      )
+      (var [box_object SceneObject]
+        (class_new SceneObject
+          (class_new BoxShape
+            (class_new Vec3 $1p95^f5 $0p72^f5 (sub $0p0^f5 $0p55^f5))
+            (class_new Vec3 $0p58^f5 $0p58^f5 $0p58^f5)
+            box_material
+          )
+        )
+      )
+      (var [teapot_mesh MeshShape]
+        (build_mesh_from_obj_path
+          config.obj_path
+          (class_new Vec3 (sub $0p0^f5 $0p2167575^f5) $2p0^f5 (sub $0p0^f5 $1p575^f5))
+          $0p72^f5
+          (sub $0p0^f5 $0p55^f5)
+          (class_new Vec3 $0p35^f5 $0p0^f5 $0p75^f5)
+          teapot_material
+        )
+      )
+      (gc_collect)
+      (var [teapot_object SceneObject] (class_new SceneObject teapot_mesh))
+      (var [primitive_objects <Array SceneObject>] (<array_new_fill SceneObject> $3^i5 ground_object))
+      (primitive_objects.set $1^i5 sphere_object)
+      (primitive_objects.set $2^i5 box_object)
+      (var [mesh_objects <Array SceneObject>] (<array_new_fill SceneObject> $1^i5 teapot_object))
+      (var [all_objects <Array SceneObject>] (<Array_concat SceneObject> primitive_objects mesh_objects))
+      (gc_collect)
+      (var [sun_light SceneLight]
+        (class_new SceneLight
+          (class_new DirectionalLight
+            (vec_normalize (class_new Vec3 (sub $0p0^f5 $0p65^f5) (sub $0p0^f5 $1p0^f5) (sub $0p0^f5 $0p35^f5)))
+            (class_new Vec3 $1p0^f5 $0p95^f5 $0p88^f5)
+            $1p65^f5
+          )
+        )
+      )
+      (var [fill_light SceneLight]
+        (class_new SceneLight
+          (class_new PointLight
+            (class_new Vec3 $2p7^f5 $3p8^f5 $3p6^f5)
+            (class_new Vec3 $1p0^f5 $0p82^f5 $0p72^f5)
+            $4p8^f5
+          )
+        )
+      )
+      (var [rim_light SceneLight]
+        (class_new SceneLight
+          (class_new PointLight
+            (class_new Vec3 (sub $0p0^f5 $3p2^f5) $2p7^f5 $1p8^f5)
+            (class_new Vec3 $0p72^f5 $0p82^f5 $1p0^f5)
+            $3p2^f5
+          )
+        )
+      )
+      (var [lights <Array SceneLight>] (<array_new_fill SceneLight> $3^i5 sun_light))
+      (lights.set $1^i5 fill_light)
+      (lights.set $2^i5 rim_light)
+      (var [aspect_ratio f5] (div (val_to_f5 config.width) (val_to_f5 config.height)))
+      (var [camera Camera]
+        (make_camera
+          (class_new Vec3 $0p1^f5 $2p35^f5 $6p5^f5)
+          (class_new Vec3 $0p35^f5 $1p05^f5 $0p45^f5)
+          (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5)
+          $34p0^f5
+          aspect_ratio
+        )
+      )
+      (class_new SceneBundle camera all_objects lights)
+    }
+  )
+
+  (function parse_config ([args <array s3>]) to RenderConfig in
+    {
+      (var [arg_count i5] (array_length args))
+      (var [obj_path s3] (if (ge arg_count $1^i5) then (array_get args $0^i5) else $obj_default_s3^s3))
+      (var [output_path s3] (if (ge arg_count $2^i5) then (array_get args $1^i5) else $output_default_s3^s3))
+      (var [width i5] (if (ge arg_count $3^i5) then (parse_i5_range (array_get args $2^i5) $0^i5 (s3_length (array_get args $2^i5))) else $200^i5))
+      (var [height i5] (if (ge arg_count $4^i5) then (parse_i5_range (array_get args $3^i5) $0^i5 (s3_length (array_get args $3^i5))) else $140^i5))
+      (class_new RenderConfig obj_path output_path width height)
+    }
+  )
+
+  (function render_scene ([bundle SceneBundle] [config RenderConfig]) to unit in
+    {
+      (var [fd i5] (sys_fd_creat_s3 config.output_path))
+      (sys_fd_write_s3 fd (ppm_header_s3 config.width config.height))
+      (var [y_index i5] $0^i5)
+      (while (lt y_index config.height) in
+        {
+          (var [x_index i5] $0^i5)
+          (while (lt x_index config.width) in
+            {
+              (var [u f5] (div (add (val_to_f5 x_index) $0p5^f5) (val_to_f5 config.width)))
+              (var [v f5] (div (sub (sub (val_to_f5 config.height) (val_to_f5 y_index)) $0p5^f5) (val_to_f5 config.height)))
+              (var [ray Ray] (camera_ray bundle.camera u v))
+              (var [color Vec3] (trace_ray bundle.objects bundle.lights ray $1^i5))
+              (sys_fd_write_s3 fd (ppm_line_s3 color))
+              (var_set x_index (add x_index $1^i5))
+              (if (eq (mod x_index $8^i5) $0^i5)
+                then
+                  {
+                    (gc_collect)
+                    unit
+                  }
+                else unit
+              )
+            }
+          )
+          (var_set y_index (add y_index $1^i5))
+          (gc_collect)
+        }
+      )
+      (sys_fd_close fd)
+      unit
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (quiet_gc_print)
+      (var [config RenderConfig] (parse_config args))
+      (var [bundle SceneBundle] (make_scene config))
+      (render_scene bundle config)
+      $0^i5
+    }
+  )
+}

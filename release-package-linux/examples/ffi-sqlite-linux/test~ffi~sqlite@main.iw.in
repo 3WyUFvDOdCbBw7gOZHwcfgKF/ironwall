@@ -1,0 +1,215 @@
+{program test~ffi~sqlite@main
+  (declare (function {{RAW_OPEN_MEMORY_SYMBOL}} () to i5))
+  (declare (function {{RAW_CLOSE_SYMBOL}} ([db i5]) to i5))
+  (declare (function {{RAW_EXEC_SYMBOL}} ([db i5] [sql s3]) to i5))
+  (declare (function {{RAW_QUERY_ROWS_S3_SYMBOL}} ([db i5] [sql s3]) to <array s3>))
+  (declare (function {{RAW_QUERY_ROWS_I5_SYMBOL}} ([db i5] [sql s3]) to <array i5>))
+
+  (function sqlite_open_memory () to i5 in ({{RAW_OPEN_MEMORY_SYMBOL}}))
+  (function sqlite_close ([db i5]) to i5 in ({{RAW_CLOSE_SYMBOL}} db))
+  (function sqlite_exec ([db i5] [sql s3]) to i5 in ({{RAW_EXEC_SYMBOL}} db sql))
+  (function sqlite_query_rows_s3 ([db i5] [sql s3]) to <array s3> in ({{RAW_QUERY_ROWS_S3_SYMBOL}} db sql))
+  (function sqlite_query_rows_i5 ([db i5] [sql s3]) to <array i5> in ({{RAW_QUERY_ROWS_I5_SYMBOL}} db sql))
+
+  (function score_bool ([value bool] [points i5]) to i5 in (if value then points else $0^i5))
+
+  (function s3_equals_local ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if
+        (neq left_length (s3_length right))
+        then
+        false
+        else
+        {
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index left_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get left index) (s3_get right index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+
+  (function rows_s3_match_3 ([values <array s3>] [row0 s3] [row1 s3] [row2 s3]) to bool in
+    (if
+      (neq (array_length values) $3^i5)
+      then
+      false
+      else
+      (and
+        (s3_equals_local (array_get values $0^i5) row0)
+        (and
+          (s3_equals_local (array_get values $1^i5) row1)
+          (s3_equals_local (array_get values $2^i5) row2)
+        )
+      )
+    )
+  )
+
+  (function rows_s3_match_4 ([values <array s3>] [row0 s3] [row1 s3] [row2 s3] [row3 s3]) to bool in
+    (if
+      (neq (array_length values) $4^i5)
+      then
+      false
+      else
+      (and
+        (s3_equals_local (array_get values $0^i5) row0)
+        (and
+          (s3_equals_local (array_get values $1^i5) row1)
+          (and
+            (s3_equals_local (array_get values $2^i5) row2)
+            (s3_equals_local (array_get values $3^i5) row3)
+          )
+        )
+      )
+    )
+  )
+
+  (function rows_i5_match_6 ([values <array i5>] [value0 i5] [value1 i5] [value2 i5] [value3 i5] [value4 i5] [value5 i5]) to bool in
+    (if
+      (neq (array_length values) $6^i5)
+      then
+      false
+      else
+      (and
+        (eq (array_get values $0^i5) value0)
+        (and
+          (eq (array_get values $1^i5) value1)
+          (and
+            (eq (array_get values $2^i5) value2)
+            (and
+              (eq (array_get values $3^i5) value3)
+              (and
+                (eq (array_get values $4^i5) value4)
+                (eq (array_get values $5^i5) value5)
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [db i5] (sqlite_open_memory))
+      (var [schema_changes i5] (sqlite_exec db $sql_schema_s3^s3))
+      (var [begin_changes i5] (sqlite_exec db $sql_begin_s3^s3))
+      (var [accounts_changes i5] (sqlite_exec db $sql_insert_accounts_s3^s3))
+      (var [projects_changes i5] (sqlite_exec db $sql_insert_projects_s3^s3))
+      (var [tasks_changes i5] (sqlite_exec db $sql_insert_tasks_s3^s3))
+      (var [events_changes i5] (sqlite_exec db $sql_insert_events_s3^s3))
+      (var [savepoint_changes i5] (sqlite_exec db $sql_savepoint_s3^s3))
+      (var [temp_task_changes i5] (sqlite_exec db $sql_insert_temp_task_s3^s3))
+      (var [temp_event_changes i5] (sqlite_exec db $sql_insert_temp_event_s3^s3))
+      (var [rollback_changes i5] (sqlite_exec db $sql_rollback_temp_s3^s3))
+      (var [update_changes i5] (sqlite_exec db $sql_apply_updates_s3^s3))
+      (var [audit_changes i5] (sqlite_exec db $sql_insert_audit_s3^s3))
+      (var [delete_changes i5] (sqlite_exec db $sql_delete_noise_s3^s3))
+      (var [budget_changes i5] (sqlite_exec db $sql_update_budget_s3^s3))
+      (var [commit_changes i5] (sqlite_exec db $sql_commit_s3^s3))
+      (var [rollup_rows <array s3>] (sqlite_query_rows_s3 db $sql_project_rollup_s3^s3))
+      (var [status_rows <array s3>] (sqlite_query_rows_s3 db $sql_status_snapshot_s3^s3))
+      (var [metric_rows <array i5>] (sqlite_query_rows_i5 db $sql_metrics_s3^s3))
+      (var [close_code i5] (sqlite_close db))
+      (add
+        (score_bool (gt db $0^i5) $1^i5)
+        (add
+          (score_bool (eq schema_changes $0^i5) $2^i5)
+          (add
+            (score_bool (eq begin_changes $0^i5) $4^i5)
+            (add
+              (score_bool (eq accounts_changes $2^i5) $8^i5)
+              (add
+                (score_bool (eq projects_changes $3^i5) $16^i5)
+                (add
+                  (score_bool (eq tasks_changes $6^i5) $32^i5)
+                  (add
+                    (score_bool (eq events_changes $9^i5) $64^i5)
+                    (add
+                      (score_bool (eq savepoint_changes $0^i5) $128^i5)
+                      (add
+                        (score_bool (eq temp_task_changes $1^i5) $256^i5)
+                        (add
+                          (score_bool (eq temp_event_changes $1^i5) $512^i5)
+                          (add
+                            (score_bool (eq rollback_changes $0^i5) $1024^i5)
+                            (add
+                              (score_bool (eq update_changes $3^i5) $2048^i5)
+                              (add
+                                (score_bool (eq audit_changes $4^i5) $4096^i5)
+                                (add
+                                  (score_bool (eq delete_changes $1^i5) $8192^i5)
+                                  (add
+                                    (score_bool (eq budget_changes $1^i5) $16384^i5)
+                                    (add
+                                      (score_bool (eq commit_changes $0^i5) $32768^i5)
+                                      (add
+                                        (score_bool
+                                          (rows_s3_match_3
+                                            rollup_rows
+                                            $expected_rollup_api_s3^s3
+                                            $expected_rollup_web_s3^s3
+                                            $expected_rollup_ops_s3^s3
+                                          )
+                                          $65536^i5
+                                        )
+                                        (add
+                                          (score_bool
+                                            (rows_s3_match_4
+                                              status_rows
+                                              $expected_status_api_design_s3^s3
+                                              $expected_status_api_ship_s3^s3
+                                              $expected_status_ops_audit_s3^s3
+                                              $expected_status_web_docs_s3^s3
+                                            )
+                                            $131072^i5
+                                          )
+                                          (add
+                                            (score_bool (rows_i5_match_6 metric_rows $4^i5 $31^i5 $23^i5 $4^i5 $1^i5 $0^i5) $262144^i5)
+                                            (score_bool (eq close_code $0^i5) $524288^i5)
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

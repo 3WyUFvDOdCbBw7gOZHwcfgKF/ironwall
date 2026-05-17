@@ -1,0 +1,128 @@
+{program test~std~hof@main
+  (import std~array)
+  (import std~list)
+  (import std~set)
+  (import std~dict)
+  (import std~eq)
+  (import std~hash)
+
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function same_bool ([left bool] [right bool]) to bool in
+    (if left then right else (if right then false else true))
+  )
+  (function id_hash ([value i5]) to i5 in value)
+  (function hash_bool_value ([value bool]) to i5 in (if value then $17^i5 else $3^i5))
+  (function is_even_i5 ([value i5]) to bool in (eq (mod value $2^i5) $0^i5))
+  (function bool_identity ([value bool]) to bool in value)
+  (function add_true_three ([acc i5] [value bool]) to i5 in
+    (if value then (add acc $3^i5) else acc)
+  )
+  (function bool_to_bonus ([value bool]) to i5 in (if value then $4^i5 else $1^i5))
+  (function keep_gt_two_i5 ([value i5]) to bool in (gt value $2^i5))
+  (function add_i5 ([acc i5] [value i5]) to i5 in (add acc value))
+  (function add_true_eleven ([acc i5] [value bool]) to i5 in
+    (if value then (add acc $11^i5) else acc)
+  )
+  (function key_plus_value_even ([key i5] [value i5]) to bool in
+    (eq (mod (add key value) $2^i5) $0^i5)
+  )
+  (function keep_dict_true ([key i5] [value bool]) to bool in value)
+  (function add_true_fifty ([acc i5] [value bool]) to i5 in
+    (if value then (add acc $2^i5) else acc)
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [base <Array i5>] (<array_new_fill i5> $6^i5 $0^i5))
+      (var [fill_index i5] $0^i5)
+      (while (lt fill_index (<Array_len i5> base)) in
+        {
+          (base.set fill_index (add fill_index $1^i5))
+          (var_set fill_index (add fill_index $1^i5))
+        }
+      )
+
+      (var [array_flags <Array bool>] (<Array_map i5 bool> base false is_even_i5))
+      (var [array_true <Array bool>] (<Array_filter bool> array_flags bool_identity))
+      (var [array_score i5] (<Array_fold bool i5> array_true $0^i5 add_true_three))
+
+      (var [bool_list <List bool>] (<list_new bool> false))
+      (var [list_index i5] $0^i5)
+      (while (lt list_index (<Array_len bool> array_flags)) in
+        {
+          (bool_list.append (array_flags.get list_index))
+          (var_set list_index (add list_index $1^i5))
+        }
+      )
+      (var [list_bonus <List i5>] (<list_map bool i5> bool_list $0^i5 bool_to_bonus))
+      (var [list_kept <List i5>] (<list_filter i5> list_bonus keep_gt_two_i5))
+      (var [list_score i5] (<list_fold i5 i5> list_kept $0^i5 add_i5))
+
+      (var [eq_i5_rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [eq_bool_rule <Eq bool>] (class_new <Eq bool> same_bool))
+      (var [hash_i5_rule <Hash i5>] (class_new <Hash i5> id_hash))
+      (var [hash_bool_rule <Hash bool>] (class_new <Hash bool> hash_bool_value))
+
+      (var [set_source <Set i5>] (<set_new i5> hash_i5_rule eq_i5_rule))
+      (var [set_index i5] $0^i5)
+      (while (lt set_index (<Array_len i5> base)) in
+        {
+          (set_source.add (base.get set_index))
+          (var_set set_index (add set_index $1^i5))
+        }
+      )
+      (var [set_flags <Set bool>] (<set_map i5 bool> set_source hash_bool_rule eq_bool_rule is_even_i5))
+      (var [set_true <Set bool>] (<set_filter bool> set_flags bool_identity))
+      (var [set_score i5] (<set_fold bool i5> set_true $0^i5 add_true_eleven))
+
+      (var [dict_source <Dict i5 i5>] (<dict_new i5 i5> hash_i5_rule eq_i5_rule $0^i5 $0^i5))
+      (var [dict_index i5] $0^i5)
+      (while (lt dict_index (<Array_len i5> base)) in
+        {
+          (dict_source.setdefault dict_index (mul (base.get dict_index) $2^i5))
+          (var_set dict_index (add dict_index $1^i5))
+        }
+      )
+      (var [dict_flags <Dict i5 bool>] (<dict_map i5 i5 bool> dict_source false key_plus_value_even))
+      (var [dict_true <Dict i5 bool>] (<dict_filter i5 bool> dict_flags keep_dict_true))
+      (var [dict_score i5] (<dict_fold i5 bool i5> dict_true $0^i5 add_true_fifty))
+
+      (add
+        array_score
+        (add
+          list_score
+          (add
+            set_score
+            (add
+              dict_score
+              (add
+                (<Array_len bool> array_true)
+                (add
+                  (<list_len i5> list_kept)
+                  (add
+                    (<set_len bool> set_true)
+                    (add
+                      (<dict_len i5 bool> dict_true)
+                      (add
+                        (if (array_true.get $0^i5) then $20^i5 else $0^i5)
+                        (add
+                          (if (eq (list_bonus.get $1^i5) $4^i5) then $30^i5 else $0^i5)
+                          (add
+                            (if (<set_contains bool> set_true true) then $40^i5 else $0^i5)
+                            (add
+                              (if (<dict_contains i5 bool> dict_true $2^i5) then $50^i5 else $0^i5)
+                              (if (<dict_contains i5 bool> dict_true $1^i5) then $0^i5 else $5^i5)
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

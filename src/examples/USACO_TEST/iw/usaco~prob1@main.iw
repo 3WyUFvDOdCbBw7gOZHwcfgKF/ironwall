@@ -1,0 +1,195 @@
+{program usaco~prob1@main
+  (import std~io)
+  (import usaco~shared)
+
+  (function popcount_i5 ([value i5]) to i5 in
+    {
+      (var [remaining i5] value)
+      (var [count i5] $0^i5)
+      (while (gt remaining $0^i5) in
+        {
+          (var_set count (add count (bwand remaining $1^i5)))
+          (var_set remaining (rs remaining $1^i5))
+        }
+      )
+      count
+    }
+  )
+
+  (function subset_sum_in_place ([values <array i5>] [bit_count i5]) to unit in
+    {
+      (var [bit i5] $0^i5)
+      (var [count i5] (array_length values))
+      (while (lt bit bit_count) in
+        {
+          (var [bit_mask i5] (ls $1^i5 bit))
+          (var [index i5] $0^i5)
+          (while (lt index count) in
+            {
+              (if (neq (bwand index bit_mask) $0^i5)
+                then
+                  {
+                    (array_set values index (mod_add (array_get values index) (array_get values (bwxor index bit_mask))))
+                    unit
+                  }
+                else unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          (var_set bit (add bit $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function superset_sum_in_place ([values <array i5>] [bit_count i5]) to unit in
+    {
+      (var [bit i5] $0^i5)
+      (var [count i5] (array_length values))
+      (while (lt bit bit_count) in
+        {
+          (var [bit_mask i5] (ls $1^i5 bit))
+          (var [index i5] $0^i5)
+          (while (lt index count) in
+            {
+              (if (eq (bwand index bit_mask) $0^i5)
+                then
+                  {
+                    (array_set values index (mod_add (array_get values index) (array_get values (bwxor index bit_mask))))
+                    unit
+                  }
+                else unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          (var_set bit (add bit $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function inverse_superset_sum_in_place ([values <array i5>] [bit_count i5]) to unit in
+    {
+      (var [bit i5] bit_count)
+      (var [count i5] (array_length values))
+      (while (gt bit $0^i5) in
+        {
+          (var [current_bit i5] (sub bit $1^i5))
+          (var [bit_mask i5] (ls $1^i5 current_bit))
+          (var [index i5] $0^i5)
+          (while (lt index count) in
+            {
+              (if (eq (bwand index bit_mask) $0^i5)
+                then
+                  {
+                    (array_set values index (mod_sub (array_get values index) (array_get values (bwxor index bit_mask))))
+                    unit
+                  }
+                else unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          (var_set bit current_bit)
+        }
+      )
+      unit
+    }
+  )
+
+  (function union_sum ([coeff <array i5>] [values <array i5>] [bit_count i5]) to <array i5> in
+    {
+      (var [coeff_sum <array i5>] (copy_i5_array coeff))
+      (subset_sum_in_place coeff_sum bit_count)
+      (var [weights <array i5>] (copy_i5_array values))
+      (inverse_superset_sum_in_place weights bit_count)
+      (var [index i5] $0^i5)
+      (var [count i5] (array_length coeff_sum))
+      (while (lt index count) in
+        {
+          (array_set coeff_sum index (mod_mul (array_get coeff_sum index) (array_get weights index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (superset_sum_in_place coeff_sum bit_count)
+      coeff_sum
+    }
+  )
+
+  (function build_inverses ([max_value i5]) to <array i5> in
+    {
+      (var [result <array i5>] (array_new <array i5> (add max_value $1^i5) $0^i5))
+      (if (ge max_value $1^i5)
+        then
+          {
+            (array_set result $1^i5 $1^i5)
+            unit
+          }
+        else unit
+      )
+      (var [value i5] $2^i5)
+      (while (le value max_value) in
+        {
+          (var [factor i5] (add (div $1000000007^i5 value) $1^i5))
+          (var [prior_index i5] (sub value (mod $1000000007^i5 value)))
+          (array_set result value (mod_mul factor (array_get result prior_index)))
+          (var_set value (add value $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [header_line s3] (stdin_read_nonempty_line_s3))
+      (var [n i5] (pair_line_left_i5 header_line))
+      (var [k i5] (pair_line_right_i5 header_line))
+      (var [output_separator c3] (pair_line_separator header_line))
+      (var [mask_count i5] (ls $1^i5 k))
+      (var [cows <array i5>] (array_new <array i5> n $0^i5))
+      (var [cnt <array i5>] (array_new <array i5> mask_count $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index n) in
+        {
+          (var [mask i5] (stdin_read_i5))
+          (array_set cows index mask)
+          (array_set cnt mask (add (array_get cnt mask) $1^i5))
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [inverses <array i5>] (build_inverses k))
+      (var [union_weights <array i5>] (array_new <array i5> mask_count $0^i5))
+      (var [size_cnt <array i5>] (array_new <array i5> mask_count $0^i5))
+      (var [mask i5] $1^i5)
+      (while (lt mask mask_count) in
+        {
+          (var [bit_total i5] (popcount_i5 mask))
+          (array_set union_weights mask (array_get inverses bit_total))
+          (array_set size_cnt mask (mod_mul (array_get cnt mask) bit_total))
+          (var_set mask (add mask $1^i5))
+        }
+      )
+
+      (var [one_sum <array i5>] (union_sum cnt union_weights k))
+      (var [size_sum <array i5>] (union_sum size_cnt union_weights k))
+
+      (var_set index $0^i5)
+      (while (lt index n) in
+        {
+          (var [cow_mask i5] (array_get cows index))
+          (var [bit_total i5] (popcount_i5 cow_mask))
+          (var [ans i5] (mod_sub (mod_add (mod_mul (array_get one_sum cow_mask) bit_total) (array_get size_sum cow_mask)) n))
+          (print_i5_with_sep ans output_separator)
+          (var_set index (add index $1^i5))
+        }
+      )
+      $0^i5
+    }
+  )
+}

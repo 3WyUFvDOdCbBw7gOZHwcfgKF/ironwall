@@ -1,0 +1,22 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~orangebox~newline~basic@main.iw",
+        "app~orangebox~newline~basic$lit.json",
+        "app~orangebox~newline~fncall@main.iw",
+        "app~orangebox~newline~fncall$lit.json",
+        "app~orangebox~newline~wide@main.iw",
+        "app~orangebox~newline~wide$lit.json"
+      ]
+    }
+  ],
+  "main": "app~orangebox~newline~basic@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

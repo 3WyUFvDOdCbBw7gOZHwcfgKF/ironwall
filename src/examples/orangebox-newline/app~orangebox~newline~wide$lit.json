@@ -1,0 +1,5 @@
+{
+  "package": "app~orangebox~newline~wide$lit",
+  "app_orangebox_newline_wide_s3^s3": "wide line 01 :: abcdefghijklmnopqrstuvwxyz 0123456789 abcdefghijklmnopqrstuvwxyz 0123456789\nwide line 02 :: this line checks whether the orange box width follows the widest real line\nwide line 03 :: short",
+  "app_orangebox_newline_trailing_s3^s3": "line before trailing newline\n"
+}

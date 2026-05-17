@@ -1,0 +1,73 @@
+{program test~std~dict~order@main
+  (import std~dict)
+  (import std~eq)
+  (import std~hash)
+  (import std~list)
+  (import std~pair)
+
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function bad_hash ([value i5]) to i5 in $1^i5)
+  (function use_key ([key i5] [value i5]) to i5 in key)
+  (function keep_ge_three ([key i5] [value i5]) to bool in (ge key $3^i5))
+  (function append_digits ([acc i5] [value i5]) to i5 in (add (mul acc $10^i5) value))
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [eq_rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [hash_rule <Hash i5>] (class_new <Hash i5> bad_hash))
+      (var [source <Dict i5 i5>] (<dict_new i5 i5> hash_rule eq_rule $0^i5 $0^i5))
+      (source.setdefault $1^i5 $1^i5)
+      (source.setdefault $2^i5 $2^i5)
+      (source.setdefault $3^i5 $3^i5)
+      (source.pop $2^i5)
+      (source.setdefault $4^i5 $4^i5)
+
+      (var [keys <List i5>] (source.keys))
+      (var [values <List i5>] (source.values))
+      (var [items <List <Pair i5 i5>>] (source.items))
+      (var [mapped <Dict i5 i5>] (<dict_map_values i5 i5 i5> source $0^i5 use_key))
+      (var [mapped_items <List <Pair i5 i5>>] (mapped.items))
+      (var [filtered <Dict i5 i5>] (<dict_filter i5 i5> mapped keep_ge_three))
+      (var [filtered_items <List <Pair i5 i5>>] (filtered.items))
+      (var [fold_score i5] (<dict_fold i5 i5 i5> filtered $0^i5 append_digits))
+
+      (add
+        (add
+          (add
+            (mul (keys.get $0^i5) $100^i5)
+            (add (mul (keys.get $1^i5) $10^i5) (keys.get $2^i5))
+          )
+          (add
+            (mul (values.get $0^i5) $100^i5)
+            (add (mul (values.get $1^i5) $10^i5) (values.get $2^i5))
+          )
+        )
+        (add
+          (add
+            (mul (cm_get (items.get $0^i5) first) $100^i5)
+            (add
+              (mul (cm_get (items.get $1^i5) first) $10^i5)
+              (cm_get (items.get $2^i5) first)
+            )
+          )
+          (add
+            (add
+              (mul (cm_get (mapped_items.get $0^i5) second) $100^i5)
+              (add
+                (mul (cm_get (mapped_items.get $1^i5) second) $10^i5)
+                (cm_get (mapped_items.get $2^i5) second)
+              )
+            )
+            (add
+              (add
+                (mul (cm_get (filtered_items.get $0^i5) first) $10^i5)
+                (cm_get (filtered_items.get $1^i5) second)
+              )
+              fold_score
+            )
+          )
+        )
+      )
+    }
+  )
+}

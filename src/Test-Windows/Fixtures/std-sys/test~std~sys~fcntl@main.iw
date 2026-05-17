@@ -1,0 +1,20 @@
+{program test~std~sys~fcntl@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [pipe_fds <array i5>] (sys_fd_pipe2))
+      (var [read_fd i5] (pipe_read_fd pipe_fds))
+      (var [write_fd i5] (pipe_write_fd pipe_fds))
+      (var [before i5] (sys_fd_fcntl_getfd write_fd))
+      (sys_fd_fcntl_setfd write_fd (sys_fd_cloexec_flag))
+      (var [after i5] (sys_fd_fcntl_getfd write_fd))
+      (sys_fd_close write_fd)
+      (sys_fd_close read_fd)
+      (add
+        $250^i5
+        (add (score (eq before $0^i5)) (score (eq after (sys_fd_cloexec_flag))))
+      )
+    }
+  )
+}

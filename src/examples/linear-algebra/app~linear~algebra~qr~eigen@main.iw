@@ -1,0 +1,187 @@
+{program app~linear~algebra~qr~eigen@main
+  (import app~linear~algebra~shared)
+  (import std~io)
+  (import std~math)
+
+  (function build_input_matrix ([size i5]) to <array f5> in
+    {
+      (var [result <array f5>] (zero_matrix size))
+      (var [index i5] $0^i5)
+      (while (lt index size) in
+        {
+          (matrix_set result size index index (val_to_f5 (sub (add size $101^i5) index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function qr_decompose ([source <array f5>] [size i5] [q <array f5>] [r <array f5>]) to unit in
+    {
+      (var [work <array f5>] (zero_vector size))
+      (var [col i5] $0^i5)
+      (while (lt col size) in
+        {
+          (var [row i5] $0^i5)
+          (while (lt row size) in
+            {
+              (vector_set work row (matrix_get source size row col))
+              (var_set row (add row $1^i5))
+            }
+          )
+
+          (var [prev i5] $0^i5)
+          (while (lt prev col) in
+            {
+              (var [projection f5] $0p0^f5)
+              (var [scan i5] $0^i5)
+              (while (lt scan size) in
+                {
+                  (var_set projection (add projection (mul (matrix_get q size scan prev) (vector_get work scan))))
+                  (var_set scan (add scan $1^i5))
+                }
+              )
+              (matrix_set r size prev col projection)
+              (var [update i5] $0^i5)
+              (while (lt update size) in
+                {
+                  (vector_set work update (sub (vector_get work update) (mul projection (matrix_get q size update prev))))
+                  (var_set update (add update $1^i5))
+                }
+              )
+              (var_set prev (add prev $1^i5))
+            }
+          )
+
+          (var [norm_sq f5] $0p0^f5)
+          (var [norm_index i5] $0^i5)
+          (while (lt norm_index size) in
+            {
+              (var_set norm_sq (add norm_sq (mul (vector_get work norm_index) (vector_get work norm_index))))
+              (var_set norm_index (add norm_index $1^i5))
+            }
+          )
+          (var [norm_value f5] (sqrt norm_sq))
+          (matrix_set r size col col norm_value)
+
+          (var [fill i5] $0^i5)
+          (while (lt fill size) in
+            {
+              (matrix_set q size fill col (div (vector_get work fill) norm_value))
+              (var_set fill (add fill $1^i5))
+            }
+          )
+          (var_set col (add col $1^i5))
+        }
+      )
+    }
+  )
+
+  (function multiply_square ([left <array f5>] [right <array f5>] [size i5] [target <array f5>]) to unit in
+    {
+      (var [row i5] $0^i5)
+      (while (lt row size) in
+        {
+          (var [col i5] $0^i5)
+          (while (lt col size) in
+            {
+              (var [sum f5] $0p0^f5)
+              (var [k i5] $0^i5)
+              (while (lt k size) in
+                {
+                  (var_set sum (add sum (mul (matrix_get left size row k) (matrix_get right size k col))))
+                  (var_set k (add k $1^i5))
+                }
+              )
+              (matrix_set target size row col sum)
+              (var_set col (add col $1^i5))
+            }
+          )
+          (var_set row (add row $1^i5))
+        }
+      )
+    }
+  )
+
+  (function offdiag_abs_sum ([matrix <array f5>] [size i5]) to f5 in
+    {
+      (var [sum f5] $0p0^f5)
+      (var [row i5] $0^i5)
+      (while (lt row size) in
+        {
+          (var [col i5] $0^i5)
+          (while (lt col size) in
+            {
+              (if (neq row col)
+                then (var_set sum (add sum (f5_abs (matrix_get matrix size row col))))
+                else unit
+              )
+              (var_set col (add col $1^i5))
+            }
+          )
+          (var_set row (add row $1^i5))
+        }
+      )
+      sum
+    }
+  )
+
+  (function qr_eigen_demo_metrics ([size i5] [steps i5]) to <array i5> in
+    {
+      (var [current <array f5>] (build_input_matrix size))
+      (var [q <array f5>] (zero_matrix size))
+      (var [r <array f5>] (zero_matrix size))
+      (var [next <array f5>] (zero_matrix size))
+      (var [step i5] $0^i5)
+      (while (lt step steps) in
+        {
+          (qr_decompose current size q r)
+          (multiply_square r q size next)
+          (copy_f5_array next current)
+          (var_set step (add step $1^i5))
+        }
+      )
+
+      (var [trace_sum f5] $0p0^f5)
+      (var [lambda_max f5] (matrix_get current size $0^i5 $0^i5))
+      (var [lambda_min f5] (matrix_get current size $0^i5 $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index size) in
+        {
+          (var [diag_value f5] (matrix_get current size index index))
+          (var_set trace_sum (add trace_sum diag_value))
+          (if (gt diag_value lambda_max)
+            then (var_set lambda_max diag_value)
+            else unit
+          )
+          (if (lt diag_value lambda_min)
+            then (var_set lambda_min diag_value)
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [metrics <array i5>] (array_new <array i5> $4^i5 $0^i5))
+      (array_set metrics $0^i5 (scaled_i5 lambda_max $1000p0^f5))
+      (array_set metrics $1^i5 (scaled_i5 lambda_min $1000p0^f5))
+      (array_set metrics $2^i5 (scaled_i5 trace_sum $1000p0^f5))
+      (array_set metrics $3^i5 (scaled_i5 (offdiag_abs_sum current size) $1000p0^f5))
+      metrics
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [metrics <array i5>] (qr_eigen_demo_metrics $100^i5 $4^i5))
+
+      (println $app_linear_algebra_qr_eigen_ok_s3^s3)
+      (print_i5_line $app_linear_algebra_lambda_max_x1000_s3^s3 (array_get metrics $0^i5))
+      (print_i5_line $app_linear_algebra_lambda_min_x1000_s3^s3 (array_get metrics $1^i5))
+      (print_i5_line $app_linear_algebra_trace_x1000_s3^s3 (array_get metrics $2^i5))
+      (print_i5_line $app_linear_algebra_offdiag_sum_x1000_s3^s3 (array_get metrics $3^i5))
+      $0^i5
+    }
+  )
+}

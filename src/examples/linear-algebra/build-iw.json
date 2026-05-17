@@ -1,0 +1,26 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~linear~algebra~shared$lit.json",
+        "app~linear~algebra~shared@defs.iw",
+        "app~linear~algebra~lu$lit.json",
+        "app~linear~algebra~lu@main.iw",
+        "app~linear~algebra~qr$lit.json",
+        "app~linear~algebra~qr@main.iw",
+        "app~linear~algebra~qr~eigen$lit.json",
+        "app~linear~algebra~qr~eigen@main.iw",
+        "app~linear~algebra~conjugate~gradient$lit.json",
+        "app~linear~algebra~conjugate~gradient@main.iw"
+      ]
+    }
+  ],
+  "main": "app~linear~algebra~lu@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

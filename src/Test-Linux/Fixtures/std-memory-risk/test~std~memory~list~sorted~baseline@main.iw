@@ -1,0 +1,81 @@
+{program test~std~memory~list~sorted~baseline@main
+  (import std~list)
+  (import std~ord)
+
+  (function compare_i5 ([left i5] [right i5]) to i5 in
+    (if (lt left right) then $0neg1^i5 else (if (gt left right) then $1^i5 else $0^i5))
+  )
+
+  (function slow_list_insert_sorted_items ([items <union unit <ListNode i5>>] [rule <Ord i5>] [value i5]) to <union unit <ListNode i5>> in
+    (match items
+      ([empty unit] (class_new <ListNode i5> value unit))
+      ([node <ListNode i5>]
+        (if (le (<ord_compare i5> rule value (cm_get node value)) $0^i5)
+          then (class_new <ListNode i5> value items)
+          else
+            (class_new <ListNode i5>
+              (cm_get node value)
+              (slow_list_insert_sorted_items (cm_get node next) rule value)
+            )
+        )
+      )
+    )
+  )
+
+  (function slow_list_sort_items ([items <union unit <ListNode i5>>] [rule <Ord i5>]) to <union unit <ListNode i5>> in
+    (match items
+      ([empty unit] unit)
+      ([node <ListNode i5>]
+        (slow_list_insert_sorted_items
+          (slow_list_sort_items (cm_get node next) rule)
+          rule
+          (cm_get node value)
+        )
+      )
+    )
+  )
+
+  (function slow_list_sorted ([source <List i5>] [rule <Ord i5>]) to <List i5> in
+    (class_new <List i5>
+      (slow_list_sort_items (cm_get source items) rule)
+      (cm_get source seed)
+      (cm_get source length)
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [ord <Ord i5>] (class_new <Ord i5> compare_i5))
+      (var [source <List i5>] (<list_new i5> $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index $3072^i5) in
+        {
+          (source.insert $0^i5 index)
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [sorted <List i5>] (slow_list_sorted source ord))
+
+      (mod
+        (add
+          (source.get $0^i5)
+          (add
+            (source.get $3071^i5)
+            (add
+              (sorted.get $0^i5)
+              (add
+                (sorted.get $1024^i5)
+                (add
+                  (sorted.get $3071^i5)
+                  (<list_len i5> sorted)
+                )
+              )
+            )
+          )
+        )
+        $251^i5
+      )
+    }
+  )
+}

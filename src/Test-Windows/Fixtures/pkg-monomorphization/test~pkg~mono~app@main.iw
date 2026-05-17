@@ -1,0 +1,10 @@
+{program test~pkg~mono~app@main
+  (import test~pkg~mono~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [single <Box i5>] (<make_box i5> $7^i5))
+      (var [nested <Box <Box i5>>] (<nested_box i5> $9^i5))
+      (add single.value nested.value.value)
+    }
+  )
+}

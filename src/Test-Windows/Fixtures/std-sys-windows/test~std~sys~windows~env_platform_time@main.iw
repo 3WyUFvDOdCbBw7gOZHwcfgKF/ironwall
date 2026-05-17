@@ -1,0 +1,70 @@
+{program test~std~sys~windows~env_platform_time@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function s3_equals ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if
+        (neq left_length (s3_length right))
+        then
+        false
+        else
+        {
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index left_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get left index) (s3_get right index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [total i5] $0^i5)
+      (var_set total (add total (score (s3_equals (sys_platform_name) $std_sys_windows_platform_name_s3^s3))))
+      (sys_env_set_s3 $std_sys_windows_env_name_s3^s3 $std_sys_windows_env_value_s3^s3)
+      (var_set total (add total (score (s3_equals (sys_env_get_s3 $std_sys_windows_env_name_s3^s3) $std_sys_windows_env_value_s3^s3))))
+      (sys_env_unset_s3 $std_sys_windows_env_name_s3^s3)
+      (var_set total (add total (score (s3_equals (sys_env_get_s3 $std_sys_windows_env_name_s3^s3) $std_sys_windows_empty_s3^s3))))
+      (var [unix_before i5] (sys_time_unix_ms))
+      (var [mono_before i5] (sys_time_monotonic_ms))
+      (sys_sleep_ms $20^i5)
+      (var [unix_after i5] (sys_time_unix_ms))
+      (var [mono_after i5] (sys_time_monotonic_ms))
+      (var_set total (add total (score (ge unix_after unix_before))))
+      (var_set total (add total (score (ge mono_after mono_before))))
+      (sys_net_startup)
+      (var [socket_fd i5] (sys_net_tcp4_socket))
+      (sys_net_set_nonblocking socket_fd true)
+      (sys_net_set_nonblocking socket_fd false)
+      (sys_net_set_reuseaddr socket_fd)
+      (sys_net_close socket_fd)
+      (sys_net_cleanup)
+      (add total $1^i5)
+    }
+  )
+}

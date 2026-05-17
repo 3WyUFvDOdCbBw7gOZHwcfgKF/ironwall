@@ -1,0 +1,57 @@
+{program test~astvis~assignment~block~gallery@main
+  (function var_definition_block_value ([flag bool] [fallback i5]) to i5 in
+    {
+      (var [selected i5]
+        (cond
+          (flag (add fallback $1^i5))
+          (else (sub fallback $1^i5))
+        )
+      )
+      selected
+    }
+  )
+  (function var_set_block_value ([payload <union i5 bool>] [fallback i5]) to i5 in
+    {
+      (var [score i5] fallback)
+      (var_set score
+        (match payload
+          ([as_i5 i5] (add as_i5 fallback))
+          ([as_bool bool]
+            (cond
+              (as_bool fallback)
+              (else $0^i5)
+            )
+          )
+        )
+      )
+      score
+    }
+  )
+  (function nested_assignment_blocks ([flag bool] [fallback i5]) to i5 in
+    {
+      (var [outer i5]
+        {
+          (var [inner i5]
+            (cond
+              (flag fallback)
+              (else $0^i5)
+            )
+          )
+          inner
+        }
+      )
+      (var_set outer
+        (let (
+          ([bump i5] (add outer $1^i5))
+        ) in
+          (cond
+            (flag bump)
+            (else outer)
+          )
+        )
+      )
+      outer
+    }
+  )
+  (function main ([args <array s3>]) to i5 in (nested_assignment_blocks true $5^i5))
+}

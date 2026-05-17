@@ -1,0 +1,14 @@
+{program test~main~argv@main
+  (function main ([args <array s3>]) to i5 in
+    {
+      (if (eq (array_length args) $3^i5) then unit else (iw_match_unreachable))
+      (add
+        (mul (s3_length (array_get args $0^i5)) $100^i5)
+        (add
+          (mul (s3_length (array_get args $1^i5)) $10^i5)
+          (s3_length (array_get args $2^i5))
+        )
+      )
+    }
+  )
+}

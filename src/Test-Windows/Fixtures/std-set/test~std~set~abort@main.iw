@@ -1,0 +1,17 @@
+{program test~std~set~abort@main
+  (import std~set)
+  (import std~eq)
+  (import std~hash)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function bad_hash ([value i5]) to i5 in $1^i5)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [eq_rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [hash_rule <Hash i5>] (class_new <Hash i5> bad_hash))
+      (var [source <Set i5>] (<set_new i5> hash_rule eq_rule))
+      (source.add $5^i5)
+      (source.remove $9^i5)
+      $0^i5
+    }
+  )
+}

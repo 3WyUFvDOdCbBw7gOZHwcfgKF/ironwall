@@ -1,0 +1,104 @@
+{program app~string~fncall~weave@main
+  (import std~io)
+  (import std~string)
+
+  (function assert_true ([value bool] [message s3]) to unit in
+    (if value
+      then unit
+      else
+        {
+          (println message)
+          (iw_match_unreachable)
+        }
+    )
+  )
+
+  (function stitch_three ([left s3] [middle s3] [right s3]) to s3 in
+    {
+      (var [joined StringS3]
+        (string_concat
+          (class_new StringS3 left)
+          (string_concat (class_new StringS3 middle) (class_new StringS3 right))
+        )
+      )
+      (cm_get joined raw)
+    }
+  )
+
+  (function divider_block ([count i5]) to s3 in
+    {
+      (var [segment StringS3] (class_new StringS3 $app_string_fncall_weave_divider_segment_s3^s3))
+      (var [repeated StringS3] (string_repeat segment count))
+      (cm_get repeated raw)
+    }
+  )
+
+  (function build_report ([payload <union s3 bool>] [prefer_fallback bool]) to s3 in
+    (stitch_three
+      (let (
+        ([prefix s3]
+          (stitch_three
+            $app_string_fncall_weave_prefix_header_s3^s3
+            (divider_block $1^i5)
+            $app_string_fncall_weave_prefix_footer_s3^s3
+          )
+        )
+      ) in
+        prefix
+      )
+      (match payload
+        ([body s3]
+          (stitch_three
+            $app_string_fncall_weave_body_intro_s3^s3
+            body
+            (divider_block $2^i5)
+          )
+        )
+        ([flag bool]
+          (if flag
+            then $app_string_fncall_weave_bool_true_block_s3^s3
+            else $app_string_fncall_weave_bool_false_block_s3^s3
+          )
+        )
+      )
+      (cond
+        (prefer_fallback $app_string_fncall_weave_fallback_tail_s3^s3)
+        ((match payload
+            ([body s3]
+              (string_contains (class_new StringS3 body) (class_new StringS3 $app_string_fncall_weave_body_marker_s3^s3))
+            )
+            ([flag bool] flag)
+          )
+          $app_string_fncall_weave_match_tail_s3^s3
+        )
+        (else
+          (let (
+            ([chooser <to s3 from bool>] (fn ([prefer_echo bool]) to s3 in
+              (if prefer_echo
+                then $app_string_fncall_weave_echo_tail_s3^s3
+                else $app_string_fncall_weave_plain_tail_s3^s3
+              )
+            ))
+          ) in
+            (chooser false)
+          )
+        )
+      )
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [assembled s3] (build_report $app_string_fncall_weave_body_block_s3^s3 false))
+      (var [assembled_text StringS3] (class_new StringS3 assembled))
+      (var [bool_report s3] (build_report false true))
+      (var [bool_text StringS3] (class_new StringS3 bool_report))
+      (assert_true ((cm_get assembled_text startswith) (class_new StringS3 $app_string_fncall_weave_prefix_marker_s3^s3)) $app_string_fncall_weave_bad_prefix_s3^s3)
+      (assert_true (string_contains assembled_text (class_new StringS3 $app_string_fncall_weave_body_marker_s3^s3)) $app_string_fncall_weave_bad_body_s3^s3)
+      (assert_true ((cm_get assembled_text endswith) (class_new StringS3 $app_string_fncall_weave_match_tail_s3^s3)) $app_string_fncall_weave_bad_match_tail_s3^s3)
+      (assert_true ((cm_get bool_text endswith) (class_new StringS3 $app_string_fncall_weave_fallback_tail_s3^s3)) $app_string_fncall_weave_bad_fallback_tail_s3^s3)
+      (println $app_string_fncall_weave_ok_s3^s3)
+      $0^i5
+    }
+  )
+}

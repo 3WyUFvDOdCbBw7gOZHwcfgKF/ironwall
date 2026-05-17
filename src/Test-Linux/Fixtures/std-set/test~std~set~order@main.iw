@@ -1,0 +1,47 @@
+{program test~std~set~order@main
+  (import std~set)
+  (import std~eq)
+  (import std~hash)
+
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function bad_hash ([value i5]) to i5 in $1^i5)
+  (function identity_i5 ([value i5]) to i5 in value)
+  (function keep_ge_three ([value i5]) to bool in (ge value $3^i5))
+  (function append_digits ([acc i5] [value i5]) to i5 in (add (mul acc $10^i5) value))
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [eq_rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [hash_rule <Hash i5>] (class_new <Hash i5> bad_hash))
+      (var [source <Set i5>] (<set_new i5> hash_rule eq_rule))
+      (source.add $1^i5)
+      (source.add $2^i5)
+      (source.add $3^i5)
+      (source.remove $2^i5)
+      (source.add $4^i5)
+
+      (var [source_fold i5] (<set_fold i5 i5> source $0^i5 append_digits))
+      (var [mapped <Set i5>] (<set_map i5 i5> source hash_rule eq_rule identity_i5))
+      (var [mapped_fold i5] (<set_fold i5 i5> mapped $0^i5 append_digits))
+      (var [filtered <Set i5>] (<set_filter i5> mapped keep_ge_three))
+      (var [filtered_fold i5] (<set_fold i5 i5> filtered $0^i5 append_digits))
+
+      (add
+        source_fold
+        (add
+          mapped_fold
+          (add
+            filtered_fold
+            (add
+              (if (<set_contains i5> filtered $4^i5) then $40^i5 else $0^i5)
+              (add
+                (if (<set_contains i5> filtered $1^i5) then $0^i5 else $5^i5)
+                (<set_len i5> filtered)
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

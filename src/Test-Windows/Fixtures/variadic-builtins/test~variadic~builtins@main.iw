@@ -1,0 +1,46 @@
+{program test~variadic~builtins@main
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+
+  (function arithmetic_signature () to i5 in
+    (add
+      (add $1^i5 $2^i5 $3^i5 $4^i5)
+      (sub $50^i5 $7^i5 $5^i5 $3^i5)
+      (mul $2^i5 $3^i5 $4^i5 $5^i5)
+    )
+  )
+
+  (function logic_signature () to i5 in
+    (add
+      (mul (score (and true true true true true)) $1000^i5)
+      (mul (score (and true true false true true)) $100^i5)
+      (mul (score (or false false false false true)) $10^i5)
+      (mul (score (or false false false false false)) $1^i5)
+    )
+  )
+
+  (function comparison_signature () to i5 in
+    {
+      (var [counter i5] $0^i5)
+      (var [emit <to i5 from i5>] (fn ([step i5]) to i5 in
+        {
+          (var_set counter (add counter step))
+          counter
+        }
+      ))
+      (add
+        (mul (score (le $1^i5 $2^i5 $2^i5 $9^i5)) $10000^i5)
+        (mul (score (lt $1p0^f6 $2p0^f6 $3p0^f6 $4p0^f6)) $2000^i5)
+        (mul (score (ge $9^i6 $8^i6 $8^i6 $1^i6)) $300^i5)
+        (mul (score (gt $9^i5 $8^i5 $7^i5 $6^i5)) $40^i5)
+        (mul (score (eq $3^i5 $3^i5 $3^i5 $3^i5)) $5^i5)
+        (mul (score (le $1^i5 $3^i5 $2^i5)) $2^i5)
+        (mul (score (lt $1p0^f6 $2p0^f6 $2p0^f6)) $1^i5)
+        (if (le (emit $1^i5) (emit $2^i5) (emit $3^i5) (emit $4^i5)) then counter else $0^i5)
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    (add (arithmetic_signature) (logic_signature) (comparison_signature))
+  )
+}

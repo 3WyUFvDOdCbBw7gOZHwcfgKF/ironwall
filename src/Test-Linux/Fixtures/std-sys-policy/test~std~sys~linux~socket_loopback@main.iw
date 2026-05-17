@@ -1,0 +1,49 @@
+{program test~std~sys~linux~socket_loopback@main
+  (import std~linux~sys)
+  (import std~thread)
+  (import test~std~sys~lib)
+
+  (function client_worker ([port i5]) to i5 in
+    {
+      (var [client_fd i5] (sys_net_socket_tcp4))
+      (sys_net_setsockopt_tcp_nodelay client_fd)
+      (sys_net_connect_ipv4_loopback client_fd port)
+      (var [sent i5] (sys_net_send_s3 client_fd $socket_payload_s3^s3))
+      (sys_net_shutdown_write client_fd)
+      (var [socket_error i5] (sys_net_getsockopt_error client_fd))
+      (sys_fd_close client_fd)
+      (add
+        (score (eq sent (s3_length $socket_payload_s3^s3)))
+        (score (eq socket_error $0^i5))
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [server_fd i5] (sys_net_socket_tcp4))
+      (sys_net_setsockopt_reuseaddr server_fd)
+      (sys_net_bind_ipv4_loopback server_fd $0^i5)
+      (var [port i5] (sys_net_getsockname_ipv4_port server_fd))
+      (sys_net_listen server_fd $16^i5)
+      (var [client Thread] (spawn (fn ([ignored unit]) to i5 in (client_worker port))))
+      (var [accepted_fd i5] (sys_net_accept server_fd))
+      (sys_net_setsockopt_tcp_nodelay accepted_fd)
+      (var [received s3] (sys_net_recv_s3 accepted_fd $64^i5))
+      (var [eof_value s3] (sys_net_recv_s3 accepted_fd $64^i5))
+      (var [client_score i5] (join client))
+      (sys_fd_close accepted_fd)
+      (sys_fd_close server_fd)
+      (add
+        (score (gt port $0^i5))
+        (add
+          (score (s3_equals received $socket_payload_s3^s3))
+          (add
+            (score (eq (s3_length eof_value) $0^i5))
+            (score (eq client_score $2^i5))
+          )
+        )
+      )
+    }
+  )
+}

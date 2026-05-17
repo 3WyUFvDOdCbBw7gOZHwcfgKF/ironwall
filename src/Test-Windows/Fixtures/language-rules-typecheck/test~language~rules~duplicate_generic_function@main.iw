@@ -1,0 +1,5 @@
+{program test~language~rules~duplicate_generic_function@main
+  (function <generic pack T> ([value T]) to T in value)
+  (function <generic pack U> ([value U]) to U in value)
+  (function main ([args <array s3>]) to i5 in (<pack i5> $1^i5))
+}

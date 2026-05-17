@@ -1,0 +1,868 @@
+{program usaco~prob3@main
+  (import std~io)
+  (import usaco~shared)
+
+  (function score_bool ([value bool]) to i5 in
+    (if value then $1^i5 else $0^i5)
+  )
+
+  (function bool_not ([value bool]) to bool in
+    (if value then false else true)
+  )
+
+  (function choose_mod ([fact <array i5>] [inv_fact <array i5>] [n_value i5] [k_value i5]) to i5 in
+    (if (or (lt n_value $0^i5) (or (lt k_value $0^i5) (gt k_value n_value)))
+      then $0^i5
+      else
+        (mod_mul
+          (array_get fact n_value)
+          (mod_mul (array_get inv_fact k_value) (array_get inv_fact (sub n_value k_value)))
+        )
+    )
+  )
+
+  (function build_factorials ([n i5]) to <array i5> in
+    {
+      (var [result <array i5>] (array_new <array i5> (add n $1^i5) $1^i5))
+      (var [index i5] $1^i5)
+      (while (le index n) in
+        {
+          (array_set result index (mod_mul (array_get result (sub index $1^i5)) index))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function build_inverse_factorials ([factorials <array i5>] [n i5]) to <array i5> in
+    {
+      (var [result <array i5>] (array_new <array i5> (add n $1^i5) $1^i5))
+      (array_set result n (pow_mod (array_get factorials n) $1000000005^i5))
+      (var [index i5] (sub n $1^i5))
+      (while (ge index $0^i5) in
+        {
+          (array_set result index (mod_mul (array_get result (add index $1^i5)) (add index $1^i5)))
+          (var_set index (sub index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function build_powers_of_two ([n i5]) to <array i5> in
+    {
+      (var [result <array i5>] (array_new <array i5> (add n $1^i5) $0^i5))
+      (array_set result $0^i5 $1^i5)
+      (var [index i5] $1^i5)
+      (while (le index n) in
+        {
+          (array_set result index (mod_add (array_get result (sub index $1^i5)) (array_get result (sub index $1^i5))))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function fill_i5_array ([target <array i5>] [value i5]) to unit in
+    {
+      (var [index i5] $0^i5)
+      (var [length i5] (array_length target))
+      (while (lt index length) in
+        {
+          (array_set target index value)
+          (var_set index (add index $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function mirror_fixed_values_in_place ([values <array i5>] [n i5]) to unit in
+    {
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (var [index i5] $0^i5)
+      (while (lt index n) in
+        {
+          (if (neq (array_get values index) unset)
+            then
+              {
+                (array_set values index (sub (sub n $1^i5) (array_get values index)))
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function reverse_i5_array_in_place ([values <array i5>]) to unit in
+    {
+      (var [left i5] $0^i5)
+      (var [right i5] (sub (array_length values) $1^i5))
+      (while (lt left right) in
+        {
+          (var [tmp i5] (array_get values left))
+          (array_set values left (array_get values right))
+          (array_set values right tmp)
+          (var_set left (add left $1^i5))
+          (var_set right (sub right $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function record_key_position ([first_pos <array i5>] [second_pos <array i5>] [key i5] [position i5]) to unit in
+    {
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (if (eq (array_get first_pos key) unset)
+        then
+          {
+            (array_set first_pos key position)
+            unit
+          }
+        else
+          {
+            (array_set second_pos key position)
+            unit
+          }
+      )
+      unit
+    }
+  )
+
+  (function even_perm_value ([index i5] [n i5]) to i5 in
+    (if (eq (mod index $2^i5) $0^i5)
+      then (add (div n $2^i5) (div index $2^i5))
+      else (div index $2^i5)
+    )
+  )
+
+  (function t1 ([constraints <array i5>] [fact <array i5>] [inv_fact <array i5>] [pow2_values <array i5>] [n i5] [left0 i5] [right0 i5] [k_limit i5]) to i5 in
+    {
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (var [mid i5] (div n $2^i5))
+      (var [first_pos <array i5>] (array_new <array i5> n unset))
+      (var [second_pos <array i5>] (array_new <array i5> n unset))
+      (var [scan i5] left0)
+      (var [valid bool] true)
+      (while (and valid (le scan right0)) in
+        {
+          (var [fixed i5] (array_get constraints scan))
+          (if (neq fixed unset)
+            then
+              {
+                (if (eq fixed mid)
+                  then
+                    {
+                      (var_set valid false)
+                      unit
+                    }
+                  else
+                    {
+                      (if (eq (mod scan $2^i5) $1^i5)
+                        then
+                          {
+                            (if (gt fixed mid)
+                              then
+                                {
+                                  (var_set valid false)
+                                  unit
+                                }
+                              else
+                                {
+                                  (if (ge fixed (sub k_limit mid))
+                                    then
+                                      {
+                                        (var_set valid false)
+                                        unit
+                                      }
+                                    else
+                                      (record_key_position first_pos second_pos (add fixed mid) scan)
+                                  )
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                        else
+                          {
+                            (if (lt fixed mid)
+                              then
+                                {
+                                  (var_set valid false)
+                                  unit
+                                }
+                              else
+                                {
+                                  (if (gt fixed k_limit)
+                                    then
+                                      {
+                                        (var_set valid false)
+                                        unit
+                                      }
+                                    else
+                                      (record_key_position first_pos second_pos fixed scan)
+                                  )
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                      )
+                      unit
+                    }
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set scan (add scan $1^i5))
+        }
+      )
+      (if valid
+        then
+          {
+            (var [active_keys <array i5>] (array_new <array i5> n $0^i5))
+            (var [active_count i5] $0^i5)
+            (var [key i5] $0^i5)
+            (while (lt key n) in
+              {
+                (if (neq (array_get first_pos key) unset)
+                  then
+                    {
+                      (array_set active_keys active_count key)
+                      (var_set active_count (add active_count $1^i5))
+                      unit
+                    }
+                  else unit
+                )
+                (var_set key (add key $1^i5))
+              }
+            )
+            (if (eq active_count $0^i5)
+              then (array_get pow2_values (div (sub right0 left0) $2^i5))
+              else
+                {
+                  (var [left i5] left0)
+                  (var [right i5] right0)
+                  (var [curr i5] mid)
+                  (var [answer i5] $1^i5)
+                  (var [active_index i5] $0^i5)
+                  (var [finished bool] false)
+                  (var [result i5] $0^i5)
+                  (while (and (lt active_index active_count) (bool_not finished)) in
+                    {
+                      (var [active_key i5] (array_get active_keys active_index))
+                      (var [pos1 i5] (array_get first_pos active_key))
+                      (var [pos2 i5] (array_get second_pos active_key))
+                      (if (neq pos2 unset)
+                        then
+                          {
+                            (if (neq (abs_i5 (sub pos2 pos1)) $1^i5)
+                              then
+                                {
+                                  (var_set finished true)
+                                  (var_set result $0^i5)
+                                  unit
+                                }
+                              else
+                                {
+                                  (var [num i5] (sub active_key curr))
+                                  (if (eq (mod pos1 $2^i5) (mod left $2^i5))
+                                    then
+                                      {
+                                        (var [s i5] (add (div (sub pos1 left) $2^i5) $1^i5))
+                                        (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                        (var_set curr active_key)
+                                        (var_set left (add left (mul $2^i5 s)))
+                                        (var_set right (sub right (mul $2^i5 (sub num s))))
+                                        unit
+                                      }
+                                    else
+                                      {
+                                        (var [s i5] (add (div (sub right pos1) $2^i5) $1^i5))
+                                        (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                        (var_set curr active_key)
+                                        (var_set left (add left (mul $2^i5 (sub num s))))
+                                        (var_set right (sub right (mul $2^i5 s)))
+                                        unit
+                                      }
+                                  )
+                                  (if (eq (add active_index $1^i5) active_count)
+                                    then
+                                      {
+                                        (var_set finished true)
+                                        (var_set result (mod_mul answer (array_get pow2_values (div (sub right left) $2^i5))))
+                                        unit
+                                      }
+                                    else unit
+                                  )
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                        else
+                          {
+                            (if (or (lt pos1 left) (gt pos1 right))
+                              then
+                                {
+                                  (var_set finished true)
+                                  (var_set result $0^i5)
+                                  unit
+                                }
+                              else
+                                {
+                                  (if (eq (add active_index $1^i5) active_count)
+                                    then
+                                      {
+                                        (if (eq active_key k_limit)
+                                          then
+                                            {
+                                              (var_set result (mod_mul answer (choose_mod fact inv_fact (div (sub right left) $2^i5) (div (sub pos1 left) $2^i5))))
+                                              unit
+                                            }
+                                          else
+                                            {
+                                              (var [remaining i5] (sub (sub active_key curr) $1^i5))
+                                              (var [left_count i5] (div (sub pos1 left) $2^i5))
+                                              (var [right_count i5] (div (sub right pos1) $2^i5))
+                                              (var [ways i5] (mod_add (choose_mod fact inv_fact remaining left_count) (choose_mod fact inv_fact remaining right_count)))
+                                              (var_set result (mod_mul (mod_mul answer ways) (array_get pow2_values (sub (sub k_limit active_key) $1^i5))))
+                                              unit
+                                            }
+                                        )
+                                        (var_set finished true)
+                                        unit
+                                      }
+                                    else
+                                      {
+                                        (var [next_pos i5] (array_get first_pos (array_get active_keys (add active_index $1^i5))))
+                                        (var [num i5] (sub active_key curr))
+                                        (if (gt next_pos pos1)
+                                          then
+                                            {
+                                              (var [s i5] (add (div (sub pos1 left) $2^i5) $1^i5))
+                                              (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                              (var_set curr active_key)
+                                              (var_set left (add left (mul $2^i5 s)))
+                                              (var_set right (sub right (mul $2^i5 (sub num s))))
+                                              unit
+                                            }
+                                          else
+                                            {
+                                              (var [s i5] (add (div (sub right pos1) $2^i5) $1^i5))
+                                              (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                              (var_set curr active_key)
+                                              (var_set left (add left (mul $2^i5 (sub num s))))
+                                              (var_set right (sub right (mul $2^i5 s)))
+                                              unit
+                                            }
+                                        )
+                                        unit
+                                      }
+                                  )
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                      )
+                      (if (bool_not finished)
+                        then
+                          {
+                            (var_set active_index (add active_index $1^i5))
+                            unit
+                          }
+                        else unit
+                      )
+                    }
+                  )
+                  result
+                }
+            )
+          }
+        else $0^i5
+      )
+    }
+  )
+
+  (function t2 ([constraints <array i5>] [fact <array i5>] [inv_fact <array i5>] [n i5] [left0 i5] [right0 i5] [center i5]) to i5 in
+    {
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (var [mid i5] (div n $2^i5))
+      (var [first_pos <array i5>] (array_new <array i5> n unset))
+      (var [second_pos <array i5>] (array_new <array i5> n unset))
+      (var [scan i5] left0)
+      (var [valid bool] true)
+      (while (and valid (lt scan (sub center $1^i5))) in
+        {
+          (var [fixed i5] (array_get constraints scan))
+          (if (neq fixed unset)
+            then
+              {
+                (if (eq fixed mid)
+                  then
+                    {
+                      (var_set valid false)
+                      unit
+                    }
+                  else
+                    {
+                      (if (eq (mod scan $2^i5) (mod left0 $2^i5))
+                        then
+                          {
+                            (if (lt fixed mid)
+                              then
+                                {
+                                  (var_set valid false)
+                                  unit
+                                }
+                              else
+                                {
+                                  (record_key_position first_pos second_pos fixed scan)
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                        else
+                          {
+                            (if (gt fixed mid)
+                              then
+                                {
+                                  (var_set valid false)
+                                  unit
+                                }
+                              else
+                                {
+                                  (record_key_position first_pos second_pos (add fixed mid) scan)
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                      )
+                      unit
+                    }
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set scan (add scan $1^i5))
+        }
+      )
+      (var_set scan right0)
+      (while (and valid (lt scan n)) in
+        {
+          (var [fixed i5] (array_get constraints scan))
+          (if (neq fixed unset)
+            then
+              {
+                (if (eq fixed mid)
+                  then
+                    {
+                      (var_set valid false)
+                      unit
+                    }
+                  else
+                    {
+                      (if (eq (mod scan $2^i5) (mod right0 $2^i5))
+                        then
+                          {
+                            (if (lt fixed mid)
+                              then
+                                {
+                                  (var_set valid false)
+                                  unit
+                                }
+                              else
+                                {
+                                  (record_key_position first_pos second_pos fixed scan)
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                        else
+                          {
+                            (if (gt fixed mid)
+                              then
+                                {
+                                  (var_set valid false)
+                                  unit
+                                }
+                              else
+                                {
+                                  (record_key_position first_pos second_pos (add fixed mid) scan)
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                      )
+                      unit
+                    }
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set scan (add scan $1^i5))
+        }
+      )
+      (if valid
+        then
+          {
+            (var [active_keys <array i5>] (array_new <array i5> n $0^i5))
+            (var [active_count i5] $0^i5)
+            (var [key i5] $0^i5)
+            (while (lt key n) in
+              {
+                (if (neq (array_get first_pos key) unset)
+                  then
+                    {
+                      (array_set active_keys active_count key)
+                      (var_set active_count (add active_count $1^i5))
+                      unit
+                    }
+                  else unit
+                )
+                (var_set key (add key $1^i5))
+              }
+            )
+            (var [left i5] left0)
+            (var [right i5] right0)
+            (var [curr i5] mid)
+            (var [answer i5] $1^i5)
+            (var [active_index i5] $0^i5)
+            (var [finished bool] false)
+            (var [result i5] $0^i5)
+            (while (and (lt active_index active_count) (bool_not finished)) in
+              {
+                (var [active_key i5] (array_get active_keys active_index))
+                (var [pos1 i5] (array_get first_pos active_key))
+                (var [pos2 i5] (array_get second_pos active_key))
+                (if (neq pos2 unset)
+                  then
+                    {
+                      (if (or (lt pos1 left) (and (ge pos1 center) (lt pos1 right)))
+                        then
+                          {
+                            (var_set finished true)
+                            (var_set result $0^i5)
+                            unit
+                          }
+                        else
+                          {
+                            (var [num i5] (sub active_key curr))
+                            (if (lt pos1 center)
+                              then
+                                {
+                                  (var [s i5] (add (div (sub pos1 left) $2^i5) $1^i5))
+                                  (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                  (var_set curr active_key)
+                                  (var_set left (add left (mul $2^i5 s)))
+                                  (var_set right (add right (mul $2^i5 (sub num s))))
+                                  unit
+                                }
+                              else
+                                {
+                                  (var [s i5] (add (div (sub pos1 right) $2^i5) $1^i5))
+                                  (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                  (var_set curr active_key)
+                                  (var_set left (add left (mul $2^i5 (sub num s))))
+                                  (var_set right (add right (mul $2^i5 s)))
+                                  unit
+                                }
+                            )
+                            (if (neq (sub pos2 pos1) $1^i5)
+                              then
+                                {
+                                  (var_set finished true)
+                                  (var_set result $0^i5)
+                                  unit
+                                }
+                              else
+                                (if (lt pos2 center)
+                                  then
+                                    (if (eq (mod pos2 $2^i5) (mod left $2^i5))
+                                      then
+                                        {
+                                          (var_set finished true)
+                                          (var_set result $0^i5)
+                                          unit
+                                        }
+                                      else unit
+                                    )
+                                  else
+                                    (if (eq (mod pos2 $2^i5) (mod right $2^i5))
+                                      then
+                                        {
+                                          (var_set finished true)
+                                          (var_set result $0^i5)
+                                          unit
+                                        }
+                                      else unit
+                                    )
+                                )
+                            )
+                            unit
+                          }
+                      )
+                      unit
+                    }
+                  else
+                    {
+                      (if (or (lt pos1 left) (and (ge pos1 center) (lt pos1 right)))
+                        then
+                          {
+                            (var_set finished true)
+                            (var_set result $0^i5)
+                            unit
+                          }
+                        else
+                          {
+                            (var [num i5] (sub active_key curr))
+                            (if (lt pos1 center)
+                              then
+                                {
+                                  (var [s i5] (add (div (sub pos1 left) $2^i5) $1^i5))
+                                  (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                  (var_set curr active_key)
+                                  (var_set left (add left (mul $2^i5 s)))
+                                  (var_set right (add right (mul $2^i5 (sub num s))))
+                                  unit
+                                }
+                              else
+                                {
+                                  (var [s i5] (add (div (sub pos1 right) $2^i5) $1^i5))
+                                  (var_set answer (mod_mul answer (choose_mod fact inv_fact (sub num $1^i5) (sub s $1^i5))))
+                                  (var_set curr active_key)
+                                  (var_set left (add left (mul $2^i5 (sub num s))))
+                                  (var_set right (add right (mul $2^i5 s)))
+                                  unit
+                                }
+                            )
+                            unit
+                          }
+                      )
+                      unit
+                    }
+                )
+                (if (bool_not finished)
+                  then
+                    {
+                      (var_set active_index (add active_index $1^i5))
+                      unit
+                    }
+                  else unit
+                )
+              }
+            )
+            (if finished
+              then result
+              else
+                (mod_mul
+                  answer
+                  (choose_mod
+                    fact
+                    inv_fact
+                    (add (div (sub (sub center left) $1^i5) $2^i5) (div (sub n right) $2^i5))
+                    (div (sub (sub center left) $1^i5) $2^i5)
+                  )
+                )
+            )
+          }
+        else $0^i5
+      )
+    }
+  )
+
+  (function solve_even_case ([constraints <array i5>] [n i5]) to i5 in
+    {
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (var [match_forward bool] true)
+      (var [match_reverse bool] true)
+      (var [index i5] $0^i5)
+      (while (lt index n) in
+        {
+          (var [fixed i5] (array_get constraints index))
+          (if (neq fixed unset)
+            then
+              {
+                (if (neq fixed (even_perm_value index n))
+                  then
+                    {
+                      (var_set match_forward false)
+                      unit
+                    }
+                  else unit
+                )
+                (if (neq fixed (even_perm_value (sub (sub n index) $1^i5) n))
+                  then
+                    {
+                      (var_set match_reverse false)
+                      unit
+                    }
+                  else unit
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      (add (score_bool match_forward) (score_bool match_reverse))
+    }
+  )
+
+  (function solve_odd_case ([constraints <array i5>] [fact <array i5>] [inv_fact <array i5>] [pow2_values <array i5>] [n i5]) to i5 in
+    {
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (var [mid i5] (div n $2^i5))
+      (var [answer i5] $0^i5)
+      (var [pass i5] $0^i5)
+      (while (lt pass $2^i5) in
+        {
+          (if (or (eq (array_get constraints $0^i5) mid) (eq (array_get constraints $0^i5) unset))
+            then
+              {
+                (if (or (eq (array_get constraints $1^i5) $0^i5) (eq (array_get constraints $1^i5) unset))
+                  then
+                    {
+                      (var_set answer (mod_add answer (t1 constraints fact inv_fact pow2_values n $2^i5 (sub n $1^i5) (sub n $1^i5))))
+                      unit
+                    }
+                  else unit
+                )
+                (if (or (eq (array_get constraints $1^i5) (sub n $1^i5)) (eq (array_get constraints $1^i5) unset))
+                  then
+                    {
+                      (mirror_fixed_values_in_place constraints n)
+                      (var_set answer (mod_add answer (t1 constraints fact inv_fact pow2_values n $2^i5 (sub n $1^i5) (sub n $1^i5))))
+                      (mirror_fixed_values_in_place constraints n)
+                      unit
+                    }
+                  else unit
+                )
+                unit
+              }
+            else unit
+          )
+          (var [center i5] $1^i5)
+          (while (lt center (sub n $1^i5)) in
+            {
+              (if (and (or (eq (array_get constraints center) mid) (eq (array_get constraints center) unset))
+                       (and (or (eq (array_get constraints (sub center $1^i5)) (sub n $1^i5)) (eq (array_get constraints (sub center $1^i5)) unset))
+                            (or (eq (array_get constraints (add center $1^i5)) $0^i5) (eq (array_get constraints (add center $1^i5)) unset))))
+                then
+                  {
+                    (var [keep_left bool] (eq (array_get constraints (sub center $1^i5)) (sub n $1^i5)))
+                    (var [keep_center bool] (eq (array_get constraints center) mid))
+                    (var [keep_right bool] (eq (array_get constraints (add center $1^i5)) $0^i5))
+                    (array_set constraints (sub center $1^i5) (sub n $1^i5))
+                    (array_set constraints center mid)
+                    (array_set constraints (add center $1^i5) $0^i5)
+                    (if (eq (mod center $2^i5) $1^i5)
+                      then
+                        {
+                          (var_set answer (mod_add answer (t2 constraints fact inv_fact n $0^i5 (add center $2^i5) center)))
+                          unit
+                        }
+                      else
+                        {
+                          (var [left_answer i5] (t1 constraints fact inv_fact pow2_values n (add center $2^i5) (sub n $1^i5) (sub (sub n (div center $2^i5)) $1^i5)))
+                          (mirror_fixed_values_in_place constraints n)
+                          (var [right_answer i5] (t1 constraints fact inv_fact pow2_values n $0^i5 (sub center $2^i5) (add mid (div center $2^i5))))
+                          (mirror_fixed_values_in_place constraints n)
+                          (var_set answer (mod_add answer (mod_mul left_answer right_answer)))
+                          unit
+                        }
+                    )
+                    (if keep_left
+                      then unit
+                      else
+                        {
+                          (array_set constraints (sub center $1^i5) unset)
+                          unit
+                        }
+                    )
+                    (if keep_center
+                      then unit
+                      else
+                        {
+                          (array_set constraints center unset)
+                          unit
+                        }
+                    )
+                    (if keep_right
+                      then unit
+                      else
+                        {
+                          (array_set constraints (add center $1^i5) unset)
+                          unit
+                        }
+                    )
+                    unit
+                  }
+                else unit
+              )
+              (var_set center (add center $1^i5))
+            }
+          )
+          (reverse_i5_array_in_place constraints)
+          (var_set pass (add pass $1^i5))
+        }
+      )
+      answer
+    }
+  )
+
+  (function solve_case ([constraints <array i5>] [fact <array i5>] [inv_fact <array i5>] [pow2_values <array i5>] [n i5]) to i5 in
+    (if (eq (mod n $2^i5) $0^i5)
+      then (solve_even_case constraints n)
+      else (solve_odd_case constraints fact inv_fact pow2_values n)
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [header_line s3] (stdin_read_nonempty_line_s3))
+      (var [test_count i5] (pair_line_left_i5 header_line))
+      (var [n i5] (pair_line_right_i5 header_line))
+      (var [output_separator c3] (pair_line_separator header_line))
+      (var [factorials <array i5>] (build_factorials n))
+      (var [inverse_factorials <array i5>] (build_inverse_factorials factorials n))
+      (var [pow2_values <array i5>] (build_powers_of_two n))
+      (var [unset i5] (sub $0^i5 $1^i5))
+      (var [case_index i5] $0^i5)
+      (while (lt case_index test_count) in
+        {
+          (var [constraint_count i5] (stdin_read_i5))
+          (var [constraints <array i5>] (array_new <array i5> n unset))
+          (var [read_index i5] $0^i5)
+          (while (lt read_index constraint_count) in
+            {
+              (var [position i5] (stdin_read_i5))
+              (var [value i5] (stdin_read_i5))
+              (array_set constraints position value)
+              (var_set read_index (add read_index $1^i5))
+            }
+          )
+          (print_i5_with_sep (solve_case constraints factorials inverse_factorials pow2_values n) output_separator)
+          (var_set case_index (add case_index $1^i5))
+        }
+      )
+      $0^i5
+    }
+  )
+}

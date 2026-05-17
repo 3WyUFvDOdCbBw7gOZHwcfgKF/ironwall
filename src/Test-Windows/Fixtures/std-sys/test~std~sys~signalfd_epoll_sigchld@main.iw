@@ -1,0 +1,88 @@
+{program test~std~sys~signalfd_epoll_sigchld@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [signals <array i5>] (array_new <array i5> $1^i5 (sys_signal_sigchld)))
+      (var [signal_flags i5] (bwor (sys_fd_cloexec_syscall_flag) (sys_fd_nonblock_flag)))
+      (var [signal_fd i5] (sys_signalfd_create_block signals signal_flags))
+      (var [epoll_fd i5] (sys_epoll_create))
+      (sys_epoll_ctl_add epoll_fd signal_fd (sys_epoll_in_flag) $901^i5)
+      (var [pid i5] (sys_process_fork))
+      (if
+        (eq pid $0^i5)
+        then
+        {
+          (sys_process_exit $7^i5)
+          unit
+        }
+        else
+        unit
+      )
+      (var [ready bool] false)
+      (var [data_ok bool] false)
+      (var [attempts i5] $0^i5)
+      (while
+        (and (lt attempts $20^i5) (eq (score ready) $0^i5))
+        in
+        {
+          (var [events <array SysEpollEvent>] (sys_epoll_wait epoll_fd $2^i5 $250^i5))
+          (if
+            (gt (array_length events) $0^i5)
+            then
+            {
+              (var [event SysEpollEvent] (array_get events $0^i5))
+              (var_set ready (sys_epoll_event_has_in event))
+              (var_set data_ok (eq (sys_epoll_event_data event) $901^i5))
+              unit
+            }
+            else
+            unit
+          )
+          (var_set attempts (add attempts $1^i5))
+        }
+      )
+      (var [info SysSignalFdInfo] (class_new SysSignalFdInfo $0^i5 $0^i5 $0^i5 $0^i5))
+      (if
+        ready
+        then
+        {
+          (var_set info (sys_signalfd_read_info signal_fd))
+          unit
+        }
+        else
+        unit
+      )
+      (var [wait_status i5] (sys_process_wait4 pid))
+      (var [fd_flags i5] (sys_fd_fcntl_getfd signal_fd))
+      (var [status_flags i5] (sys_fd_fcntl_getfl signal_fd))
+      (sys_fd_close epoll_fd)
+      (sys_fd_close signal_fd)
+      (add
+        $580^i5
+        (add
+          (score ready)
+          (add
+            (score data_ok)
+            (add
+              (score (eq (sys_signalfd_info_signo info) (sys_signal_sigchld)))
+              (add
+                (score (eq (sys_signalfd_info_pid info) pid))
+                (add
+                  (score (eq (sys_signalfd_info_status info) $7^i5))
+                  (add
+                    (score (eq wait_status (exit_status_word $7^i5)))
+                    (add
+                      (score (eq fd_flags (sys_fd_cloexec_flag)))
+                      (score (neq (bwand status_flags (sys_fd_nonblock_flag)) $0^i5))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

@@ -1,0 +1,18 @@
+{program test~global~init@main
+  (var [global_score i5] {(var [tmp i5] $17^i5) (var_set tmp (add tmp $10^i5)) (sub tmp $2^i5)})
+  (var [global_text s3] (let (([seed c3] (s3_get $hello_s3^s3 $0^i5))) in (s3_new $5^i5 seed)))
+  (var [global_flag bool] (lt $1^i5 $2^i5))
+  (var [global_payload <union i5 s3>] $12^i5)
+  (function score_payload ([value <union i5 s3>]) to i5 in
+    (match value ([as_i5 i5] as_i5) ([as_s3 s3] (s3_length as_s3)))
+  )
+  (function main ([args <array s3>]) to i5 in
+    (if
+      global_flag
+      then
+      (add global_score (add (s3_length global_text) (score_payload global_payload)))
+      else
+      $0^i5
+    )
+  )
+}

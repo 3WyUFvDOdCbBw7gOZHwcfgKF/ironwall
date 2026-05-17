@@ -1,0 +1,12 @@
+{program test~std~sys~write@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [fd i5] (sys_fd_open_write_s3 $sys_write_path_s3^s3))
+      (var [written i5] (sys_fd_write_s3 fd $write_payload_s3^s3))
+      (sys_fd_close fd)
+      (add $140^i5 (score (eq written (s3_length $write_payload_s3^s3))))
+    }
+  )
+}

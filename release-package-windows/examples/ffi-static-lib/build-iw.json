@@ -1,0 +1,14 @@
+{
+  "mode": "build",
+  "directories": [
+    {
+      "path": "src"
+    }
+  ],
+  "main": "example~ffi~static@main",
+  "output": "ffi-static-lib.out",
+  "precompiledLibs": [],
+  "ffiLibs": [
+    "native/libffi_example.a"
+  ]
+}

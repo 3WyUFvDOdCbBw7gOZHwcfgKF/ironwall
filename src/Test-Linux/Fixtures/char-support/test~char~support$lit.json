@@ -1,0 +1,9 @@
+{
+  "package": "test~char~support$lit",
+  "char_a_c3^c3": "a",
+  "char_b_c3^c3": "b",
+  "char_a_c4^c4": "a",
+  "char_b_c4^c4": "b",
+  "char_a_c5^c5": "a",
+  "char_b_c5^c5": "b"
+}

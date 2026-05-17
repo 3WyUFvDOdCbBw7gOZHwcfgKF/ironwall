@@ -1,0 +1,18 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~string~match~labyrinth@main.iw",
+        "app~string~match~labyrinth$lit.json"
+      ]
+    }
+  ],
+  "main": "app~string~match~labyrinth@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

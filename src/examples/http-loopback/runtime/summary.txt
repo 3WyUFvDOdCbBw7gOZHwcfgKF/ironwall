@@ -1,0 +1,10 @@
+port-configured=yes
+accepted=3
+handled=3
+json=1
+static=1
+missing=1
+sendmsg=3
+sendfile=1
+sendfile-bytes=23
+socket-errors-zero=yes

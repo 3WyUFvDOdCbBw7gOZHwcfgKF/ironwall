@@ -1,0 +1,10 @@
+{program app~orangebox~newline~basic@main
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [single_line s3] $app_orangebox_newline_single_s3^s3)
+      (var [three_lines s3] $app_orangebox_newline_three_lines_s3^s3)
+      (var [blank_lines s3] $app_orangebox_newline_blank_lines_s3^s3)
+      $0^i5
+    }
+  )
+}

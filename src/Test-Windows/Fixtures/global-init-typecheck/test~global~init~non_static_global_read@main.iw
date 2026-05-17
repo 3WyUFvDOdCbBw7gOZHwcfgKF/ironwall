@@ -1,0 +1,4 @@
+{program test~global~init~non_static_global_read@main
+  (var [base i5] $9^i5)
+  (var [bad i5] base)
+}

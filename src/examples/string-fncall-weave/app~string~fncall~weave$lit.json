@@ -1,0 +1,21 @@
+{
+  "package": "app~string~fncall~weave$lit",
+  "app_string_fncall_weave_prefix_header_s3^s3": "WEAVE PREFIX\nframe-01 :: let block chooses the opening panel\n",
+  "app_string_fncall_weave_prefix_footer_s3^s3": "frame-02 :: fncall layout should hang this whole text under the call\n",
+  "app_string_fncall_weave_prefix_marker_s3^s3": "WEAVE PREFIX",
+  "app_string_fncall_weave_body_intro_s3^s3": "WEAVE BODY INTRO\n",
+  "app_string_fncall_weave_body_block_s3^s3": "WEAVE BODY\nsegment-a :: match branch injects a multiline payload\nsegment-b :: BODY-MARKER proves the middle block survived\nsegment-c :: the viewer should show parentheses sized by height only\n",
+  "app_string_fncall_weave_body_marker_s3^s3": "BODY-MARKER",
+  "app_string_fncall_weave_divider_segment_s3^s3": "-- woven divider :: repeated to enlarge the middle argument --\n",
+  "app_string_fncall_weave_bool_true_block_s3^s3": "BOOL TRUE BLOCK\nbranch :: true payload keeps the right side active\n",
+  "app_string_fncall_weave_bool_false_block_s3^s3": "BOOL FALSE BLOCK\nbranch :: false payload still renders as a multiline alternative\n",
+  "app_string_fncall_weave_fallback_tail_s3^s3": "TAIL :: fallback route closes the report",
+  "app_string_fncall_weave_match_tail_s3^s3": "TAIL :: match-driven route closes the report",
+  "app_string_fncall_weave_echo_tail_s3^s3": "TAIL :: echo route closes the report",
+  "app_string_fncall_weave_plain_tail_s3^s3": "TAIL :: plain route closes the report",
+  "app_string_fncall_weave_bad_prefix_s3^s3": "fncall weave prefix check failed",
+  "app_string_fncall_weave_bad_body_s3^s3": "fncall weave body marker missing",
+  "app_string_fncall_weave_bad_match_tail_s3^s3": "fncall weave did not end with match tail",
+  "app_string_fncall_weave_bad_fallback_tail_s3^s3": "fncall weave fallback tail missing",
+  "app_string_fncall_weave_ok_s3^s3": "STRING FNCALL WEAVE OK"
+}

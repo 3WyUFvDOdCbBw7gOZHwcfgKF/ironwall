@@ -1,0 +1,10 @@
+{program astvis~large~string~fncall@main
+  (function accept_s3 ([value s3]) to i5 in $0^i5)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (accept_s3 $wide_argument_s3^s3)
+      (accept_s3 $huge_argument_s3^s3)
+      $0^i5
+    }
+  )
+}

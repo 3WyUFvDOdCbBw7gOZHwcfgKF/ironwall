@@ -1,0 +1,6 @@
+{
+  "package": "app~orangebox~newline~basic$lit",
+  "app_orangebox_newline_single_s3^s3": "orange box single line",
+  "app_orangebox_newline_three_lines_s3^s3": "line 01: header\nline 02: middle payload\nline 03: tail",
+  "app_orangebox_newline_blank_lines_s3^s3": "top line\n\nmiddle after blank\n\nbottom line"
+}

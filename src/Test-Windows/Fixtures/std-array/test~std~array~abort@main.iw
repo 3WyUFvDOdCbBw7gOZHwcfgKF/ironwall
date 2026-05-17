@@ -1,0 +1,12 @@
+{program test~std~array~abort@main
+  (import std~array)
+  (import std~eq)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [source <Array i5>] (<array_new_fill i5> $2^i5 $1^i5))
+      (source.index rule $9^i5)
+    }
+  )
+}

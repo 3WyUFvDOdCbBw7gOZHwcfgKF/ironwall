@@ -1,0 +1,13 @@
+{program test~language~rules~duplicate_generic_class@main
+  (class <generic Bucket T>
+    (property [value T])
+    (constructor ([value0 T]) in (cm_set self value value0))
+  )
+  (class <generic Bucket U>
+    (property [value U])
+    (constructor ([value0 U]) in (cm_set self value value0))
+  )
+  (function main ([args <array s3>]) to i5 in
+    (cm_get (class_new <Bucket i5> $1^i5) value)
+  )
+}

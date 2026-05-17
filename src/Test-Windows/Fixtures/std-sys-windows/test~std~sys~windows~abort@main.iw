@@ -1,0 +1,10 @@
+{program test~std~sys~windows~abort@main
+  (import std~windows~sys)
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (sys_process_abort)
+      $0^i5
+    }
+  )
+}

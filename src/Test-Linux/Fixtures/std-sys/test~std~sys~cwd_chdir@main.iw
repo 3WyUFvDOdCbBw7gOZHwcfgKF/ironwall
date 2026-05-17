@@ -1,0 +1,68 @@
+{program test~std~sys~cwd_chdir@main
+  (import std~linux~sys)
+  (import test~std~sys~lib)
+  (function s3_endswith ([value s3] [suffix s3]) to bool in
+    {
+      (var [value_length i5] (s3_length value))
+      (var [suffix_length i5] (s3_length suffix))
+      (if
+        (lt value_length suffix_length)
+        then
+        false
+        else
+        {
+          (var [offset i5] (sub value_length suffix_length))
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index suffix_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get value (add offset index)) (s3_get suffix index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [initial_cwd s3] (sys_path_getcwd_s3))
+      (sys_path_chdir_s3 $cwd_target_dir_s3^s3)
+      (var [current_cwd s3] (sys_path_getcwd_s3))
+      (var [fd i5] (sys_fd_open_read_s3 $cwd_target_file_name_s3^s3))
+      (var [contents s3] (sys_fd_read_s3 fd $64^i5))
+      (sys_fd_close fd)
+      (add
+        $700^i5
+        (add
+          (score (gt (s3_length initial_cwd) $0^i5))
+          (add
+            (score (if (s3_equals initial_cwd current_cwd) then false else true))
+            (add
+              (score (s3_endswith current_cwd $cwd_target_suffix_s3^s3))
+              (score (s3_equals contents $cwd_expected_contents_s3^s3))
+            )
+          )
+        )
+      )
+    }
+  )
+}

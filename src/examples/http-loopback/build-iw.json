@@ -1,0 +1,20 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~http~loopback@main.iw",
+        "app~http~loopback$lit.json",
+        "app~http~loopback~lib@defs.iw",
+        "app~http~loopback~lib$lit.json"
+      ]
+    }
+  ],
+  "main": "app~http~loopback@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

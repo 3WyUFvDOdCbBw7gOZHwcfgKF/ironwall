@@ -1,0 +1,21 @@
+{
+  "package": "app~string~cond~panorama$lit",
+  "app_string_cond_panorama_newline_s3^s3": "\n",
+  "app_string_cond_panorama_headline_s3^s3": "PANORAMA HEADLINE :: layered cond corridors",
+  "app_string_cond_panorama_head_prefix_s3^s3": "PANORAMA HEADLINE",
+  "app_string_cond_panorama_head_suffix_s3^s3": "corridors",
+  "app_string_cond_panorama_story_s3^s3": "PANORAMA: dawn entry / glass relay / checksum 01\nbranch-alpha :: cond guard opens the archive gate\nbranch-beta :: nested let packs a folded transcript\nbranch-gamma :: while loop measures the lantern pulses\nbranch-delta :: match observer records MARKER-ORBIT\nbranch-epsilon :: literal database keeps every newline alive\nbranch-zeta :: closing echo returns to the viewport",
+  "app_string_cond_panorama_fallback_s3^s3": "fallback-frame :: spare branch for the cond renderer\nfallback-frame :: keeps multiline shape when primary checks fail\nfallback-frame :: still valid input for the viewer",
+  "app_string_cond_panorama_marker_s3^s3": "MARKER-ORBIT",
+  "app_string_cond_panorama_lines_ok_s3^s3": "COND line-count branch verified",
+  "app_string_cond_panorama_contains_only_s3^s3": "COND marker branch verified",
+  "app_string_cond_panorama_failure_s3^s3": "COND decision failed",
+  "app_string_cond_panorama_success_banner_s3^s3": "STRING COND PANORAMA OK",
+  "app_string_cond_panorama_bad_lines_s3^s3": "bad panorama line count",
+  "app_string_cond_panorama_bad_headline_s3^s3": "headline prefix or suffix mismatch",
+  "app_string_cond_panorama_missing_marker_s3^s3": "story marker missing",
+  "app_string_cond_panorama_bad_decision_s3^s3": "cond decision did not select success banner",
+  "app_string_cond_panorama_unexpected_count_s3^s3": "unexpected i5 branch while preferring body",
+  "app_string_cond_panorama_unexpected_true_s3^s3": "unexpected true branch while preferring body",
+  "app_string_cond_panorama_unexpected_false_s3^s3": "unexpected false branch while preferring body"
+}

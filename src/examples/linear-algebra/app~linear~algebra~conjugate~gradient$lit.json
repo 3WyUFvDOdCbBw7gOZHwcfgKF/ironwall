@@ -1,0 +1,9 @@
+{
+  "package": "app~linear~algebra~conjugate~gradient$lit",
+  "app_linear_algebra_cg_ok_s3^s3": "cg ok",
+  "app_linear_algebra_iterations_s3^s3": "iterations=",
+  "app_linear_algebra_x_sum_x1000_s3^s3": "x-sum-x1000=",
+  "app_linear_algebra_x0_x1000_s3^s3": "x0-x1000=",
+  "app_linear_algebra_x_last_x1000_s3^s3": "x-last-x1000=",
+  "app_linear_algebra_residual_x1e6_s3^s3": "residual-x1000000="
+}

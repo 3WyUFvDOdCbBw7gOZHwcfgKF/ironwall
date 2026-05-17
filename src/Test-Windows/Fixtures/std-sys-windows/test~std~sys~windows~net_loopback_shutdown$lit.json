@@ -1,0 +1,5 @@
+{
+  "package": "test~std~sys~windows~net_loopback_shutdown$lit",
+  "std_sys_windows_net_loopback_shutdown_payload_s3^s3": "loopback-close",
+  "std_sys_windows_empty_s3^s3": ""
+}

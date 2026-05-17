@@ -1,0 +1,44 @@
+{program test~std~array~ord@main
+  (import std~array)
+  (import std~ord)
+  (function compare_i5 ([left i5] [right i5]) to i5 in
+    (if (lt left right) then $0neg1^i5 else (if (gt left right) then $1^i5 else $0^i5))
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [ord <Ord i5>] (class_new <Ord i5> compare_i5))
+      (var [source <Array i5>] (<array_new_fill i5> $5^i5 $0^i5))
+      (source.set $0^i5 $7^i5)
+      (source.set $1^i5 $3^i5)
+      (source.set $2^i5 $9^i5)
+      (source.set $3^i5 $3^i5)
+      (source.set $4^i5 $1^i5)
+      (var [sorted_copy <Array i5>] (<Array_sorted i5> source ord))
+      (var [reversed_copy <Array i5>] (<Array_reversed i5> source))
+      (source.set $0^i5 $42^i5)
+      (source.sort ord)
+      (add
+        (source.get $0^i5)
+        (add
+          (source.get $4^i5)
+          (add
+            (sorted_copy.get $0^i5)
+            (add
+              (sorted_copy.get $2^i5)
+              (add
+                (sorted_copy.get $4^i5)
+                (add
+                  (reversed_copy.get $0^i5)
+                  (add
+                    (reversed_copy.get $4^i5)
+                    (add (<Array_max i5> source ord) (<Array_min i5> sorted_copy ord))
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

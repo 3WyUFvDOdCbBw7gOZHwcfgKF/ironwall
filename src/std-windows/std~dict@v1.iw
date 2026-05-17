@@ -1,0 +1,861 @@
+{program std~dict@v1
+  (import std~box)
+  (import std~eq)
+  (import std~hash)
+  (import std~list)
+  (import std~pair)
+
+  (class DictLookupResult
+    (property [index i5])
+    (property [found bool])
+    (constructor ([index0 i5] [found0 bool]) in
+      {
+        (cm_set self index index0)
+        (cm_set self found found0)
+      }
+    )
+  )
+
+  (function <generic dict_key_unwrap K> ([slot <union unit <Box K>>]) to K in
+    (match
+      slot
+      ([empty unit] (iw_match_unreachable))
+      ([value <Box K>] (<box_unwrap K> value))
+    )
+  )
+
+  (function <generic dict_value_unwrap V> ([slot <union unit <Box V>>]) to V in
+    (match
+      slot
+      ([empty unit] (iw_match_unreachable))
+      ([value <Box V>] (<box_unwrap V> value))
+    )
+  )
+
+  (function <generic dict_new_key_slots K> ([capacity i5]) to <array <union unit <Box K>>> in
+    (array_new <array <union unit <Box K>>> capacity unit)
+  )
+
+  (function <generic dict_new_value_slots V> ([capacity i5]) to <array <union unit <Box V>>> in
+    (array_new <array <union unit <Box V>>> capacity unit)
+  )
+
+  (class <generic Dict K V>
+    (property [hash_rule <Hash K>])
+    (property [eq_rule <Eq K>])
+    (property [key_seed K])
+    (property [value_seed V])
+    (property [key_slots <array <union unit <Box K>>>])
+    (property [value_slots <array <union unit <Box V>>>])
+    (property [hashes <array i5>])
+    (property [states <array i5>])
+    (property [size i5])
+    (property [used i5])
+    (property [capacity i5])
+    (property [order <List K>])
+    (constructor ([hash_rule0 <Hash K>] [eq_rule0 <Eq K>] [key_seed0 K] [value_seed0 V] [capacity0 i5]) in
+      {
+        (cm_set self hash_rule hash_rule0)
+        (cm_set self eq_rule eq_rule0)
+        (cm_set self key_seed key_seed0)
+        (cm_set self value_seed value_seed0)
+        (cm_set self key_slots (<dict_new_key_slots K> capacity0))
+        (cm_set self value_slots (<dict_new_value_slots V> capacity0))
+        (cm_set self hashes (array_new <array i5> capacity0 $0^i5))
+        (cm_set self states (array_new <array i5> capacity0 $0^i5))
+        (cm_set self size $0^i5)
+        (cm_set self used $0^i5)
+        (cm_set self capacity capacity0)
+        (cm_set self order (<list_new K> key_seed0))
+      }
+    )
+    (method get ([key K] [fallback V]) to V in
+      {
+        (var [key_hash i5] (<hash_apply K> (cm_get self hash_rule) key))
+        (var [lookup DictLookupResult]
+          (<dict_find_slot K>
+            (cm_get self key_slots)
+            (cm_get self hashes)
+            (cm_get self states)
+            (cm_get self capacity)
+            (cm_get self eq_rule)
+            key
+            key_hash
+          )
+        )
+        (if (cm_get lookup found)
+          then (<dict_value_unwrap V> (array_get (cm_get self value_slots) (cm_get lookup index)))
+          else fallback
+        )
+      }
+    )
+    (method pop ([key K]) to V in
+      {
+        (var [key_hash i5] (<hash_apply K> (cm_get self hash_rule) key))
+        (var [lookup DictLookupResult]
+          (<dict_find_slot K>
+            (cm_get self key_slots)
+            (cm_get self hashes)
+            (cm_get self states)
+            (cm_get self capacity)
+            (cm_get self eq_rule)
+            key
+            key_hash
+          )
+        )
+        (if (cm_get lookup found)
+          then (<dict_remove_at_index K V> self (cm_get lookup index))
+          else (iw_match_unreachable)
+        )
+      }
+    )
+    (method popitem () to <Pair K V> in
+      {
+        (var [order_now <List K>] (cm_get self order))
+        (var [found i5] $0^i5)
+        (var [result_key K] (cm_get self key_seed))
+        (var [result_value V] (cm_get self value_seed))
+        (while (and (gt (cm_get order_now length) $0^i5) (eq found $0^i5)) in
+          {
+            (match (cm_get order_now items)
+              ([empty unit] (iw_match_unreachable))
+              ([node <ListNode K>]
+                {
+                  (var [candidate K] (cm_get node value))
+                  (if (<dict_contains K V> self candidate)
+                    then
+                      {
+                        (var_set result_key candidate)
+                        (var_set result_value (<dict_get_existing_value K V> self candidate))
+                        ((cm_get self pop) candidate)
+                        (var_set found $1^i5)
+                        unit
+                      }
+                    else
+                      {
+                        (cm_set order_now items (cm_get node next))
+                        (cm_set order_now length (sub (cm_get order_now length) $1^i5))
+                        (if (eq (cm_get order_now length) $0^i5)
+                          then (cm_set order_now tail unit)
+                          else unit
+                        )
+                        unit
+                      }
+                  )
+                }
+              )
+            )
+          }
+        )
+        (if (eq found $1^i5)
+          then (class_new <Pair K V> result_key result_value)
+          else (iw_match_unreachable)
+        )
+      }
+    )
+    (method update ([other <Dict K V>]) to unit in
+      {
+        (<dict_store_entries_from_arrays K V>
+          self
+          (cm_get other key_slots)
+          (cm_get other value_slots)
+          (cm_get other states)
+          (cm_get other capacity)
+        )
+        unit
+      }
+    )
+    (method setdefault ([key K] [fallback V]) to V in
+      {
+        (var [key_hash i5] (<hash_apply K> (cm_get self hash_rule) key))
+        (var [lookup DictLookupResult]
+          (<dict_find_slot K>
+            (cm_get self key_slots)
+            (cm_get self hashes)
+            (cm_get self states)
+            (cm_get self capacity)
+            (cm_get self eq_rule)
+            key
+            key_hash
+          )
+        )
+        (if (cm_get lookup found)
+          then (<dict_value_unwrap V> (array_get (cm_get self value_slots) (cm_get lookup index)))
+          else
+            {
+              (<dict_store K V> self key fallback)
+              fallback
+            }
+        )
+      }
+    )
+    (method clear () to unit in
+      {
+        (<dict_reset_storage K V> self (cm_get self capacity))
+        unit
+      }
+    )
+    (method copy () to <Dict K V> in
+      {
+        (var [result <Dict K V>]
+          (class_new <Dict K V>
+            (cm_get self hash_rule)
+            (cm_get self eq_rule)
+            (cm_get self key_seed)
+            (cm_get self value_seed)
+            (cm_get self capacity)
+          )
+        )
+        (<dict_store_entries_from_arrays K V>
+          result
+          (cm_get self key_slots)
+          (cm_get self value_slots)
+          (cm_get self states)
+          (cm_get self capacity)
+        )
+        result
+      }
+    )
+    (method keys () to <List K> in
+      (<dict_build_keys_from_arrays K V>
+        (cm_get self key_seed)
+        (cm_get self key_slots)
+        (cm_get self states)
+        (cm_get self capacity)
+      )
+    )
+    (method values () to <List V> in
+      (<dict_build_values_from_arrays K V>
+        (cm_get self value_seed)
+        (cm_get self value_slots)
+        (cm_get self states)
+        (cm_get self capacity)
+      )
+    )
+    (method items () to <List <Pair K V>> in
+      (<dict_build_items_from_arrays K V>
+        (class_new <Pair K V> (cm_get self key_seed) (cm_get self value_seed))
+        (cm_get self key_slots)
+        (cm_get self value_slots)
+        (cm_get self states)
+        (cm_get self capacity)
+      )
+    )
+  )
+
+  (function <generic dict_find_slot K> ([key_slots <array <union unit <Box K>>>] [hashes <array i5>] [states <array i5>] [capacity i5] [eq_rule <Eq K>] [key K] [key_hash i5]) to DictLookupResult in
+    {
+      (var [slot i5] (mod key_hash capacity))
+      (if (lt slot $0^i5)
+        then
+          {
+            (var_set slot (add slot capacity))
+            unit
+          }
+        else unit
+      )
+      (var [first_tombstone i5] capacity)
+      (var [steps i5] $0^i5)
+      (var [result DictLookupResult] (class_new DictLookupResult capacity false))
+      (while (lt steps capacity) in
+        {
+          (var [state i5] (array_get states slot))
+          (if (eq state $0^i5)
+            then
+              {
+                (cm_set result index (if (lt first_tombstone capacity) then first_tombstone else slot))
+                (cm_set result found false)
+                (var_set steps capacity)
+                unit
+              }
+            else
+              (if (eq state $2^i5)
+                then
+                  {
+                    (if (lt first_tombstone capacity)
+                      then unit
+                      else
+                        {
+                          (var_set first_tombstone slot)
+                          unit
+                        }
+                    )
+                    unit
+                  }
+                else
+                  (if (eq (array_get hashes slot) key_hash)
+                    then
+                      (if (<eq_apply K> eq_rule (<dict_key_unwrap K> (array_get key_slots slot)) key)
+                        then
+                          {
+                            (cm_set result index slot)
+                            (cm_set result found true)
+                            (var_set steps capacity)
+                            unit
+                          }
+                        else unit
+                      )
+                    else unit
+                  )
+              )
+          )
+          (if (lt steps capacity)
+            then
+              {
+                (var_set slot (mod (add slot $1^i5) capacity))
+                (var_set steps (add steps $1^i5))
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (if (lt (cm_get result index) capacity)
+        then result
+        else
+          (if (lt first_tombstone capacity)
+            then (class_new DictLookupResult first_tombstone false)
+            else (iw_match_unreachable)
+          )
+      )
+    }
+  )
+
+  (function <generic dict_reset_storage K V> ([dict <Dict K V>] [capacity i5]) to unit in
+    {
+      (cm_set dict key_slots (<dict_new_key_slots K> capacity))
+      (cm_set dict value_slots (<dict_new_value_slots V> capacity))
+      (cm_set dict hashes (array_new <array i5> capacity $0^i5))
+      (cm_set dict states (array_new <array i5> capacity $0^i5))
+      (cm_set dict size $0^i5)
+      (cm_set dict used $0^i5)
+      (cm_set dict capacity capacity)
+      (cm_set dict order (<list_new K> (cm_get dict key_seed)))
+      unit
+    }
+  )
+
+  (function <generic dict_store_hashed K V> ([dict <Dict K V>] [key K] [value V] [key_hash i5] [record_order bool]) to unit in
+    {
+      (var [lookup DictLookupResult]
+        (<dict_find_slot K>
+          (cm_get dict key_slots)
+          (cm_get dict hashes)
+          (cm_get dict states)
+          (cm_get dict capacity)
+          (cm_get dict eq_rule)
+          key
+          key_hash
+        )
+      )
+      (if (cm_get lookup found)
+        then
+          {
+            (array_set (cm_get dict value_slots) (cm_get lookup index) (class_new <Box V> value))
+            unit
+          }
+        else
+          {
+            (var [index i5] (cm_get lookup index))
+            (var [prior_state i5] (array_get (cm_get dict states) index))
+            (array_set (cm_get dict key_slots) index (class_new <Box K> key))
+            (array_set (cm_get dict value_slots) index (class_new <Box V> value))
+            (array_set (cm_get dict hashes) index key_hash)
+            (array_set (cm_get dict states) index $1^i5)
+            (cm_set dict size (add (cm_get dict size) $1^i5))
+            (if (eq prior_state $0^i5)
+              then
+                {
+                  (cm_set dict used (add (cm_get dict used) $1^i5))
+                  unit
+                }
+              else unit
+            )
+            (if record_order
+              then
+                {
+                  (var [order_now <List K>] (cm_get dict order))
+                  (var [new_order_node <ListNode K>] (class_new <ListNode K> key (cm_get order_now items)))
+                  (cm_set order_now items new_order_node)
+                  (if (eq (cm_get order_now length) $0^i5)
+                    then (cm_set order_now tail new_order_node)
+                    else unit
+                  )
+                  (cm_set order_now length (add (cm_get order_now length) $1^i5))
+                  unit
+                }
+              else unit
+            )
+            unit
+          }
+      )
+    }
+  )
+
+  (function <generic dict_resize K V> ([dict <Dict K V>] [new_capacity i5]) to unit in
+    {
+      (var [old_order <List K>] (cm_get dict order))
+      (var [old_key_slots <array <union unit <Box K>>>] (cm_get dict key_slots))
+      (var [old_value_slots <array <union unit <Box V>>>] (cm_get dict value_slots))
+      (var [old_hashes <array i5>] (cm_get dict hashes))
+      (var [old_states <array i5>] (cm_get dict states))
+      (var [old_capacity i5] (cm_get dict capacity))
+      (cm_set dict key_slots (<dict_new_key_slots K> new_capacity))
+      (cm_set dict value_slots (<dict_new_value_slots V> new_capacity))
+      (cm_set dict hashes (array_new <array i5> new_capacity $0^i5))
+      (cm_set dict states (array_new <array i5> new_capacity $0^i5))
+      (cm_set dict size $0^i5)
+      (cm_set dict used $0^i5)
+      (cm_set dict capacity new_capacity)
+      (cm_set dict order old_order)
+      (var [index i5] $0^i5)
+      (while (lt index old_capacity) in
+        {
+          (if (eq (array_get old_states index) $1^i5)
+            then
+              {
+                (<dict_store_hashed K V>
+                  dict
+                  (<dict_key_unwrap K> (array_get old_key_slots index))
+                  (<dict_value_unwrap V> (array_get old_value_slots index))
+                  (array_get old_hashes index)
+                  false
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function <generic dict_store K V> ([dict <Dict K V>] [key K] [value V]) to unit in
+    {
+      (var [capacity_now i5] (cm_get dict capacity))
+      (if (ge (mul (cm_get dict used) $4^i5) (mul capacity_now $3^i5))
+        then
+          {
+            (<dict_resize K V> dict (mul capacity_now $2^i5))
+            unit
+          }
+        else unit
+      )
+      (var [key_hash i5] (<hash_apply K> (cm_get dict hash_rule) key))
+      (<dict_store_hashed K V> dict key value key_hash true)
+      unit
+    }
+  )
+
+  (function <generic dict_get_existing_value K V> ([dict <Dict K V>] [key K]) to V in
+    {
+      (var [key_hash i5] (<hash_apply K> (cm_get dict hash_rule) key))
+      (var [lookup DictLookupResult]
+        (<dict_find_slot K>
+          (cm_get dict key_slots)
+          (cm_get dict hashes)
+          (cm_get dict states)
+          (cm_get dict capacity)
+          (cm_get dict eq_rule)
+          key
+          key_hash
+        )
+      )
+      (if (cm_get lookup found)
+        then (<dict_value_unwrap V> (array_get (cm_get dict value_slots) (cm_get lookup index)))
+        else (iw_match_unreachable)
+      )
+    }
+  )
+
+  (function <generic dict_remove_at_index K V> ([dict <Dict K V>] [index i5]) to V in
+    {
+      (var [removed_key K] (<dict_key_unwrap K> (array_get (cm_get dict key_slots) index)))
+      (var [result V] (<dict_value_unwrap V> (array_get (cm_get dict value_slots) index)))
+      (var [order_now <List K>] (cm_get dict order))
+      (if (gt (cm_get order_now length) $0^i5)
+        then
+          {
+            (match (cm_get order_now items)
+              ([empty unit] unit)
+              ([head_node <ListNode K>]
+                (if (<eq_apply K> (cm_get dict eq_rule) (cm_get head_node value) removed_key)
+                  then
+                    {
+                      (cm_set order_now items (cm_get head_node next))
+                      (cm_set order_now length (sub (cm_get order_now length) $1^i5))
+                      (if (eq (cm_get order_now length) $0^i5)
+                        then (cm_set order_now tail unit)
+                        else unit
+                      )
+                      unit
+                    }
+                  else
+                    {
+                      (var [prev_cursor <union unit <ListNode K>>] (cm_get order_now items))
+                      (var [removed bool] false)
+                      (while (and (not removed) (gt (cm_get order_now length) $0^i5)) in
+                        {
+                          (match prev_cursor
+                            ([empty unit] (var_set removed true))
+                            ([prev_node <ListNode K>]
+                              (match (cm_get prev_node next)
+                                ([empty unit] (var_set removed true))
+                                ([target_node <ListNode K>]
+                                  (if (<eq_apply K> (cm_get dict eq_rule) (cm_get target_node value) removed_key)
+                                    then
+                                      {
+                                        (cm_set prev_node next (cm_get target_node next))
+                                        (match (cm_get target_node next)
+                                          ([empty unit] (cm_set order_now tail prev_node))
+                                          ([next_node <ListNode K>] unit)
+                                        )
+                                        (cm_set order_now length (sub (cm_get order_now length) $1^i5))
+                                        (var_set removed true)
+                                        unit
+                                      }
+                                    else
+                                      {
+                                        (var_set prev_cursor (cm_get prev_node next))
+                                        unit
+                                      }
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        }
+                      )
+                      unit
+                    }
+                )
+              )
+            )
+          }
+        else unit
+      )
+      (array_set (cm_get dict key_slots) index unit)
+      (array_set (cm_get dict value_slots) index unit)
+      (array_set (cm_get dict hashes) index $0^i5)
+      (array_set (cm_get dict states) index $2^i5)
+      (cm_set dict size (sub (cm_get dict size) $1^i5))
+      result
+    }
+  )
+
+  (function <generic dict_store_entries_from_arrays K V> ([target <Dict K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to unit in
+    {
+      (var [index i5] $0^i5)
+      (while (lt index capacity) in
+        {
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (<dict_store K V> target (<dict_key_unwrap K> (array_get key_slots index)) (<dict_value_unwrap V> (array_get value_slots index)))
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function <generic dict_build_keys_from_arrays K V> ([key_seed K] [key_slots <array <union unit <Box K>>>] [states <array i5>] [capacity i5]) to <List K> in
+    {
+      (var [items <union unit <ListNode K>>] unit)
+      (var [length i5] $0^i5)
+      (var [index i5] capacity)
+      (while (gt index $0^i5) in
+        {
+          (var_set index (sub index $1^i5))
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (var_set items (class_new <ListNode K> (<dict_key_unwrap K> (array_get key_slots index)) items))
+                (var_set length (add length $1^i5))
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new <List K> items key_seed length)
+    }
+  )
+
+  (function <generic dict_build_values_from_arrays K V> ([value_seed V] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to <List V> in
+    {
+      (var [items <union unit <ListNode V>>] unit)
+      (var [length i5] $0^i5)
+      (var [index i5] capacity)
+      (while (gt index $0^i5) in
+        {
+          (var_set index (sub index $1^i5))
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (var_set items (class_new <ListNode V> (<dict_value_unwrap V> (array_get value_slots index)) items))
+                (var_set length (add length $1^i5))
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new <List V> items value_seed length)
+    }
+  )
+
+  (function <generic dict_build_items_from_arrays K V> ([pair_seed <Pair K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to <List <Pair K V>> in
+    {
+      (var [items <union unit <ListNode <Pair K V>>>] unit)
+      (var [length i5] $0^i5)
+      (var [index i5] capacity)
+      (while (gt index $0^i5) in
+        {
+          (var_set index (sub index $1^i5))
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (var_set items
+                  (class_new <ListNode <Pair K V>>
+                    (class_new <Pair K V>
+                      (<dict_key_unwrap K> (array_get key_slots index))
+                      (<dict_value_unwrap V> (array_get value_slots index))
+                    )
+                    items
+                  )
+                )
+                (var_set length (add length $1^i5))
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      (class_new <List <Pair K V>> items pair_seed length)
+    }
+  )
+
+  (function <generic dict_fold_values_from_arrays_reverse K V Acc> ([value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [init Acc] [step <to Acc from Acc V>]) to Acc in
+    {
+      (var [index i5] capacity)
+      (var [acc Acc] init)
+      (while (gt index $0^i5) in
+        {
+          (var_set index (sub index $1^i5))
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (var_set acc (step acc (<dict_value_unwrap V> (array_get value_slots index))))
+                unit
+              }
+            else unit
+          )
+        }
+      )
+      acc
+    }
+  )
+
+  (function <generic dict_store_mapped_entries_from_arrays K V U> ([target <Dict K U>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [mapper <to U from K V>]) to unit in
+    {
+      (var [index i5] $0^i5)
+      (while (lt index capacity) in
+        {
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (var [key K] (<dict_key_unwrap K> (array_get key_slots index)))
+                (var [value V] (<dict_value_unwrap V> (array_get value_slots index)))
+                (<dict_store K U> target key (mapper key value))
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function <generic dict_store_filtered_entries_from_arrays K V> ([target <Dict K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [predicate <to bool from K V>]) to unit in
+    {
+      (var [index i5] $0^i5)
+      (while (lt index capacity) in
+        {
+          (if (eq (array_get states index) $1^i5)
+            then
+              {
+                (var [key K] (<dict_key_unwrap K> (array_get key_slots index)))
+                (var [value V] (<dict_value_unwrap V> (array_get value_slots index)))
+                (if (predicate key value)
+                  then
+                    {
+                      (<dict_store K V> target key value)
+                      unit
+                    }
+                  else unit
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      unit
+    }
+  )
+
+  (function <generic dict_new K V> ([hash_rule <Hash K>] [eq_rule <Eq K>] [key_seed K] [value_seed V]) to <Dict K V> in
+    (class_new <Dict K V> hash_rule eq_rule key_seed value_seed $8^i5)
+  )
+
+  (function <generic dict_len K V> ([dict <Dict K V>]) to i5 in
+    (cm_get dict size)
+  )
+
+  (function <generic dict_contains K V> ([dict <Dict K V>] [key K]) to bool in
+    {
+      (var [key_hash i5] (<hash_apply K> (cm_get dict hash_rule) key))
+      (cm_get
+        (<dict_find_slot K>
+          (cm_get dict key_slots)
+          (cm_get dict hashes)
+          (cm_get dict states)
+          (cm_get dict capacity)
+          (cm_get dict eq_rule)
+          key
+          key_hash
+        )
+        found
+      )
+    }
+  )
+
+  (function <generic dict_fold K V Acc> ([source <Dict K V>] [init Acc] [step <to Acc from Acc V>]) to Acc in
+    (<dict_fold_values_from_arrays_reverse K V Acc>
+      (cm_get source value_slots)
+      (cm_get source states)
+      (cm_get source capacity)
+      init
+      step
+    )
+  )
+
+  (function <generic dict_map_values K V U> ([source <Dict K V>] [value_seed U] [mapper <to U from K V>]) to <Dict K U> in
+    {
+      (var [result <Dict K U>]
+        (class_new <Dict K U>
+          (cm_get source hash_rule)
+          (cm_get source eq_rule)
+          (cm_get source key_seed)
+          value_seed
+          (cm_get source capacity)
+        )
+      )
+      (<dict_store_mapped_entries_from_arrays K V U>
+        result
+        (cm_get source key_slots)
+        (cm_get source value_slots)
+        (cm_get source states)
+        (cm_get source capacity)
+        mapper
+      )
+      result
+    }
+  )
+
+  (function <generic dict_map K V U> ([source <Dict K V>] [value_seed U] [mapper <to U from K V>]) to <Dict K U> in
+    (<dict_map_values K V U> source value_seed mapper)
+  )
+
+  (function <generic dict_filter K V> ([source <Dict K V>] [predicate <to bool from K V>]) to <Dict K V> in
+    {
+      (var [result <Dict K V>]
+        (class_new <Dict K V>
+          (cm_get source hash_rule)
+          (cm_get source eq_rule)
+          (cm_get source key_seed)
+          (cm_get source value_seed)
+          (cm_get source capacity)
+        )
+      )
+      (<dict_store_filtered_entries_from_arrays K V>
+        result
+        (cm_get source key_slots)
+        (cm_get source value_slots)
+        (cm_get source states)
+        (cm_get source capacity)
+        predicate
+      )
+      result
+    }
+  )
+
+  (function <generic dict_merge K V> ([left <Dict K V>] [right <Dict K V>]) to <Dict K V> in
+    {
+      (var [result <Dict K V>] ((cm_get left copy)))
+      ((cm_get result update) right)
+      result
+    }
+  )
+
+  (function <generic dict_equals K V> ([left <Dict K V>] [right <Dict K V>] [value_rule <Eq V>]) to bool in
+    (if (eq (<dict_len K V> left) (<dict_len K V> right))
+      then
+        {
+          (var [left_key_slots <array <union unit <Box K>>>] (cm_get left key_slots))
+          (var [left_value_slots <array <union unit <Box V>>>] (cm_get left value_slots))
+          (var [left_states <array i5>] (cm_get left states))
+          (var [index i5] $0^i5)
+          (var [total i5] (cm_get left capacity))
+          (var [result bool] true)
+          (while (lt index total) in
+            {
+              (if result
+                then
+                  {
+                    (if (eq (array_get left_states index) $1^i5)
+                      then
+                        {
+                          (var [candidate K] (<dict_key_unwrap K> (array_get left_key_slots index)))
+                          (if (<dict_contains K V> right candidate)
+                          then
+                            (if (<eq_apply V> value_rule (<dict_value_unwrap V> (array_get left_value_slots index)) (<dict_get_existing_value K V> right candidate))
+                              then unit
+                              else
+                                {
+                                  (var_set result false)
+                                  unit
+                                }
+                            )
+                          else
+                            {
+                              (var_set result false)
+                              unit
+                            }
+                        )
+                        }
+                      else unit
+                    )
+                    unit
+                  }
+                else unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          result
+        }
+      else false
+    )
+  )
+}

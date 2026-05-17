@@ -1,0 +1,28 @@
+{program test~global~init~conversions@main
+  (function f6_one_bits () to u6 in (ls $1023^u6 $52^u6))
+  (var [global_val_i5 i5] (val_to_i5 $3p75^f5))
+  (var [global_val_u5 u5] (val_to_u5 (sub $0p0^f5 $1p25^f5)))
+  (var [global_bin_u5 u5] (bin_to_u5 $1p0^f5))
+  (var [global_bin_i5 i5] (bin_to_i5 $4294967295^u5))
+  (var [global_roundtrip_i5 i5] (val_to_i5 (val_to_f5 $16777217^i5)))
+  (var [global_bin_u6 u6] (bin_to_u6 $1p0^f6))
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function main ([args <array s3>]) to i5 in
+    (add
+      (score (eq global_val_i5 $3^i5))
+      (add
+        (score (eq global_val_u5 $4294967295^u5))
+        (add
+          (score (eq global_bin_u5 $1065353216^u5))
+          (add
+            (score (eq global_bin_i5 (sub $0^i5 $1^i5)))
+            (add
+              (score (eq global_roundtrip_i5 $16777216^i5))
+              (score (eq global_bin_u6 (f6_one_bits)))
+            )
+          )
+        )
+      )
+    )
+  )
+}

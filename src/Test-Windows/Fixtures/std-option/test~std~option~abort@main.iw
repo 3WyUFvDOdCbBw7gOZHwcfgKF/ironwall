@@ -1,0 +1,4 @@
+{program test~std~option~abort@main
+  (import std~option)
+  (function main ([args <array s3>]) to i5 in (<option_unwrap i5> (<option_none i5>)))
+}

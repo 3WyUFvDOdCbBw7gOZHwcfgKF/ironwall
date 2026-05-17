@@ -1,0 +1,145 @@
+{program app~string~cond~panorama@main
+  (import std~io)
+  (import std~string)
+
+  (function same_s3 ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if (neq left_length (s3_length right))
+        then false
+        else
+          {
+            (var [index i5] $0^i5)
+            (var [same bool] true)
+            (while (lt index left_length) in
+              {
+                (if same
+                  then
+                    (if (neq (s3_get left index) (s3_get right index))
+                      then
+                        {
+                          (var_set same false)
+                          unit
+                        }
+                      else unit
+                    )
+                  else unit
+                )
+                (var_set index (add index $1^i5))
+              }
+            )
+            same
+          }
+      )
+    }
+  )
+
+  (function assert_true ([value bool] [message s3]) to unit in
+    (if value
+      then unit
+      else
+        {
+          (println message)
+          (iw_match_unreachable)
+        }
+    )
+  )
+
+  (class TextPanorama
+    (property [headline s3])
+    (property [body s3])
+    (property [fallback s3])
+    (constructor ([headline0 s3] [body0 s3] [fallback0 s3]) in
+      {
+        (cm_set self headline headline0)
+        (cm_set self body body0)
+        (cm_set self fallback fallback0)
+      }
+    )
+    (method line_count () to i5 in
+      {
+        (var [body_text StringS3] (class_new StringS3 (cm_get self body)))
+        (var [newline_text StringS3] (class_new StringS3 $app_string_cond_panorama_newline_s3^s3))
+        (add $1^i5 ((cm_get body_text count) newline_text))
+      }
+    )
+    (method contains ([fragment s3]) to bool in
+      (string_contains (class_new StringS3 (cm_get self body)) (class_new StringS3 fragment))
+    )
+    (method choose ([prefer_body bool] [prefer_line_count bool]) to <union s3 i5 bool> in
+      (cond
+        (prefer_body (cm_get self body))
+        (prefer_line_count ((cm_get self line_count)))
+        (else ((cm_get self contains) $app_string_cond_panorama_marker_s3^s3))
+      )
+    )
+  )
+
+  (function decide_suffix ([panorama TextPanorama] [prefer_body bool] [prefer_fallback bool]) to s3 in
+    (cond
+      (prefer_body
+        (match ((cm_get panorama choose) true false)
+          ([chosen s3] chosen)
+          ([count i5] $app_string_cond_panorama_unexpected_count_s3^s3)
+          ([flag bool] (if flag then $app_string_cond_panorama_unexpected_true_s3^s3 else $app_string_cond_panorama_unexpected_false_s3^s3))
+        )
+      )
+      (prefer_fallback (cm_get panorama fallback))
+      (else
+        (match ((cm_get panorama choose) false true)
+          ([chosen s3] chosen)
+          ([count i5]
+            (if (eq count $7^i5)
+              then $app_string_cond_panorama_lines_ok_s3^s3
+              else $app_string_cond_panorama_bad_lines_s3^s3
+            )
+          )
+          ([flag bool]
+            (if flag
+              then $app_string_cond_panorama_contains_only_s3^s3
+              else $app_string_cond_panorama_failure_s3^s3
+            )
+          )
+        )
+      )
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [panorama TextPanorama]
+        (class_new TextPanorama
+          $app_string_cond_panorama_headline_s3^s3
+          $app_string_cond_panorama_story_s3^s3
+          $app_string_cond_panorama_fallback_s3^s3
+        )
+      )
+      (var [headline_text StringS3] (class_new StringS3 (cm_get panorama headline)))
+      (var [suffix_picker <to s3 from bool>] (fn ([prefer_fallback bool]) to s3 in (decide_suffix panorama false prefer_fallback)))
+      (var [final_text s3]
+        (cond
+          (((cm_get headline_text startswith) (class_new StringS3 $app_string_cond_panorama_head_prefix_s3^s3))
+            (let (
+              ([suffix s3] (suffix_picker false))
+            ) in
+              (if (same_s3 suffix $app_string_cond_panorama_lines_ok_s3^s3)
+                then $app_string_cond_panorama_success_banner_s3^s3
+                else (suffix_picker true)
+              )
+            )
+          )
+          (((cm_get panorama contains) $app_string_cond_panorama_marker_s3^s3)
+            $app_string_cond_panorama_contains_only_s3^s3
+          )
+          (else $app_string_cond_panorama_failure_s3^s3)
+        )
+      )
+      (assert_true (eq ((cm_get panorama line_count)) $7^i5) $app_string_cond_panorama_bad_lines_s3^s3)
+      (assert_true ((cm_get headline_text endswith) (class_new StringS3 $app_string_cond_panorama_head_suffix_s3^s3)) $app_string_cond_panorama_bad_headline_s3^s3)
+      (assert_true ((cm_get panorama contains) $app_string_cond_panorama_marker_s3^s3) $app_string_cond_panorama_missing_marker_s3^s3)
+      (assert_true (same_s3 final_text $app_string_cond_panorama_success_banner_s3^s3) $app_string_cond_panorama_bad_decision_s3^s3)
+      (println final_text)
+      $0^i5
+    }
+  )
+}

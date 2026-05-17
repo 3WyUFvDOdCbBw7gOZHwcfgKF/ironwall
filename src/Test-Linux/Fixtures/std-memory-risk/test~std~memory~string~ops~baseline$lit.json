@@ -1,0 +1,11 @@
+{
+  "package": "test~std~memory~string~ops~baseline$lit",
+  "empty_s3^s3": "",
+  "comma_s3^s3": ",",
+  "pipe_s3^s3": "|",
+  "padded_alpha_s3^s3": "  [alpha]  ",
+  "padded_beta_s3^s3": " \t[beta]\n",
+  "padded_gamma_s3^s3": "\r[gamma] ",
+  "alpha_s3^s3": "alpha",
+  "beta_s3^s3": "beta"
+}

@@ -1,0 +1,5 @@
+{program test~global~init~invalid_union_without_primitive@main
+  (class Left (constructor () in unit))
+  (class Right (constructor () in unit))
+  (var [bad <union Left Right>] (class_new Left))
+}

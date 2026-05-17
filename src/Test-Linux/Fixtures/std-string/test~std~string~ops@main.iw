@@ -1,0 +1,96 @@
+{program test~std~string~ops@main
+  (import std~array)
+  (import std~string)
+
+  (function score_s3 ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+
+  (function same_s3 ([left s3] [right s3]) to bool in
+    {
+      (var [left_len i5] (s3_length left))
+      (var [right_len i5] (s3_length right))
+      (if (neq left_len right_len)
+        then false
+        else
+          {
+            (var [same bool] true)
+            (var [index i5] $0^i5)
+            (while (and same (lt index left_len)) in
+              {
+                (var_set same (eq (s3_get left index) (s3_get right index)))
+                (var_set index (add index $1^i5))
+              }
+            )
+            same
+          }
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [hello StringS3] (class_new StringS3 $hello_s3^s3))
+      (var [ell StringS3] (class_new StringS3 $ell_s3^s3))
+      (var [lo StringS3] (class_new StringS3 $lo_s3^s3))
+      (var [world StringS3] (class_new StringS3 $world_s3^s3))
+      (var [empty StringS3] (class_new StringS3 $empty_s3^s3))
+      (var [comma StringS3] (class_new StringS3 $comma_s3^s3))
+      (var [csv StringS3] (class_new StringS3 $csv_s3^s3))
+      (var [aa StringS3] (class_new StringS3 $aa_s3^s3))
+      (var [bb StringS3] (class_new StringS3 $bb_s3^s3))
+      (var [dd StringS3] (class_new StringS3 $dd_s3^s3))
+      (var [padded StringS3] (class_new StringS3 $padded_s3^s3))
+      (var [padded_inner StringS3] (class_new StringS3 $padded_inner_s3^s3))
+      (var [inner StringS3] (class_new StringS3 $inner_s3^s3))
+      (var [slice_mid StringS3] (string_slice hello $1^i5 $4^i5))
+      (var [slice_tail StringS3] (string_slice hello (sub $0^i5 $2^i5) (string_len hello)))
+      (var [slice_clamped StringS3] (string_slice hello (sub $0^i5 $99^i5) $99^i5))
+      (var [trimmed StringS3] (string_trim padded))
+      (var [trimmed_inner StringS3] (string_trim padded_inner))
+      (var [csv_parts <Array StringS3>] (string_split csv comma))
+      (var [no_match_parts <Array StringS3>] (string_split hello world))
+      (var [empty_parts <Array StringS3>] (<array_new_fill StringS3> $0^i5 empty))
+      (var [rejoined_csv StringS3] (string_join comma csv_parts))
+      (var [rejoined_empty StringS3] (string_join comma empty_parts))
+      (add
+        (score_s3 (same_s3 slice_mid.raw ell.raw))
+        (add
+          (score_s3 (same_s3 slice_tail.raw lo.raw))
+          (add
+            (score_s3 (same_s3 slice_clamped.raw hello.raw))
+            (add
+              (score_s3 (same_s3 trimmed.raw hello.raw))
+              (add
+                (score_s3 (same_s3 trimmed_inner.raw inner.raw))
+                (add
+                  (score_s3 (eq (<Array_len StringS3> csv_parts) $4^i5))
+                  (add
+                    (score_s3 (same_s3 (cm_get (csv_parts.get $0^i5) raw) aa.raw))
+                    (add
+                      (score_s3 (same_s3 (cm_get (csv_parts.get $1^i5) raw) bb.raw))
+                      (add
+                        (score_s3 (same_s3 (cm_get (csv_parts.get $2^i5) raw) empty.raw))
+                        (add
+                          (score_s3 (same_s3 (cm_get (csv_parts.get $3^i5) raw) dd.raw))
+                          (add
+                            (score_s3 (same_s3 rejoined_csv.raw csv.raw))
+                            (add
+                              (score_s3 (eq (<Array_len StringS3> no_match_parts) $1^i5))
+                              (add
+                                (score_s3 (same_s3 (cm_get (no_match_parts.get $0^i5) raw) hello.raw))
+                                (score_s3 (same_s3 rejoined_empty.raw empty.raw))
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

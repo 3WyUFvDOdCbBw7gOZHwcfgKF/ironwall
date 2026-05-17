@@ -1,0 +1,5 @@
+{
+  "package": "app~orangebox~newline~fncall$lit",
+  "app_orangebox_newline_fncall_left_s3^s3": "fncall left line 01\nfncall left line 02\nfncall left line 03",
+  "app_orangebox_newline_fncall_right_s3^s3": "fncall right A\nfncall right B\nfncall right C\nfncall right D"
+}

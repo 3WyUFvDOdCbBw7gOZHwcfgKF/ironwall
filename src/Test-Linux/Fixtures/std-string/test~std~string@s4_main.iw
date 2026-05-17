@@ -1,0 +1,141 @@
+{program test~std~string@s4_main
+  (import std~string)
+  (function score_s4 ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function same_s4 ([left s4] [right s4]) to bool in
+    {
+      (var [left_len i5] (s4_length left))
+      (var [right_len i5] (s4_length right))
+      (if
+        (neq left_len right_len)
+        then
+        false
+        else
+        {
+          (var [same bool] true)
+          (var [index i5] $0^i5)
+          (while
+            (and same (lt index left_len))
+            in
+            {
+              (var_set same (eq (s4_get left index) (s4_get right index)))
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [hello StringS4] (class_new StringS4 $hello_s4^s4))
+      (var [ell StringS4] (class_new StringS4 $ell_s4^s4))
+      (var [lo StringS4] (class_new StringS4 $lo_s4^s4))
+      (var [he StringS4] (class_new StringS4 $he_s4^s4))
+      (var [world StringS4] (class_new StringS4 $world_s4^s4))
+      (var [empty StringS4] (class_new StringS4 $empty_s4^s4))
+      (var [ll StringS4] (class_new StringS4 $ll_s4^s4))
+      (var [hello_world StringS4] (string_concat hello world))
+      (var [repeated_lo StringS4] (string_repeat lo $3^i5))
+      (var [reversed_world StringS4] (string_reversed world))
+      (var [double_reversed_world StringS4] (string_reversed reversed_world))
+      (var [repeat_zero StringS4] (string_repeat hello $0^i5))
+      (var [empty_world StringS4] (string_concat empty world))
+      (var [world_empty StringS4] (string_concat world empty))
+      (var [builder StringBuilderS4] (string_builder_new empty))
+      (builder.append hello)
+      (builder.append empty)
+      (builder.append world)
+      (var [builder_built StringS4] (builder.build))
+      (var [empty_builder StringBuilderS4] (string_builder_new hello))
+      (var [builder_empty StringS4] (empty_builder.build))
+      (add
+        (score_s4 (eq (string_len hello) $5^i5))
+        (add
+          (score_s4 (eq (hello.find ell) $1^i5))
+          (add
+            (score_s4 (eq (hello.find lo) $3^i5))
+            (add
+              (score_s4 (eq (hello.find world) (sub $0^i5 $1^i5)))
+              (add
+                (score_s4 (eq (hello.count ll) $1^i5))
+                (add
+                  (score_s4 (eq (hello.count empty) $6^i5))
+                  (add
+                    (score_s4 (hello.startswith he))
+                    (add
+                      (score_s4 (hello.endswith lo))
+                      (add
+                        (score_s4 (hello.endswith empty))
+                        (add
+                          (score_s4 (string_contains hello ell))
+                          (add
+                            (score_s4 (xor (string_contains hello world) true))
+                            (add
+                              (score_s4 (eq (string_len hello_world) $10^i5))
+                              (add
+                                (score_s4 (same_s4 hello_world.raw $helloworld_s4^s4))
+                                (add
+                                  (score_s4 (eq (string_len repeated_lo) $6^i5))
+                                  (add
+                                    (score_s4 (same_s4 repeated_lo.raw $lololo_s4^s4))
+                                    (add
+                                      (score_s4
+                                        (same_s4 reversed_world.raw $dlrow_s4^s4)
+                                      )
+                                      (add
+                                        (score_s4
+                                          (same_s4
+                                            double_reversed_world.raw
+                                            $world_s4^s4
+                                          )
+                                        )
+                                        (add
+                                          (score_s4
+                                            (same_s4 repeat_zero.raw $empty_s4^s4)
+                                          )
+                                          (add
+                                            (score_s4
+                                              (same_s4 empty_world.raw $world_s4^s4)
+                                            )
+                                            (add
+                                              (score_s4
+                                                (same_s4 world_empty.raw $world_s4^s4)
+                                              )
+                                              (add
+                                                (score_s4 (eq (string_builder_len builder) $10^i5))
+                                                (add
+                                                  (score_s4
+                                                    (same_s4 builder_built.raw $helloworld_s4^s4)
+                                                  )
+                                                  (add
+                                                    (score_s4 (eq (string_len builder_built) $10^i5))
+                                                    (score_s4
+                                                      (same_s4 builder_empty.raw $empty_s4^s4)
+                                                    )
+                                                  )
+                                                )
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

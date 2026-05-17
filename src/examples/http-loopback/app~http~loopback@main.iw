@@ -1,0 +1,314 @@
+{program app~http~loopback@main
+  (import app~http~loopback~lib)
+  (import std~io)
+  (import std~string)
+  (import std~linux~sys)
+
+  (function is_request_prefix ([request s3] [prefix s3]) to bool in
+    {
+      (var [request_text StringS3] (class_new StringS3 request))
+      (var [prefix_text StringS3] (class_new StringS3 prefix))
+      ((cm_get request_text startswith) prefix_text)
+    }
+  )
+
+  (function send_chunks_checked ([fd i5] [chunks <array s3>] [flags i5]) to i5 in
+    {
+      (sys_net_sendmsg_s3 fd chunks flags)
+      (sum_s3_chunks chunks)
+    }
+  )
+
+  (function send_json_response ([fd i5] [status_line s3] [content_type s3] [content_length_line s3] [connection_close s3] [body s3]) to i5 in
+    {
+      (var [chunks <array s3>]
+        (s3_array5
+          status_line
+          content_type
+          content_length_line
+          connection_close
+          body
+        )
+      )
+      (send_chunks_checked fd chunks (sys_net_msg_nosignal_flag))
+    }
+  )
+
+  (function send_not_found_response ([fd i5] [status_line s3] [content_type s3] [content_length_line s3] [connection_close s3] [body s3]) to i5 in
+    {
+      (var [chunks <array s3>]
+        (s3_array5
+          status_line
+          content_type
+          content_length_line
+          connection_close
+          body
+        )
+      )
+      (send_chunks_checked fd chunks (sys_net_msg_nosignal_flag))
+    }
+  )
+
+  (function send_static_response ([fd i5] [status_line s3] [content_type s3] [connection_close s3]) to i5 in
+    {
+      (var [file_fd i5] (sys_fd_open_read_s3 $app_http_loopback_static_path_s3^s3))
+      (var [file_stat SysFileStat] (sys_fd_fstat file_fd))
+      (var [file_size i5] (sys_stat_size file_stat))
+      (if (sys_stat_is_regular file_stat)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (var [length_line s3] (content_length_line file_size))
+      (var [chunks <array s3>]
+        (s3_array4
+          status_line
+          content_type
+          length_line
+          connection_close
+        )
+      )
+      (send_chunks_checked fd chunks (bwor (sys_net_msg_nosignal_flag) (sys_net_msg_more_flag)))
+      (var [body_bytes i5] (sys_fd_sendfile fd file_fd file_size))
+      (sys_fd_close file_fd)
+      (if (eq body_bytes file_size)
+        then body_bytes
+        else (iw_match_unreachable)
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [listener_fd i5] (sys_net_socket_tcp4))
+      (sys_net_setsockopt_reuseaddr listener_fd)
+      (sys_net_setsockopt_reuseport listener_fd)
+      (sys_net_bind_ipv4_loopback listener_fd $0^i5)
+      (var [listener_error_zero bool] (eq (sys_net_getsockopt_error listener_fd) $0^i5))
+      (if listener_error_zero
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+        (var [bound_port i5] (sys_net_getsockname_ipv4_port listener_fd))
+      (if (gt bound_port $0^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (var [port_fd i5] (sys_fd_creat_s3 $app_http_loopback_port_config_path_s3^s3))
+      (sys_fd_write_s3 port_fd (i5_to_s3 bound_port))
+      (sys_fd_write_s3 port_fd $app_http_loopback_newline_s3^s3)
+      (sys_fd_fsync port_fd)
+      (sys_fd_close port_fd)
+      (sys_net_listen listener_fd $32^i5)
+
+      (var [epoll_fd i5] (sys_epoll_create))
+      (sys_epoll_ctl_add epoll_fd listener_fd (sys_epoll_in_flag) listener_fd)
+
+      (var [ready_fd i5] (sys_fd_creat_s3 $app_http_loopback_ready_tmp_path_s3^s3))
+        (sys_fd_write_s3 ready_fd $app_http_loopback_ready_text_s3^s3)
+      (sys_fd_fsync ready_fd)
+      (sys_fd_close ready_fd)
+      (sys_path_rename_s3 $app_http_loopback_ready_tmp_path_s3^s3 $app_http_loopback_ready_path_s3^s3)
+
+      (var [handled_count i5] $0^i5)
+      (var [accepted_count i5] $0^i5)
+      (var [json_count i5] $0^i5)
+      (var [static_count i5] $0^i5)
+      (var [missing_count i5] $0^i5)
+      (var [sendmsg_count i5] $0^i5)
+      (var [sendfile_count i5] $0^i5)
+      (var [sendfile_bytes i5] $0^i5)
+      (var [socket_errors_zero bool] true)
+      (var [accept_flags i5] (sys_fd_cloexec_syscall_flag))
+      (var [status_200 s3] $app_http_loopback_http_200_status_s3^s3)
+      (var [status_404 s3] $app_http_loopback_http_404_status_s3^s3)
+      (var [json_content_type s3] $app_http_loopback_json_content_type_s3^s3)
+      (var [text_content_type s3] $app_http_loopback_text_content_type_s3^s3)
+      (var [json_content_length s3] $app_http_loopback_json_content_length_s3^s3)
+      (var [not_found_content_length s3] $app_http_loopback_not_found_content_length_s3^s3)
+      (var [connection_close s3] $app_http_loopback_connection_close_s3^s3)
+      (var [json_body s3] $app_http_loopback_json_body_s3^s3)
+      (var [not_found_body s3] $app_http_loopback_not_found_body_s3^s3)
+      (var [json_route_prefix s3] $app_http_loopback_route_json_prefix_s3^s3)
+      (var [static_route_prefix s3] $app_http_loopback_route_static_prefix_s3^s3)
+      (var [missing_route_prefix s3] $app_http_loopback_route_missing_prefix_s3^s3)
+      (while (lt handled_count $3^i5) in
+        {
+          (var [events <array SysEpollEvent>] (sys_epoll_wait epoll_fd $8^i5 $5000^i5))
+          (var [event_index i5] $0^i5)
+          (while (lt event_index (array_length events)) in
+            {
+              (var [event SysEpollEvent] (array_get events event_index))
+              (if (eq (sys_epoll_event_data event) listener_fd)
+                then
+                  {
+                    (if (sys_epoll_event_has_in event)
+                      then
+                        {
+                          (var [client_fd i5] (sys_net_accept4 listener_fd accept_flags))
+                          (sys_net_setsockopt_tcp_nodelay client_fd)
+                          (var_set socket_errors_zero (and socket_errors_zero (eq (sys_net_getsockopt_error client_fd) $0^i5)))
+                          (var_set accepted_count (add accepted_count $1^i5))
+                          (var [request s3] (sys_net_recv_s3 client_fd $2048^i5))
+                          (if (is_request_prefix request json_route_prefix)
+                            then
+                              {
+                                (send_json_response client_fd status_200 json_content_type json_content_length connection_close json_body)
+                                (var_set json_count (add json_count $1^i5))
+                                (var_set sendmsg_count (add sendmsg_count $1^i5))
+                                unit
+                              }
+                            else
+                              (if (is_request_prefix request static_route_prefix)
+                                then
+                                  {
+                                    (var [written_bytes i5] (send_static_response client_fd status_200 text_content_type connection_close))
+                                    (var_set static_count (add static_count $1^i5))
+                                    (var_set sendmsg_count (add sendmsg_count $1^i5))
+                                    (var_set sendfile_count (add sendfile_count $1^i5))
+                                    (var_set sendfile_bytes (add sendfile_bytes written_bytes))
+                                    unit
+                                  }
+                                else
+                                  (if (is_request_prefix request missing_route_prefix)
+                                    then
+                                      {
+                                        (send_not_found_response client_fd status_404 text_content_type not_found_content_length connection_close not_found_body)
+                                        (var_set missing_count (add missing_count $1^i5))
+                                        (var_set sendmsg_count (add sendmsg_count $1^i5))
+                                        unit
+                                      }
+                                    else
+                                      {
+                                        (iw_match_unreachable)
+                                        unit
+                                      }
+                                  )
+                              )
+                          )
+                          (sys_net_shutdown_write client_fd)
+                          (sys_fd_close client_fd)
+                          (var_set handled_count (add handled_count $1^i5))
+                          unit
+                        }
+                      else unit
+                    )
+                  }
+                else
+                  {
+                    (iw_match_unreachable)
+                    unit
+                  }
+              )
+              (var_set event_index (add event_index $1^i5))
+            }
+          )
+        }
+      )
+
+      (sys_fd_close epoll_fd)
+      (sys_fd_close listener_fd)
+
+      (if (eq accepted_count $3^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if (eq handled_count $3^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if (eq json_count $1^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if (eq static_count $1^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if (eq missing_count $1^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if (eq sendmsg_count $3^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if (eq sendfile_count $1^i5)
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+      (if socket_errors_zero
+        then unit
+        else
+          {
+            (iw_match_unreachable)
+            unit
+          }
+      )
+
+      (var [summary_fd i5] (sys_fd_creat_s3 $app_http_loopback_summary_tmp_path_s3^s3))
+        (write_label_bool_line summary_fd $app_http_loopback_port_configured_label_s3^s3 true)
+      (write_label_i5_line summary_fd $app_http_loopback_accepted_label_s3^s3 accepted_count)
+      (write_label_i5_line summary_fd $app_http_loopback_handled_label_s3^s3 handled_count)
+      (write_label_i5_line summary_fd $app_http_loopback_json_label_s3^s3 json_count)
+      (write_label_i5_line summary_fd $app_http_loopback_static_label_s3^s3 static_count)
+      (write_label_i5_line summary_fd $app_http_loopback_missing_label_s3^s3 missing_count)
+      (write_label_i5_line summary_fd $app_http_loopback_sendmsg_label_s3^s3 sendmsg_count)
+      (write_label_i5_line summary_fd $app_http_loopback_sendfile_label_s3^s3 sendfile_count)
+      (write_label_i5_line summary_fd $app_http_loopback_sendfile_bytes_label_s3^s3 sendfile_bytes)
+      (write_label_bool_line summary_fd $app_http_loopback_socket_errors_zero_label_s3^s3 socket_errors_zero)
+      (sys_fd_fdatasync summary_fd)
+      (sys_fd_close summary_fd)
+      (sys_path_rename_s3 $app_http_loopback_summary_tmp_path_s3^s3 $app_http_loopback_summary_path_s3^s3)
+
+      (println $app_http_loopback_stdout_title_s3^s3)
+      (print $app_http_loopback_stdout_accepted_label_s3^s3)
+      (print (i5_to_s3 accepted_count))
+      (print $app_http_loopback_stdout_sep_s3^s3)
+      (print $app_http_loopback_stdout_handled_label_s3^s3)
+      (println (i5_to_s3 handled_count))
+      (print $app_http_loopback_stdout_sendfile_bytes_label_s3^s3)
+      (println (i5_to_s3 sendfile_bytes))
+      $0^i5
+    }
+  )
+}

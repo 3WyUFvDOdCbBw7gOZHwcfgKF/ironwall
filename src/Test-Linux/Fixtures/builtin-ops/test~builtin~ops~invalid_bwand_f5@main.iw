@@ -1,0 +1,3 @@
+{program test~builtin~ops~invalid_bwand_f5@main
+  (function main ([args <array s3>]) to i5 in (bwand $7p5^f5 $2p0^f5))
+}

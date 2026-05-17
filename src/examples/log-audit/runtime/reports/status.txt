@@ -1,0 +1,3 @@
+LOG_AUDIT_OK
+wait-status=0
+child-newline=yes

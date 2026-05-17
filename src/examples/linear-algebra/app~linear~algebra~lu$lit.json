@@ -1,0 +1,8 @@
+{
+  "package": "app~linear~algebra~lu$lit",
+  "app_linear_algebra_lu_ok_s3^s3": "lu ok",
+  "app_linear_algebra_l_subdiag_sum_x1000_s3^s3": "l-subdiag-sum-x1000=",
+  "app_linear_algebra_u_diag_sum_x1000_s3^s3": "u-diag-sum-x1000=",
+  "app_linear_algebra_u_last_diag_x1000_s3^s3": "u-last-diag-x1000=",
+  "app_linear_algebra_reconstruction_error_x1e6_s3^s3": "reconstruction-error-x1000000="
+}

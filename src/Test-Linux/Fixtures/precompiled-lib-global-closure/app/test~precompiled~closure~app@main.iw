@@ -1,0 +1,13 @@
+{program test~precompiled~closure~app@main
+  (import test~precompiled~closure~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [reader <to i5 from i5>] (make_reader))
+      (var [writer <to i5 from i5>] (make_writer $20^i5))
+      (var [before_write i5] (reader $1^i5))
+      (var [after_write i5] (writer $2^i5))
+      (var [after_read i5] (reader $3^i5))
+      (add before_write (add after_write after_read))
+    }
+  )
+}

@@ -1,0 +1,15 @@
+{
+  "package": "test~std~sys~linux~aliases_misc$lit",
+  "std_sys_linux_aliases_file_s3^s3": "artifacts/std-sys/linux-aliases-file.txt",
+  "std_sys_linux_aliases_patch_file_s3^s3": "artifacts/std-sys/linux-aliases-patch.txt",
+  "std_sys_linux_aliases_dir_s3^s3": "artifacts/std-sys/linux-aliases-dir",
+  "std_sys_linux_aliases_part_a_s3^s3": "ab",
+  "std_sys_linux_aliases_part_b_s3^s3": "cd",
+  "std_sys_linux_aliases_contents_s3^s3": "abcd",
+  "std_sys_linux_aliases_prefix_s3^s3": "ab",
+  "std_sys_linux_aliases_tail_s3^s3": "bcd",
+  "std_sys_linux_aliases_rewrite_s3^s3": "xy",
+  "std_sys_linux_aliases_patch_seed_s3^s3": "1234",
+  "std_sys_linux_aliases_patch_value_s3^s3": "Z",
+  "std_sys_linux_aliases_patch_expected_s3^s3": "1Z34"
+}

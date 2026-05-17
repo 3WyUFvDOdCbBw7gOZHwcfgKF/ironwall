@@ -1,0 +1,65 @@
+{program test~closure~capture~matrix@main
+  (function make_nested4 ([left0 i5]) to <to <to <to i5 from i5> from i5> from i5> in
+    (fn ([left1 i5]) to <to <to i5 from i5> from i5> in
+      (fn ([left2 i5]) to <to i5 from i5> in
+        (fn ([right i5]) to i5 in (add left0 (add left1 (add left2 right))))
+      )
+    )
+  )
+
+  (function make_accumulator ([start i5]) to <to i5 from i5> in
+    {
+      (var [acc i5] start)
+      (fn ([delta i5]) to i5 in
+        {
+          (var_set acc (add acc delta))
+          acc
+        }
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [captured_bias i5] $10^i5)
+      (var [capture_reader <to i5 from i5>] (fn ([value i5]) to i5 in (add captured_bias value)))
+      (var_set captured_bias $20^i5)
+      (var [capture_after_mutation i5] (capture_reader $1^i5))
+
+      (var [layer1 <to <to <to i5 from i5> from i5> from i5>] (make_nested4 $3^i5))
+      (var [layer2 <to <to i5 from i5> from i5>] (layer1 $5^i5))
+      (var [layer3 <to i5 from i5>] (layer2 $7^i5))
+      (var [nested_result i5] (layer3 $11^i5))
+
+      (var [shared i5] $5^i5)
+      (var [shared_reader <to i5 from i5>] (fn ([delta i5]) to i5 in (add shared delta)))
+      (var [shared_writer <to i5 from i5>] (fn ([delta i5]) to i5 in
+        {
+          (var_set shared (add shared delta))
+          shared
+        }
+      ))
+      (var [shared_result i5] (add (shared_reader $0^i5) (add (shared_writer $3^i5) (shared_reader $1^i5))))
+
+      (var [accumulator <to i5 from i5>] (make_accumulator $10^i5))
+      (var [state_result i5] (add (accumulator $1^i5) (add (accumulator $5^i5) (accumulator $2^i5))))
+
+      (var [empty_closure <to i5 from i5>] (fn ([value i5]) to i5 in (mul value $2^i5)))
+      (var [empty_result i5] (empty_closure $6^i5))
+
+      (add
+        capture_after_mutation
+        (add
+          (mul nested_result $10^i5)
+          (add
+            (mul shared_result $100^i5)
+            (add
+              (mul state_result $1000^i5)
+              (mul empty_result $10000^i5)
+            )
+          )
+        )
+      )
+    }
+  )
+}

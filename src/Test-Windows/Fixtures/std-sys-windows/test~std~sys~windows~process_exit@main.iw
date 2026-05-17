@@ -1,0 +1,9 @@
+{program test~std~sys~windows~process_exit@main
+  (import std~windows~sys)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (sys_process_exit $41^i5)
+      $0^i5
+    }
+  )
+}

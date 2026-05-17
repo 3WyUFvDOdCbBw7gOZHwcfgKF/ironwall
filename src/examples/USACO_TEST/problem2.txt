@@ -1,0 +1,100 @@
+**Note: The time limit for this problem is 3s, 1.5x the default.**
+
+Bessie has a string of length N
+(1≤N≤3⋅105) consisting solely of the characters M and O. For each position i of the string, there is a cost ci to change the character at that position to the other character (1≤ci≤108
+
+).
+
+Bessie thinks the string will look better if it contains more moos of length L
+(1≤L≤min(N,3)). A moo of length L is an M followed by L−1
+
+Os.
+
+For each positive integer k
+from 1 to ⌊N/L⌋ inclusive, compute the minimum cost to change the string to contain at least k substrings equal to a moo of length L
+
+.
+
+INPUT FORMAT (input arrives from the terminal / stdin):
+The first line contains L
+and N.
+
+The next line contains Bessie's length-N
+
+string, consisting solely of Ms and Os.
+
+The next line contains space-separated integers c1…cN
+
+.
+
+OUTPUT FORMAT (print output to the terminal / stdout):
+Output ⌊N/L⌋
+lines, the answer for each k
+in increasing order.
+
+SAMPLE INPUT:
+
+1 4
+MOOO
+10 20 30 40
+
+SAMPLE OUTPUT:
+
+0
+20
+50
+90
+
+SAMPLE INPUT:
+
+3 4
+OOOO
+50 40 30 20
+
+SAMPLE OUTPUT:
+
+40
+
+SAMPLE INPUT:
+
+2 20
+OOOMOMOOOMOOOMMMOMOO
+44743602 39649528 94028117 50811780 97338107 30426846 94909807 22669835 78498782 18004278 16633124 24711234 90542888 88490759 12851185 74589289 54413775 21184626 97688928 10497142
+
+SAMPLE OUTPUT:
+
+0
+0
+0
+0
+0
+12851185
+35521020
+60232254
+99881782
+952304708
+
+SAMPLE INPUT:
+
+3 20
+OOOMOMOOOMOOOMMMOMOO
+44743602 39649528 94028117 50811780 97338107 30426846 94909807 22669835 78498782 18004278 16633124 24711234 90542888 88490759 12851185 74589289 54413775 21184626 97688928 10497142
+
+SAMPLE OUTPUT:
+
+0
+0
+0
+44743602
+119332891
+207066974
+
+SCORING:
+
+    Input 5: L=3,N≤5000
+
+Input 6: L=1
+Inputs 7-10: L=2
+Inputs 11-18: L=3
+
+Problem credits: Benjamin Qi 

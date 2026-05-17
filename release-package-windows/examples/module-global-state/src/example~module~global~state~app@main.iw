@@ -1,0 +1,23 @@
+{program example~module~global~state~app@main
+  (import example~module~global~state~lib)
+  (function install_payload ([seed i5]) to unit in
+    {
+      (var [marker Marker] (class_new Marker (add seed $2^i5) (add seed $3^i5)))
+      (var [payload Payload] (class_new Payload marker (add seed $5^i5)))
+      (var_set shared_value payload)
+      unit
+    }
+  )
+  (function read_shared_value () to i5 in
+    (match shared_value
+      ([value i5] value)
+      ([payload Payload] (payload_score payload))
+    )
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (install_payload $30^i5)
+      (read_shared_value)
+    }
+  )
+}

@@ -1,0 +1,323 @@
+ (Analysis by Benjamin Qi, Richard Qi)
+
+Let's first describe parts common to all solutions.
+
+    Let cnt[i]
+
+denote the number of cows associated with i, for each i∈(0,2K)
+.
+The inverses of 1…K
+modulo 109+7
+can be computed using binary exponentiation or other methods.
+The runtime dependence on N
+will always be O(N) or O(NK)
+
+    . Such factors will be omitted below.
+
+Partial Solution (K≤10
+): O(4K)
+
+time
+
+The sum for a bitstring i
+is ∑2K−1k=1cnt[k]⋅popcount(i&k)/popcount(i|k). This can be computed in O(2K) time for a single i, and there are only O(2K) distinct values of i
+
+in total.
+
+Full Solutions: To solve this problem fully, you'll need to be familiar with fast subset summation (aka SOS DP). Given an array v[0…2N−1]
+, this method can be used to compute v′[i]=∑j:j&i=jv[j] for all i in O(N2N) time. The way it works is by adding in the effect of each bit from 0 to N−1
+
+one at a time. Here is a concise implementation that does this in place.
+
+void sos(int N, vector<int> &v) {
+    assert(size(v) == (1 << N));
+    for (int b = 0; b < N; ++b)
+        for (int i = 0; i < (1 << N); ++i)
+            if (i & (1 << b)) v[i] += v[i ^ (1 << b)];
+}
+
+After B
+iterations of the outer loop, we will have computed the desired sums considering only j such that the last N−B bits of i and j are equal. Intuitively, we start with 2N
+
+independent subproblems, and then each time we add a bit the number of independent subproblems halves.
+
+Full Solution 1: O(K22K)
+time, O(K2K)
+
+memory
+
+For each i∈[0,2K)
+and j∈[0,K], let dp[i][j] be the sum of cnt[k]⋅popcount(i&k) over all k such that popcount(i|k)=j; that is, the total number of intersection bits if we fix the number of bits in the union. Then the desired sum for i will be ∑Kj=1dp[i][j]/j
+
+.
+
+It remains to describe how to compute all dp[i][j]
+. As with fast subset summation described above, we can do this by adding one bit at a time. Specifically, define dpb[i][j], where j∈[0,b], as a pair with elements equal to the sums of cnt[k] and cnt[k]⋅popcountb(i&k), respectively, over all k such that the last K−b bits of i and k are equal and popcountb(i|k)=j. Here, popcountb means that we only count set bits among the first b bits. We will initialize dpb=0[i][0]={cnt[i],0} independently for each i, then increase b until it equals K. In the end, dp[i][j] will be the second element of dpK[i][j]
+
+.
+
+Runtime: dpb[i][j]
+only depends on dpb−1[i′][j′] where i′∈{i,i⊕(1≪(b−1))} and j′∈{j−1,j}, so transitions can be performed in constant time for each DP state. There are O(K22K)
+
+total DP states.
+
+Memory: We can transform dpb−1
+to dpb in place, so O(K2K)
+
+.
+
+Ben's code:
+
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+
+using vi = vector<int>;
+using pi = pair<int, int>;
+#define f first
+#define s second
+
+const int MOD = 1e9 + 7;
+
+int mod_mul(int a, int b) { return (ll)a * b % MOD; }
+void operator+=(pi &a, const pi &b) {
+    a.f += b.f;
+    a.s += b.s;
+}
+
+int main() {
+    cin.tie(0)->sync_with_stdio(0);
+    int N, K;
+    cin >> N >> K;
+    vi A(N);
+    for (int &t : A) cin >> t;
+    pi dp[1 << K][K + 1]{};
+    for (int &t : A) {
+        assert(0 < t && t < (1 << K));
+        ++dp[t][0].f;
+    }
+    for (int b = 0; b < K; ++b) {  // dp_b -> dp_{b+1}
+        for (int i = 0; i < (1 << K); ++i)
+            if (!(i & (1 << b))) {
+                for (int j = b + 1; j >= 0; --j) {
+                    if (j) dp[i][j] += dp[i ^ (1 << b)][j - 1];
+                    if (j == 0) dp[i ^ (1 << b)][j] = {};
+                    else {
+                        dp[i ^ (1 << b)][j] = {
+                            dp[i][j - 1].f + dp[i ^ (1 << b)][j - 1].f,
+                            dp[i][j - 1].s + dp[i ^ (1 << b)][j - 1].f +
+                                dp[i ^ (1 << b)][j - 1].s};
+                    }
+                }
+            }
+    }
+    vi invs{0, 1};
+    for (int i = 2; i <= K; ++i)  // mod inverses in O(K) time
+        invs.push_back(mod_mul(MOD / i + 1, invs[i - MOD % i]));
+    for (int t : A) {
+        int ans = 0;
+        for (int j = 1; j <= K; ++j) {
+            ans += mod_mul(dp[t][j].s, invs.at(j));
+            ans %= MOD;
+        }
+        cout << ans << "\n";
+    }
+}
+
+Here is a Codeforces problem that uses a similar idea.
+
+Full Solution 2: O(K2K)
+time, O(2K)
+
+memory using principle of inclusion-exclusion
+
+Notice that we can split up |A∩B||A∪B|=|A||A∪B|+|B||A∪B|−1
+
+.
+
+Consider a fixed cow A
+. If we sum over all cows B, the third term is clearly −N. For the first two terms, we reduce computing each term to instead summing 1|A∪B|
+
+(inverse size of the union).
+
+For the first term, we can instead sum the quantity 1|A∪B|
+, and multiply by |A|
+
+at the end.
+
+For the second term, we can create |B|
+copies of every B, and then sum the quantity 1|A∪B|
+
+.
+
+Now, we've reduced the problem to computing the sum ∑B1|A∪B|
+for each A. We can rewrite this sum as ∑B1|A∪B|=∑U⊇A∑B⊆U,A∪B=U1|U|
+
+.
+
+We now use PIE to rearrange this sum. Some intuition for this: it would be nice if our sum was ∑U⊇A∑B⊆U1|U|
+, because then we could rewrite this as ∑U⊇A1|U|∑B⊆U1=∑U⊇A1|U|f(U), where f(U)=∑B⊆U1 can be computed using fast subset sum. Then, ∑U⊇A1|U|f(U) can be computed for all A
+
+using fast superset sum.
+
+However, this new sum overcounts by many terms: specifically, for a fixed A
+, the contribution of B to the sum would be ∑U⊇A∪B1|U|, where we want it to actually be just 1|A∪B|
+
+.
+
+Instead, let's compute the sum ∑U⊇A∑B⊆Ug(U)
+for some function g(U)≠1|U|. Then, for a fixed A, the contribution of B to the sum is ∑U⊇A∪Bg(U)
+
+.
+
+The key insight here is that because g
+is arbitrary, we can set g exactly so that for every set S, ∑U⊇Sg(U)=1|S|
+
+.
+
+In general, this is the inverse subset sum problem: given all subset sums of a function on sets, reconstruct the original function. This can be implemented by doing the same operations one does for subset sum, but in reverse, and replacing all additions with subtractions.
+
+Alternatively, for this specific function, the function value g(U)
+relies only on |U|, of which there are only K possibilities for. Specifically, we have g(U)=g′(|U|) for some function g′, and 1|S|=∑U⊇Sg(U)=∑U⊇Sg′(|U|)=∑Kk=|S|(K−|U|k−|U|)g′(k). The (K−|U|k−|U|) term comes from the number of ways to choose a set of size k that contains U
+
+.
+
+Then, we see that g′(|U|)=1|U|−∑Kk=|U|+1(K−|U|k−|U|)g′(k)
+, so we can compute all g′(k) in O(K2) time by going from k=K to k=1
+
+.
+
+So, our final algorithm is to compute the function g
+using inverse superset sum (or using combinations), then compute the function f(U)=∑B⊆U1 using subset sum, and finally compute ∑U⊇Ag(U)⋅f(U)
+
+using a superset sum.
+
+Richard's code:
+
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+using vi = vector<int>;
+
+#define sz(x) int((x).size())
+#define pb push_back
+
+const int MOD = 1e9+7;
+
+/**
+ * Description: Modular arithmetic.
+ * Source: KACTL
+ * Verification: https://open.kattis.com/problems/modulararithmetic
+ * Usage: mi a = MOD+5; cout << (int)inv(a); // 400000003
+ */
+
+struct mi {
+ 	int v; explicit operator int() const { return v; } 
+	mi():v(0) {}
+	mi(ll _v):v(int(_v%MOD)) { v += (v<0)*MOD; }
+};
+mi& operator+=(mi& a, mi b) { 
+	if ((a.v += b.v) >= MOD) a.v -= MOD; 
+	return a; }
+mi& operator-=(mi& a, mi b) { 
+	if ((a.v -= b.v) < 0) a.v += MOD; 
+	return a; }
+mi operator+(mi a, mi b) { return a += b; }
+mi operator-(mi a, mi b) { return a -= b; }
+mi operator*(mi a, mi b) { return mi((ll)a.v*b.v); }
+mi& operator*=(mi& a, mi b) { return a = a*b; }
+mi pow(mi a, ll p) { assert(p >= 0); // won't work for negative p
+	return p==0?1:pow(a*a,p/2)*(p&1?a:1); }
+mi inv(mi a) { assert(a.v != 0); return pow(a,MOD-2); }
+mi operator/(mi a, mi b) { return a*inv(b); }
+bool operator==(mi a, mi b) { return a.v == b.v; }
+
+using vmi = vector<mi>;
+ 
+int K;
+ 
+vmi supersetSum(vmi C) {
+	// for every j < 2^K, compute sum over i superset j of C[i]
+	for (int b = 0; b < K; b++) {
+		for (int i = sz(C) - 1; i >= 0; i--) {
+			if (!((i >> b) & 1)) { C[i] += C[i ^ (1 << b)]; }
+		}
+	}
+	return C;
+}
+
+vmi inverseSupersetSum(vmi C){
+	// inverse operation of supersetSum: operations reversed
+	for (int b = K-1; b >= 0; b--) {
+		for (int i = 0; i < sz(C); i++) {
+			if (!((i >> b) & 1)) { C[i] -= C[i ^ (1 << b)]; }
+		}
+	}
+	return C;
+}
+ 
+vmi subsetSum(vmi C) {
+	// for every j < 2^K, compute sum over i subset j of C[i]
+	for (int b = 0; b < K; b++) {
+		for (int i = 0; i < sz(C); i++) {
+			if ((i >> b) & 1) { C[i] += C[i ^ (1 << b)]; }
+		}
+	}
+	return C;
+}
+ 
+vmi unionSum(vmi C, vmi f) {
+	// for every j < 2^K, compute sum over i of C_i * f(i intersect j)
+	assert(sz(C) == (1 << K) && sz(f) == (1 << K));
+ 
+	// compute superset sum of C
+	C = subsetSum(C);
+	vmi g = inverseSupersetSum(f);
+	for (int i = 0; i < sz(C); i++) { C[i] *= g[i]; }
+	C = supersetSum(C);
+	return C;
+}
+ 
+vmi sumSimilarities(vi cows) {
+	vmi cnt(1 << K);
+	for (int c : cows) cnt[c] += 1;
+ 
+	vmi f(1<<K, mi(0));
+	vmi invs(K+1, mi(0));
+	for (int i = 1; i <= K; i++) { invs[i] = mi(1) / mi(i); }
+	for(int i = 1; i < (1<<K); i++){
+		f[i] = invs[__builtin_popcount(i)];
+	}
+
+	vmi one_sum = unionSum(cnt, f);
+
+	vmi size_cnt;
+	for (int i = 0; i < sz(cnt); i++)
+		size_cnt.pb(cnt[i] * mi(__builtin_popcount(i)));
+	vmi size_sum = unionSum(size_cnt, f);
+ 
+	vmi res;
+	for (int c : cows) res.pb(one_sum[c] * __builtin_popcount(c) + size_sum[c] - sz(cows));
+	return res;
+}
+ 
+
+int main() {
+	cin.tie(0)->sync_with_stdio(0); 
+	int N;
+	cin >> N >> K;
+ 
+	vi cows(N);
+	for(int i = 0; i < N; i++) cin >> cows[i];
+
+	auto ans = sumSimilarities(cows);
+	for(auto u: ans) cout << u.v << "\n";
+}
+
+Other Partial Solutions: Slower solutions using some of the ideas from full solution 2 can receive partial credit. Possible time complexities include O(K3K)
+and O(K32K)
+
+.
+

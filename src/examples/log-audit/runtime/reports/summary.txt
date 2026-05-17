@@ -1,0 +1,29 @@
+state: ready
+input-bytes=311
+total-lines=7
+error-events=3
+warning-events=2
+deploy-events=2
+pread-offset-ok=yes
+pwrite-offset-ok=yes
+child-status-ok=yes
+
+== metric order ==
+ERROR 
+warning-events=
+deploy
+== active alerts ==
+login_failed
+disk_full
+password_expiring
+deploy started
+deploy finished
+== highlights ==
+ERROR 
+warning-events=
+deploy
+deploy finished
+deploy started
+password_expiring
+disk_full
+login_failed

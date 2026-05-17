@@ -1,0 +1,10 @@
+{
+  "package": "app~string~match~labyrinth$lit",
+  "app_string_match_labyrinth_banner_s3^s3": "LABYRINTH BANNER\nturn-01 :: imported strings frame the passage\nturn-02 :: nested match decides which echo survives\nturn-03 :: banner branch should score as eleven",
+  "app_string_match_labyrinth_trace_s3^s3": "TRACE START\nnode-a :: outer match enters the corridor\nnode-b :: inner match checks TRACE-MARKER for the hidden switch\nnode-c :: multiline payload stays intact for rendering\nTRACE END",
+  "app_string_match_labyrinth_fallback_s3^s3": "FALLBACK TRACE\nnode-x :: this branch waits behind the main banner\nnode-y :: alternate multiline payload for visual comparison",
+  "app_string_match_labyrinth_trace_marker_s3^s3": "TRACE-MARKER",
+  "app_string_match_labyrinth_bad_total_s3^s3": "labyrinth total mismatch",
+  "app_string_match_labyrinth_missing_marker_s3^s3": "trace marker missing from multiline payload",
+  "app_string_match_labyrinth_ok_s3^s3": "STRING MATCH LABYRINTH OK"
+}

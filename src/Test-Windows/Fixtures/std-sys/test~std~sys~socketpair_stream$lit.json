@@ -1,0 +1,5 @@
+{
+  "package": "test~std~sys~socketpair_stream$lit",
+  "socketpair_left_s3^s3": "left-to-right",
+  "socketpair_right_s3^s3": "right-to-left"
+}

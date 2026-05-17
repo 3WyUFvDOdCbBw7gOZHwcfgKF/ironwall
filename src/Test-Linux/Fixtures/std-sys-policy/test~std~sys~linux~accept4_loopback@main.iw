@@ -1,0 +1,72 @@
+{program test~std~sys~linux~accept4_loopback@main
+  (import std~linux~sys)
+  (import std~thread)
+  (import test~std~sys~lib)
+
+  (function client_worker ([port i5]) to i5 in
+    {
+      (var [client_fd i5] (sys_net_socket_tcp4))
+      (sys_net_connect_ipv4_loopback client_fd port)
+      (var [sent i5] (sys_net_send_s3 client_fd $accept4_payload_s3^s3))
+      (var [socket_error i5] (sys_net_getsockopt_error client_fd))
+      (sys_fd_close client_fd)
+      (add
+        (score (eq sent (s3_length $accept4_payload_s3^s3)))
+        (score (eq socket_error $0^i5))
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [server_fd i5] (sys_net_socket_tcp4))
+      (sys_net_setsockopt_reuseaddr server_fd)
+      (sys_net_bind_ipv4_loopback server_fd $0^i5)
+      (var [port i5] (sys_net_getsockname_ipv4_port server_fd))
+      (sys_net_listen server_fd $16^i5)
+      (var [client Thread] (spawn (fn ([ignored unit]) to i5 in (client_worker port))))
+      (var [accept_flags i5] (bwor (sys_fd_cloexec_syscall_flag) (sys_fd_nonblock_flag)))
+      (var [accepted_fd i5] (sys_net_accept4 server_fd accept_flags))
+      (var [epoll_fd i5] (sys_epoll_create))
+      (sys_epoll_ctl_add epoll_fd accepted_fd (sys_epoll_in_flag) accepted_fd)
+      (var [ready_events <array SysEpollEvent>] (sys_epoll_wait epoll_fd $4^i5 $5000^i5))
+      (var [event_ready bool] false)
+      (var [event_data_ok bool] false)
+      (if
+        (gt (array_length ready_events) $0^i5)
+        then
+        {
+          (var [event SysEpollEvent] (array_get ready_events $0^i5))
+          (var_set event_ready (sys_epoll_event_has_in event))
+          (var_set event_data_ok (eq (sys_epoll_event_data event) accepted_fd))
+          unit
+        }
+        else
+        unit
+      )
+      (var [fd_flags i5] (sys_fd_fcntl_getfd accepted_fd))
+      (var [status_flags i5] (sys_fd_fcntl_getfl accepted_fd))
+      (var [received s3] (sys_net_recv_s3 accepted_fd $64^i5))
+      (var [client_score i5] (join client))
+      (sys_fd_close epoll_fd)
+      (sys_fd_close accepted_fd)
+      (sys_fd_close server_fd)
+      (add
+        (score event_ready)
+        (add
+          (score event_data_ok)
+          (add
+            (score (eq fd_flags (sys_fd_cloexec_flag)))
+            (add
+              (score (neq (bwand status_flags (sys_fd_nonblock_flag)) $0^i5))
+              (add
+                (score (s3_equals received $accept4_payload_s3^s3))
+                (score (eq client_score $2^i5))
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

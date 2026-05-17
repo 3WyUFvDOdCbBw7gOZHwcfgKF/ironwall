@@ -1,0 +1,85 @@
+{program test~std~memory~set~update~baseline@main
+  (import std~set)
+  (import std~eq)
+  (import std~hash)
+
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function id_hash ([value i5]) to i5 in value)
+
+  (function slow_set_intersection_update_score ([source <Set i5>] [other <Set i5>]) to i5 in
+    {
+      (var [target <Set i5>] (source.copy))
+      (var [result <Set i5>] (target.intersection other))
+      (add
+        (<set_len i5> result)
+        (add
+          (if (<set_contains i5> result $12000^i5) then $10^i5 else $0^i5)
+          (if (<set_contains i5> result $100^i5) then $0^i5 else $20^i5)
+        )
+      )
+    }
+  )
+
+  (function slow_set_difference_update_score ([source <Set i5>] [other <Set i5>]) to i5 in
+    {
+      (var [target <Set i5>] (source.copy))
+      (var [result <Set i5>] (target.difference other))
+      (add
+        (<set_len i5> result)
+        (add
+          (if (<set_contains i5> result $100^i5) then $30^i5 else $0^i5)
+          (if (<set_contains i5> result $12000^i5) then $0^i5 else $40^i5)
+        )
+      )
+    }
+  )
+
+  (function slow_set_symmetric_difference_update_score ([source <Set i5>] [other <Set i5>]) to i5 in
+    {
+      (var [target <Set i5>] (source.copy))
+      (var [result <Set i5>] (target.symmetric_difference other))
+      (add
+        (<set_len i5> result)
+        (add
+          (if (<set_contains i5> result $100^i5) then $50^i5 else $0^i5)
+          (add
+            (if (<set_contains i5> result $12000^i5) then $0^i5 else $60^i5)
+            (if (<set_contains i5> result $30000^i5) then $70^i5 else $0^i5)
+          )
+        )
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [eq_rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [hash_rule <Hash i5>] (class_new <Hash i5> id_hash))
+      (var [source <Set i5>] (<set_new i5> hash_rule eq_rule))
+      (var [other <Set i5>] (<set_new i5> hash_rule eq_rule))
+      (var [index i5] $0^i5)
+      (while (lt index $24000^i5) in
+        {
+          (source.add index)
+          (other.add (add index $12000^i5))
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [intersection_score i5] (slow_set_intersection_update_score source other))
+      (var [difference_score i5] (slow_set_difference_update_score source other))
+      (var [symdiff_score i5] (slow_set_symmetric_difference_update_score source other))
+
+      (mod
+        (add
+          intersection_score
+          (add
+            difference_score
+            symdiff_score
+          )
+        )
+        $251^i5
+      )
+    }
+  )
+}

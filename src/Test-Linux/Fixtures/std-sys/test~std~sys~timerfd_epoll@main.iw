@@ -1,0 +1,49 @@
+{program test~std~sys~timerfd_epoll@main
+  (import std~linux~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [timer_flags i5] (bwor (sys_fd_cloexec_syscall_flag) (sys_fd_nonblock_flag)))
+      (var [timer_fd i5] (sys_timerfd_create_monotonic timer_flags))
+      (var [epoll_fd i5] (sys_epoll_create))
+      (sys_epoll_ctl_add epoll_fd timer_fd (sys_epoll_in_flag) $701^i5)
+      (sys_timerfd_settime_oneshot_ms timer_fd $30^i5)
+      (var [events <array SysEpollEvent>] (sys_epoll_wait epoll_fd $4^i5 $5000^i5))
+      (var [ready bool] false)
+      (var [data_ok bool] false)
+      (if
+        (gt (array_length events) $0^i5)
+        then
+        {
+          (var [event SysEpollEvent] (array_get events $0^i5))
+          (var_set ready (sys_epoll_event_has_in event))
+          (var_set data_ok (eq (sys_epoll_event_data event) $701^i5))
+          unit
+        }
+        else
+        unit
+      )
+      (var [expirations i5] (sys_timerfd_read_expirations timer_fd))
+      (var [fd_flags i5] (sys_fd_fcntl_getfd timer_fd))
+      (var [status_flags i5] (sys_fd_fcntl_getfl timer_fd))
+      (sys_fd_close epoll_fd)
+      (sys_fd_close timer_fd)
+      (add
+        $530^i5
+        (add
+          (score ready)
+          (add
+            (score data_ok)
+            (add
+              (score (eq expirations $1^i5))
+              (add
+                (score (eq fd_flags (sys_fd_cloexec_flag)))
+                (score (neq (bwand status_flags (sys_fd_nonblock_flag)) $0^i5))
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

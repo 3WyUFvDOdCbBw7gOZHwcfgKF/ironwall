@@ -1,0 +1,11 @@
+{program test~std~sys~open_read@main
+  (import std~linux~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [fd i5] (sys_fd_open_read_s3 $sys_input_path_s3^s3))
+      (sys_fd_close fd)
+      (add $100^i5 (score (gt fd $2^i5)))
+    }
+  )
+}

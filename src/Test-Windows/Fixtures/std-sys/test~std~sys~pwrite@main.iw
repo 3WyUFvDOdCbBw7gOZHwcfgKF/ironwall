@@ -1,0 +1,20 @@
+{program test~std~sys~pwrite@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [fd i5] (sys_fd_creat_s3 $sys_pwrite_path_s3^s3))
+      (var [written i5] (sys_fd_pwrite_s3 fd $sys_pwrite_payload_s3^s3 $2^i5))
+      (var [pos i5] (sys_fd_seek_cur fd $0^i5))
+      (var [end_pos i5] (sys_fd_seek_end fd $0^i5))
+      (sys_fd_close fd)
+      (add
+        $370^i5
+        (add
+          (score (eq written (s3_length $sys_pwrite_payload_s3^s3)))
+          (add (score (eq pos $0^i5)) (score (eq end_pos $5^i5)))
+        )
+      )
+    }
+  )
+}

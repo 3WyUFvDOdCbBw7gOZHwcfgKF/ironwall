@@ -1,0 +1,7 @@
+{
+  "package": "test~std~sys~windows~env_platform_time$lit",
+  "std_sys_windows_platform_name_s3^s3": "windows",
+  "std_sys_windows_env_name_s3^s3": "IW_STD_SYS_WINDOWS_ENV",
+  "std_sys_windows_env_value_s3^s3": "windows-ok",
+  "std_sys_windows_empty_s3^s3": ""
+}

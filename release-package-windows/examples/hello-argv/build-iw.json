@@ -1,0 +1,12 @@
+{
+  "mode": "build",
+  "directories": [
+    {
+      "path": "src"
+    }
+  ],
+  "main": "example~hello~argv@main",
+  "output": "hello-argv.out",
+  "precompiledLibs": [],
+  "ffiLibs": []
+}

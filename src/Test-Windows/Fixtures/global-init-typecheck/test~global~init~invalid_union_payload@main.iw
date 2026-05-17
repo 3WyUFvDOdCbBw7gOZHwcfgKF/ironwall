@@ -1,0 +1,4 @@
+{program test~global~init~invalid_union_payload@main
+  (class Marker (constructor () in unit))
+  (var [bad <union Marker i5>] (class_new Marker))
+}

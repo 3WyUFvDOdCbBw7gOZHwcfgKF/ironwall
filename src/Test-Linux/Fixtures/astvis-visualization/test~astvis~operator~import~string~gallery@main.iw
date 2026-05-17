@@ -1,0 +1,16 @@
+{program test~astvis~operator~import~string~gallery@main
+  (import core~math)
+  (import text~assets)
+  (function precedence_math ([a i5] [b i5] [c i5] [d i5] [flag bool]) to bool in
+    (or
+      (and
+        (eq (add a (mul b c)) (sub d a))
+        (xor flag (lt a b))
+      )
+      (eq (add (eq a b) c) (mul (add a b) c))
+    )
+  )
+  (function string_box ([args <array s3>]) to s3 in $hello^s3)
+  (function string_arg ([args <array s3>]) to s3 in (select_text $hello^s3 $world^s3))
+  (function main ([args <array s3>]) to bool in (precedence_math $1^i5 $2^i5 $3^i5 $4^i5 true))
+}

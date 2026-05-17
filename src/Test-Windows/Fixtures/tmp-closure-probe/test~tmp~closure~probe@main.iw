@@ -1,0 +1,28 @@
+{program test~tmp~closure~probe@main
+  (function make_adder ([base i5]) to <to i5 from i5> in
+    (fn ([delta i5]) to i5 in (add base delta))
+  )
+
+  (function make_counter ([start i5]) to <to i5 from > in
+    {
+      (var [value i5] start)
+      (fn () to i5 in
+        {
+          (var_set value (add value $1^i5))
+          value
+        }
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [outer i5] $10^i5)
+      (var [closure <to i5 from i5>] (fn ([x i5]) to i5 in (add outer x)))
+      (var_set outer $20^i5)
+      (var [adder <to i5 from i5>] (make_adder $5^i5))
+      (var [counter <to i5 from >] (make_counter $7^i5))
+      (add (closure $1^i5) (add (adder $2^i5) (add (counter) (counter))))
+    }
+  )
+}

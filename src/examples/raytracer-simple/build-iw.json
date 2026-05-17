@@ -1,0 +1,11 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": "src"
+    }
+  ],
+  "main": "ray~tracer~simple@main",
+  "precompiledLibs": [],
+  "ffiLibs": []
+}

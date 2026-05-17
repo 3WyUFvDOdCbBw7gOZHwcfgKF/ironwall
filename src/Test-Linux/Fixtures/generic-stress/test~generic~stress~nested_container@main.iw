@@ -1,0 +1,25 @@
+{program test~generic~stress~nested_container@main
+  (import test~generic~stress~nested_container_lib)
+
+  (function head_or ([box <Box i5>] [fallback i5]) to i5 in
+    (match (cm_get box items)
+      ([empty unit] fallback)
+      ([node <Node i5>] (cm_get node value))
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [seed <Box i5>] (class_new <Box i5> (class_new <Node i5> $99^i5 unit)))
+      (var [raw <array <Box i5>>] (array_new <array <Box i5>> $3^i5 seed))
+      (cm_set (array_get raw $0^i5) items (class_new <Node i5> $41^i5 unit))
+      (add
+        (head_or (array_get raw $0^i5) $7^i5)
+        (add
+          (mul (head_or (array_get raw $1^i5) $7^i5) $10^i5)
+          (head_or seed $7^i5)
+        )
+      )
+    }
+  )
+}

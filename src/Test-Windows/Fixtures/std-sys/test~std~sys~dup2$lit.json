@@ -1,0 +1,4 @@
+{
+  "package": "test~std~sys~dup2$lit",
+  "dup_payload_s3^s3": "dup-two"
+}

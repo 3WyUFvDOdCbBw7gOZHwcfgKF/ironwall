@@ -1,0 +1,26 @@
+{program test~std~memory~string~concat~optimized@main
+  (import std~string)
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [chunk_seed StringS3] (class_new StringS3 $ab_s3^s3))
+      (var [chunk StringS3] (string_repeat chunk_seed $2048^i5))
+      (var [builder StringBuilderS3] (string_builder_new chunk_seed))
+      (var [index i5] $0^i5)
+      (while (lt index $512^i5) in
+        {
+          (builder.append chunk)
+          (var_set index (add index $1^i5))
+        }
+      )
+      (var [result StringS3] (builder.build))
+      (mod
+        (add
+          (string_len result)
+          (result.count chunk)
+        )
+        $251^i5
+      )
+    }
+  )
+}

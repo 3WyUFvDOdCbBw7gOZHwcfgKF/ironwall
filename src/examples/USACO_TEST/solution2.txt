@@ -1,0 +1,306 @@
+ (Analysis by Benjamin Qi)
+
+Subtask 1 (small N)
+DP from left to right works in O(N2/L)
+time.
+
+Subtask 2 (L=1)
+Treat Ms as Os with cost 0 to change. Then sort the Os in increasing order of cost and change them to M in that order. This works in O(NlogN)
+.
+
+L, N = map(int, input().split())
+s = input()
+c = list(map(int, input().split()))
+for i in range(N):
+    if s[i] == 'M':
+        c[i] = 0
+
+c.sort()
+ans = 0
+for i in range(N):
+    ans += c[i]
+    print(ans)
+
+Subtask 3 (L=2)
+For each i∈[1,N−1]
+, let ai denote the cost to make a MO starting at i. Also, define a0=aN=∞ for convenience. A "solution" for k is a way to choose k indices with the minimum total cost so that no two chosen indices are adjacent.
+
+For k=1
+the solution is to choose the MO corresponding to the minimum ai. Let i′ be the i
+
+achieving the minimum.
+
+For k>1
+, note that there is always a solution containing either i′ or both i′−1 and i′+1. This is because if exactly one of i′−1 and i′+1 is in the solution, we can replace it with i′ without increasing the cost. Let's produce a new sequence of costs by removing ai′−1,ai′,ai′+1 and inserting the element ai′−1−ai′+ai′+1 into the same location, then find a solution for k−1 on the new sequence. The kth cost for the original sequence will then be the cost for this new solution plus ai′; if the new element is chosen in the new solution, that corresponds to adding both i′−1 and i′+1 to the original solution; otherwise, this corresponding to adding i′
+
+to the original solution.
+
+We can use a sorted set and a linked list to maintain the current costs in increasing order, and the adjacency relations between costs, respectively. This runs in O(NlogN)
+
+time.
+
+#include <bits/stdc++.h>
+using namespace std;
+
+template <class T> using V = vector<T>;
+#define all(x) begin(x), end(x)
+
+#define f first
+#define s second
+#define mp make_pair
+
+using ll = int64_t;
+using vl = V<ll>;
+using vi = V<int>;
+
+#define FOR(i, a, b) for (int i = (a); i < (b); ++i)
+#define F0R(i, a) FOR(i, 0, a)
+#define sz(x) int(size(x))
+
+const ll BIG = 1e18;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int L, N;
+    cin >> L >> N;
+    assert(L == 2);
+
+    string S;
+    cin >> S;
+    vi C(N);
+    for (int &c : C) cin >> c;
+
+    vl cost{BIG};
+    auto make = [&](int ind, char c) {
+        if (S.at(ind) == c) return 0;
+        return C.at(ind);
+    };
+    F0R(i, N - 1) cost.push_back(make(i, 'M') + make(i + 1, 'O'));
+    cost.push_back(BIG);
+
+    set<pair<ll, int>> s;             // ccurrent osts
+    vi nxt(sz(cost)), prv(sz(cost));  // linked list
+    F0R(i, sz(cost)) nxt[i] = i + 1, prv[i] = i - 1;
+    F0R(i, sz(cost)) s.insert({cost[i], i});
+    ll ans = 0;
+
+    auto link = [&](int l, int r) {
+        if (l >= 0) nxt.at(l) = r;
+        if (r < sz(cost)) prv.at(r) = l;
+    };
+
+    for (int _ = 0; _ < N / 2; ++_) {
+        assert(sz(s));
+        assert(begin(s)->f < BIG);
+        ans += begin(s)->f;
+
+        int i = begin(s)->s;
+        int a = prv[i], b = nxt[i];
+
+        // next, remove a and b and update the cost for i
+        s.erase(mp(cost[i], i));
+        s.erase(mp(cost.at(a), a));
+        s.erase(mp(cost.at(b), b));
+
+        cost[i] = cost[a] + cost[b] - cost[i];
+        link(prv.at(a), i);
+        link(i, nxt.at(b));
+
+        s.insert(mp(cost[i], i));
+        cout << ans << "\n";
+    }
+}
+
+Unfortunately, this subtask was somewhat of a red herring in the sense that the solution above does not seem to generalize easily to larger L
+
+.
+
+Full Credit
+From the sample cases and L=1
+, you might hypothesize that the answer is convex as a function of k; that is, cost(k)−cost(k−1)≤cost(k+1)−cost(k). It was not necessary to know the proof of this fact to solve this problem, so the proof will come later.
+
+Why is convexity helpful? Well, if you consider the L=1
+case and suppose you have the answer sequences for two strings, you can find the answer sequence for their concatenation in linear time with a greedy merge; if the kth answer for the concatenated string takes l Ms from the first string and r Ms from the second string where l+r=k, then for k+1 either l or r should increase by one. This gives an alternative way to solve L=1
+
+that is equivalent to merge sort: split the string into equally sized halves, solve each half, and greedily combine the answer sequences.
+
+def greedy_merge(ans_l, ans_r):
+    l, r = 0, 0
+    ans = [ans_l[l] + ans_r[r]]
+    while l + 1 < len(ans_l) and r + 1 < len(ans_r):
+        if ans_l[l+1]-ans_l[l] <= ans_r[r+1]-ans_r[r]:
+            l += 1
+        else:
+            r += 1
+        ans.append(ans_l[l] + ans_r[r])
+    while l + 1 < len(ans_l):
+        l += 1
+        ans.append(ans_l[l] + ans_r[r])
+    while r + 1 < len(ans_r):
+        r += 1
+        ans.append(ans_l[l] + ans_r[r])
+    return ans
+ 
+def answer_sequence(costs):
+    if len(costs) <= 1:
+        return [0] + costs
+    m = len(costs) // 2
+    ans_l = answer_sequence(costs[:m])
+    ans_r = answer_sequence(costs[m:])
+    return greedy_merge(ans_l, ans_r)
+ 
+L, N = map(int, input().split())
+s = input()
+c = list(map(int, input().split()))
+for i in range(N):
+    if s[i] == 'M':
+        c[i] = 0
+ 
+seq = answer_sequence(c)
+for i in range(1, N + 1):
+    print(seq[i])
+
+For L>1
+, we can apply a similar approach. However, since we need to consider MOOs crossing the midpoint, we also need to compute the answers for removing up to L−1 characters from the ends of each half. This means that we have to merge O(L3) pairs of convex sequences rather than just one in each recursive call, though the sequences to merge are a factor of L shorter. The time complexity is O(L2NlogN)
+
+.
+
+#include <bits/stdc++.h>
+using namespace std;
+
+template <class T> using V = vector<T>;
+#define all(x) begin(x), end(x)
+
+using ll = int64_t;
+using vl = V<ll>;
+using vi = V<int>;
+
+#define FOR(i, a, b) for (int i = (a); i < (b); ++i)
+#define F0R(i, a) FOR(i, 0, a)
+#define sz(x) int(size(x))
+
+struct Info {
+    int len;
+    array<array<vl, 3>, 3> dp;
+    // dp[i][j] = answer sequence for removing i chars from left
+    // and j chars from right of range. must be convex
+};
+
+// greedy merge convex functions
+void upd(vl &a, const vl &b, const vl &c, int i, ll add) {
+    assert(sz(b) && sz(c));
+    int nsize = sz(b) + sz(c) - 1 + i;
+    if (sz(a) < nsize) a.resize(nsize, LLONG_MAX);
+    int ib = 0, ic = 0;
+    for (;; ++i) {
+        a[i] = min(a[i], add);
+        if (ib + 1 < sz(b)) {
+            if (ic + 1 < sz(c)) {
+                if (b[ib + 1] - b[ib] <= c[ic + 1] - c[ic])
+                    add += b[ib + 1] - b[ib], ++ib;
+                else add += c[ic + 1] - c[ic], ++ic;
+            } else add += b[ib + 1] - b[ib], ++ib;
+        } else if (ic + 1 < sz(c)) add += c[ic + 1] - c[ic], ++ic;
+        else break;
+    }
+}
+
+int L;
+
+vi costs;  // cost of the i-th moo
+
+Info solve(int l, int r) {  // answer sequence for S[l:r]
+    Info res;
+    res.len = r - l;
+    if (L == 1 && res.len == 1) {
+        res.dp.at(0).at(0) = {0, costs.at(l)};
+        return res;
+    }
+    if (res.len < L) {
+        F0R(i, L) F0R(j, L) if (i + j <= res.len) res.dp.at(i).at(j) = {0};
+        return res;
+    }
+    int m = (l + r) / 2;
+    Info l_info = solve(l, m), r_info = solve(m, r);
+    F0R(i, L) F0R(j, L) if (i + j <= res.len) {
+        if (i >= l_info.len)
+            res.dp.at(i).at(j) = r_info.dp.at(i - l_info.len).at(j);
+        else if (j >= r_info.len)
+            res.dp.at(i).at(j) = l_info.dp.at(i).at(j - r_info.len);
+        else {
+            upd(res.dp.at(i).at(j), l_info.dp.at(i).at(0),
+                r_info.dp.at(0).at(j), 0, 0);
+            FOR(p, 1, L)
+            if (l_info.len >= i + p && r_info.len >= j + L - p)
+                upd(res.dp.at(i).at(j), l_info.dp.at(i).at(p),
+                    r_info.dp.at(L - p).at(j), 1, costs.at(m - p));
+        }
+    }
+    return res;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin >> L;
+    int N;
+    cin >> N;
+    assert(L <= N);
+    string S;
+    cin >> S;
+    V<int> C(N);
+    for (int &c : C) cin >> c;
+    auto get_cost = [&](int p, char c) {
+        if (S.at(p) != c) return C.at(p);
+        return 0;
+    };
+    F0R(i, N - L + 1) {
+        string goal = "MOO";
+        costs.emplace_back();
+        F0R(j, L)
+        costs.back() += get_cost(i + j, goal.at(j));
+    }
+    auto ans = solve(0, N).dp.at(0).at(0);
+    ans.erase(begin(ans));
+    assert(sz(ans) == N / L);
+    for (auto t : ans) cout << t << "\n";
+}
+
+Proof of convexity: Define a "optimal solution" for k
+to be a set of k
+
+non-overlapping MOOs to pick whose cost is minimized.
+
+Let L
+and R be optimal solutions for k−1 and k+1, respectively; it suffices to show that from these two solutions, we can construct a solution M for k with cost(M)≤(cost(L)+cost(R))/2
+
+.
+
+Construct a bipartite graph with a vertex on the left side for every MOO in L
+and every MOO in R
+
+, and edges between MOOs that overlap. The connected components in this graph are all paths that alternate between sides ("alternating paths"), which we can classify into several different types:
+
+    having one moo on the left side and one moo on the right side at the same position
+    having equal numbers of vertices on each side, but not in the first case
+    having one more vertex on the left side
+    having one more vertex on the right side (augmenting path)
+
+If we fix L
+, there always exists R such that there are exactly two augmenting paths, and the remaining connected components are of type 1. This is because whenever we have a connected component of type 2, or a pair of connected components where one is of type 3 and one is of type 4, we can always toggle the vertices along each such component in R to convert them to connected components of type 1, without changing the cost of R
+
+. By toggle, we mean that for each vertex, we insert it into the solution if it is not already there or remove it otherwise.
+
+So then cost(R)=cost(L)+d1+d2
+where d1 and d2 are the differences in cost resulting from toggling each augmenting path. Define M to be the state of L after toggling the augmenting path with smaller cost. Then cost(M)=cost(L)+min(d1,d2)≤(cost(L)+cost(R))/2
+
+, as desired.
+
+Note: coincidentally, a very similar problem appeared a week before the contest. Problems involving L=2
+
+have also shown up in the past:
+
+    JOI18 Candies
+    ABC218 H
+

@@ -1,0 +1,9 @@
+{
+  "package": "test~std~sys~windows~dir_iterate$lit",
+  "std_sys_windows_dir_iterate_root_s3^s3": "artifacts/std-sys-windows-dir-iterate",
+  "std_sys_windows_dir_iterate_subdir_s3^s3": "artifacts/std-sys-windows-dir-iterate/subdir",
+  "std_sys_windows_dir_iterate_file_a_s3^s3": "artifacts/std-sys-windows-dir-iterate/alpha.txt",
+  "std_sys_windows_dir_iterate_file_b_s3^s3": "artifacts/std-sys-windows-dir-iterate/beta.txt",
+  "std_sys_windows_dir_iterate_value_a_s3^s3": "A",
+  "std_sys_windows_dir_iterate_value_b_s3^s3": "B"
+}

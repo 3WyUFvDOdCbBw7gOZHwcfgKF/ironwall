@@ -1,0 +1,96 @@
+{program test~std~dict~resize@main
+  (import std~dict)
+  (import std~eq)
+  (import std~hash)
+  (import std~list)
+  (import std~pair)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function id_hash ([value i5]) to i5 in value)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [key_eq <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [value_eq <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [hash_rule <Hash i5>] (class_new <Hash i5> id_hash))
+      (var [source <Dict i5 i5>] (<dict_new i5 i5> hash_rule key_eq $0^i5 $0^i5))
+      (source.setdefault $0^i5 $100^i5)
+      (source.setdefault $1^i5 $101^i5)
+      (source.setdefault $2^i5 $102^i5)
+      (source.setdefault $3^i5 $103^i5)
+      (source.setdefault $4^i5 $104^i5)
+      (source.setdefault $5^i5 $105^i5)
+      (source.setdefault $6^i5 $106^i5)
+      (source.setdefault $7^i5 $107^i5)
+      (source.setdefault $8^i5 $108^i5)
+      (source.setdefault $9^i5 $109^i5)
+      (source.setdefault $10^i5 $110^i5)
+      (source.setdefault $11^i5 $111^i5)
+      (source.setdefault $12^i5 $112^i5)
+      (source.setdefault $13^i5 $113^i5)
+      (source.setdefault $14^i5 $114^i5)
+      (source.setdefault $15^i5 $115^i5)
+      (source.setdefault $16^i5 $116^i5)
+      (source.setdefault $17^i5 $117^i5)
+      (source.setdefault $18^i5 $118^i5)
+      (source.setdefault $19^i5 $119^i5)
+      (var [other <Dict i5 i5>] (<dict_new i5 i5> hash_rule key_eq $0^i5 $0^i5))
+      (other.setdefault $5^i5 $205^i5)
+      (other.setdefault $10^i5 $210^i5)
+      (other.setdefault $21^i5 $121^i5)
+      (other.setdefault $22^i5 $122^i5)
+      (source.update other)
+      (var [popped_ten i5] (source.pop $10^i5))
+      (var [keys <List i5>] (source.keys))
+      (var [values <List i5>] (source.values))
+      (var [items <List <Pair i5 i5>>] (source.items))
+      (var [popitem_pair <Pair i5 i5>] (source.popitem))
+      (var [copy <Dict i5 i5>] (source.copy))
+      (var [equal_copy bool] (<dict_equals i5 i5> source copy value_eq))
+      (add
+        (<dict_len i5 i5> source)
+        (add
+          popped_ten
+          (add
+            (<list_len i5> keys)
+            (add
+              (keys.get $0^i5)
+              (add
+                (keys.get $18^i5)
+                (add
+                  (values.get $5^i5)
+                  (add
+                    (cm_get (items.get $19^i5) first)
+                    (add
+                      popitem_pair.first
+                      (add
+                        popitem_pair.second
+                        (add
+                          (if
+                            (<dict_contains i5 i5> source $10^i5)
+                            then
+                            $0^i5
+                            else
+                            $100^i5
+                          )
+                          (add
+                            (if
+                              (<dict_contains i5 i5> source $21^i5)
+                              then
+                              $10^i5
+                              else
+                              $0^i5
+                            )
+                            (if equal_copy then $20^i5 else $0^i5)
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

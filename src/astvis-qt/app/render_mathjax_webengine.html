@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ironwall MathJax Bridge</title>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+</style>
+<script>
+window.__qtMathJaxReady = false;
+window.__qtMathJaxError = '';
+window.MathJax = {
+    startup: {typeset: false},
+    svg: {fontCache: 'none'}
+};
+</script>
+<script src="../../../MathJax-4.1.1/tex-svg.js"></script>
+<script>
+(() => {
+    function setError(error) {
+        const message = String(error && error.message ? error.message : error);
+        window.__qtMathJaxError = message;
+        console.error(message);
+    }
+
+    window.__qtRenderMathSvgSync = function(tex, display) {
+        try {
+            if (!window.__qtMathJaxReady || !window.MathJax || typeof MathJax.tex2svg !== 'function') {
+                return {ok: false, error: window.__qtMathJaxError || 'MathJax is not ready.'};
+            }
+
+            const container = MathJax.tex2svg(tex, {display: !!display});
+            const svg = container.querySelector('svg');
+            if (!svg) {
+                return {ok: false, error: 'MathJax did not produce an SVG node.'};
+            }
+
+            return {ok: true, svg: svg.outerHTML};
+        } catch (error) {
+            setError(error);
+            return {ok: false, error: window.__qtMathJaxError};
+        }
+    };
+
+    if (!window.MathJax || !MathJax.startup || !MathJax.startup.promise) {
+        setError('MathJax startup promise is unavailable.');
+        return;
+    }
+
+    MathJax.startup.promise
+        .then(() => {
+            window.__qtMathJaxReady = true;
+        })
+        .catch(setError);
+})();
+</script>
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,550 @@
+{program ray~tracer~simple@main
+  (import std~array)
+  (import std~gc)
+  (import std~math)
+  (import std~string)
+  (import std~linux~sys)
+
+  (class Vec3
+    (property [x f5])
+    (property [y f5])
+    (property [z f5])
+    (constructor () in
+      {
+        (cm_set self x $0p0^f5)
+        (cm_set self y $0p0^f5)
+        (cm_set self z $0p0^f5)
+      }
+    )
+    (constructor ([x0 f5] [y0 f5] [z0 f5]) in
+      {
+        (cm_set self x x0)
+        (cm_set self y y0)
+        (cm_set self z z0)
+      }
+    )
+  )
+
+  (class Ray
+    (property [origin Vec3])
+    (property [direction Vec3])
+    (constructor ([origin0 Vec3] [direction0 Vec3]) in
+      {
+        (cm_set self origin origin0)
+        (cm_set self direction direction0)
+      }
+    )
+  )
+
+  (class Sphere
+    (property [center Vec3])
+    (property [radius f5])
+    (property [color Vec3])
+    (property [shine f5])
+    (constructor () in
+      {
+        (cm_set self center (class_new Vec3))
+        (cm_set self radius $1p0^f5)
+        (cm_set self color (class_new Vec3 $1p0^f5 $1p0^f5 $1p0^f5))
+        (cm_set self shine $0p2^f5)
+      }
+    )
+    (constructor ([center0 Vec3] [radius0 f5] [color0 Vec3] [shine0 f5]) in
+      {
+        (cm_set self center center0)
+        (cm_set self radius radius0)
+        (cm_set self color color0)
+        (cm_set self shine shine0)
+      }
+    )
+  )
+
+  (class Plane
+    (property [point Vec3])
+    (property [normal Vec3])
+    (property [color Vec3])
+    (property [shine f5])
+    (constructor () in
+      {
+        (cm_set self point (class_new Vec3))
+        (cm_set self normal (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5))
+        (cm_set self color (class_new Vec3 $1p0^f5 $1p0^f5 $1p0^f5))
+        (cm_set self shine $0p0^f5)
+      }
+    )
+    (constructor ([point0 Vec3] [normal0 Vec3] [color0 Vec3] [shine0 f5]) in
+      {
+        (cm_set self point point0)
+        (cm_set self normal normal0)
+        (cm_set self color color0)
+        (cm_set self shine shine0)
+      }
+    )
+  )
+
+  (class Camera
+    (property [origin Vec3])
+    (property [lower_left Vec3])
+    (property [horizontal Vec3])
+    (property [vertical Vec3])
+    (constructor ([origin0 Vec3] [lower_left0 Vec3] [horizontal0 Vec3] [vertical0 Vec3]) in
+      {
+        (cm_set self origin origin0)
+        (cm_set self lower_left lower_left0)
+        (cm_set self horizontal horizontal0)
+        (cm_set self vertical vertical0)
+      }
+    )
+  )
+
+  (class RenderConfig
+    (property [output_path s3])
+    (property [width i5])
+    (property [height i5])
+    (constructor ([output_path0 s3] [width0 i5] [height0 i5]) in
+      {
+        (cm_set self output_path output_path0)
+        (cm_set self width width0)
+        (cm_set self height height0)
+      }
+    )
+  )
+
+  (class HitState
+    (property [did_hit bool])
+    (property [distance f5])
+    (property [point Vec3])
+    (property [normal Vec3])
+    (property [color Vec3])
+    (property [shine f5])
+    (constructor () in
+      {
+        (cm_set self did_hit false)
+        (cm_set self distance $1000000p0^f5)
+        (cm_set self point (class_new Vec3))
+        (cm_set self normal (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5))
+        (cm_set self color (class_new Vec3))
+        (cm_set self shine $0p0^f5)
+      }
+    )
+  )
+
+  (function f5_abs ([value f5]) to f5 in (if (lt value $0p0^f5) then (sub $0p0^f5 value) else value))
+  (function f5_max ([left f5] [right f5]) to f5 in (if (gt left right) then left else right))
+  (function f5_clamp ([value f5] [minimum f5] [maximum f5]) to f5 in
+    (if (lt value minimum)
+      then minimum
+      else (if (gt value maximum) then maximum else value)
+    )
+  )
+
+  (function vec_add ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3 (add left.x right.x) (add left.y right.y) (add left.z right.z))
+  )
+  (function vec_sub ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3 (sub left.x right.x) (sub left.y right.y) (sub left.z right.z))
+  )
+  (function vec_scale ([value Vec3] [factor f5]) to Vec3 in
+    (class_new Vec3 (mul value.x factor) (mul value.y factor) (mul value.z factor))
+  )
+  (function vec_hadamard ([left Vec3] [right Vec3]) to Vec3 in
+    (class_new Vec3 (mul left.x right.x) (mul left.y right.y) (mul left.z right.z))
+  )
+  (function vec_dot ([left Vec3] [right Vec3]) to f5 in
+    (add (mul left.x right.x) (add (mul left.y right.y) (mul left.z right.z)))
+  )
+  (function vec_length ([value Vec3]) to f5 in (sqrt (vec_dot value value)))
+  (function vec_normalize ([value Vec3]) to Vec3 in
+    {
+      (var [length_value f5] (vec_length value))
+      (if (lt length_value $0p0001^f5)
+        then (class_new Vec3)
+        else (vec_scale value (div $1p0^f5 length_value))
+      )
+    }
+  )
+  (function vec_mix ([left Vec3] [right Vec3] [factor f5]) to Vec3 in
+    (vec_add (vec_scale left (sub $1p0^f5 factor)) (vec_scale right factor))
+  )
+
+  (function count_decimal_digits_nonnegative ([value i5]) to i5 in
+    (if (lt value $10^i5)
+      then $1^i5
+      else (add $1^i5 (count_decimal_digits_nonnegative (div value $10^i5)))
+    )
+  )
+
+  (function digit_char ([value i5]) to c3 in
+    (if (eq value $0^i5)
+      then (s3_get $digit0_s3^s3 $0^i5)
+      else
+        (if (eq value $1^i5)
+          then (s3_get $digit1_s3^s3 $0^i5)
+          else
+            (if (eq value $2^i5)
+              then (s3_get $digit2_s3^s3 $0^i5)
+              else
+                (if (eq value $3^i5)
+                  then (s3_get $digit3_s3^s3 $0^i5)
+                  else
+                    (if (eq value $4^i5)
+                      then (s3_get $digit4_s3^s3 $0^i5)
+                      else
+                        (if (eq value $5^i5)
+                          then (s3_get $digit5_s3^s3 $0^i5)
+                          else
+                            (if (eq value $6^i5)
+                              then (s3_get $digit6_s3^s3 $0^i5)
+                              else
+                                (if (eq value $7^i5)
+                                  then (s3_get $digit7_s3^s3 $0^i5)
+                                  else
+                                    (if (eq value $8^i5)
+                                      then (s3_get $digit8_s3^s3 $0^i5)
+                                      else (s3_get $digit9_s3^s3 $0^i5)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function fill_decimal_digits ([result s3] [slot i5] [value i5]) to s3 in
+    {
+      (if (lt value $10^i5)
+        then (s3_set result slot (digit_char value))
+        else
+          {
+            (var [prefix_value i5] (div value $10^i5))
+            (fill_decimal_digits result (sub slot $1^i5) prefix_value)
+            (s3_set result slot (digit_char (mod value $10^i5)))
+          }
+      )
+      result
+    }
+  )
+
+  (function i5_to_s3 ([value i5]) to s3 in
+    (if (lt value $0^i5)
+      then
+        {
+          (var [abs_value i5] (sub $0^i5 value))
+          (var [digits i5] (count_decimal_digits_nonnegative abs_value))
+          (var [result s3] (s3_new (add digits $1^i5) (s3_get $digit0_s3^s3 $0^i5)))
+          (s3_set result $0^i5 (s3_get $minus_s3^s3 $0^i5))
+          (fill_decimal_digits result digits abs_value)
+        }
+      else
+        {
+          (var [digits i5] (count_decimal_digits_nonnegative value))
+          (var [result s3] (s3_new digits (s3_get $digit0_s3^s3 $0^i5)))
+          (fill_decimal_digits result (sub digits $1^i5) value)
+        }
+    )
+  )
+
+  (function parse_nonnegative_i5 ([value s3]) to i5 in
+    {
+      (var [index i5] $0^i5)
+      (var [result i5] $0^i5)
+      (var [length_value i5] (s3_length value))
+      (while (lt index length_value) in
+        {
+          (var [code i5] (sub (val_to_i5 (s3_get value index)) (val_to_i5 (s3_get $digit0_s3^s3 $0^i5))))
+          (var_set result (add (mul result $10^i5) code))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function ppm_channel ([value f5]) to i5 in
+    (round (mul (sqrt (f5_clamp value $0p0^f5 $1p0^f5)) $255p0^f5))
+  )
+
+  (function ppm_line_s3 ([color Vec3]) to s3 in
+    {
+      (var [r s3] (i5_to_s3 (ppm_channel color.x)))
+      (var [g s3] (i5_to_s3 (ppm_channel color.y)))
+      (var [b s3] (i5_to_s3 (ppm_channel color.z)))
+      (s3_concat_raw r (s3_concat_raw $space_s3^s3 (s3_concat_raw g (s3_concat_raw $space_s3^s3 (s3_concat_raw b $newline_s3^s3)))))
+    }
+  )
+
+  (function ppm_header_s3 ([width i5] [height i5]) to s3 in
+    (s3_concat_raw
+      $ppm_magic_s3^s3
+      (s3_concat_raw (i5_to_s3 width) (s3_concat_raw $space_s3^s3 (s3_concat_raw (i5_to_s3 height) (s3_concat_raw $newline_s3^s3 $ppm_max_s3^s3))))
+    )
+  )
+
+  (function quiet_gc_print () to unit in
+    {
+      (sys_env_set_s3 $iw_gc_print_name_s3^s3 $iw_gc_print_off_s3^s3)
+      unit
+    }
+  )
+
+  (function make_camera ([width i5] [height i5]) to Camera in
+    {
+      (var [aspect_ratio f5] (div (val_to_f5 width) (val_to_f5 height)))
+      (var [viewport_height f5] $2p0^f5)
+      (var [viewport_width f5] (mul viewport_height aspect_ratio))
+      (var [origin Vec3] (class_new Vec3 $0p0^f5 $0p35^f5 $1p6^f5))
+      (var [horizontal Vec3] (class_new Vec3 viewport_width $0p0^f5 $0p0^f5))
+      (var [vertical Vec3] (class_new Vec3 $0p0^f5 viewport_height $0p0^f5))
+      (var [lower_left Vec3] (vec_add origin (class_new Vec3 (div (sub $0p0^f5 viewport_width) $2p0^f5) (sub $0p0^f5 (div viewport_height $2p0^f5)) (sub $0p0^f5 $2p2^f5))))
+      (class_new Camera origin lower_left horizontal vertical)
+    }
+  )
+
+  (function make_spheres () to <Array Sphere> in
+    {
+      (var [seed Sphere] (class_new Sphere))
+      (var [raw <array Sphere>] (array_new <array Sphere> $4^i5 seed))
+      (array_set raw $0^i5 (class_new Sphere (class_new Vec3 (sub $0p0^f5 $0p95^f5) (sub $0p0^f5 $0p2^f5) (sub $0p0^f5 $3p6^f5)) $0p8^f5 (class_new Vec3 $0p92^f5 $0p9^f5 $0p84^f5) $0p25^f5))
+      (array_set raw $1^i5 (class_new Sphere (class_new Vec3 $0p85^f5 (sub $0p0^f5 $0p55^f5) (sub $0p0^f5 $2p55^f5)) $0p45^f5 (class_new Vec3 $0p95^f5 $0p72^f5 $0p3^f5) $0p55^f5))
+      (array_set raw $2^i5 (class_new Sphere (class_new Vec3 $1p3^f5 $0p28^f5 (sub $0p0^f5 $4p2^f5)) $0p7^f5 (class_new Vec3 $0p35^f5 $0p82^f5 $0p8^f5) $0p15^f5))
+      (array_set raw $3^i5 (class_new Sphere (class_new Vec3 (sub $0p0^f5 $0p1^f5) (sub $0p0^f5 $0p78^f5) (sub $0p0^f5 $4p7^f5)) $0p22^f5 (class_new Vec3 $0p98^f5 $0p98^f5 $0p98^f5) $0p8^f5))
+      (<array_wrap Sphere> raw seed)
+    }
+  )
+
+  (function make_planes () to <Array Plane> in
+    {
+      (var [seed Plane] (class_new Plane))
+      (var [raw <array Plane>] (array_new <array Plane> $5^i5 seed))
+      (array_set raw $0^i5 (class_new Plane (class_new Vec3 $0p0^f5 (sub $0p0^f5 $1p0^f5) $0p0^f5) (class_new Vec3 $0p0^f5 $1p0^f5 $0p0^f5) (class_new Vec3 $0p76^f5 $0p72^f5 $0p68^f5) $0p02^f5))
+      (array_set raw $1^i5 (class_new Plane (class_new Vec3 $0p0^f5 $2p45^f5 $0p0^f5) (class_new Vec3 $0p0^f5 (sub $0p0^f5 $1p0^f5) $0p0^f5) (class_new Vec3 $0p74^f5 $0p78^f5 $0p84^f5) $0p02^f5))
+      (array_set raw $2^i5 (class_new Plane (class_new Vec3 (sub $0p0^f5 $2p35^f5) $0p0^f5 $0p0^f5) (class_new Vec3 $1p0^f5 $0p0^f5 $0p0^f5) (class_new Vec3 $0p82^f5 $0p38^f5 $0p35^f5) $0p04^f5))
+      (array_set raw $3^i5 (class_new Plane (class_new Vec3 $2p35^f5 $0p0^f5 $0p0^f5) (class_new Vec3 (sub $0p0^f5 $1p0^f5) $0p0^f5 $0p0^f5) (class_new Vec3 $0p32^f5 $0p42^f5 $0p84^f5) $0p04^f5))
+      (array_set raw $4^i5 (class_new Plane (class_new Vec3 $0p0^f5 $0p0^f5 (sub $0p0^f5 $6p0^f5)) (class_new Vec3 $0p0^f5 $0p0^f5 $1p0^f5) (class_new Vec3 $0p72^f5 $0p78^f5 $0p74^f5) $0p05^f5))
+      (<array_wrap Plane> raw seed)
+    }
+  )
+
+  (function sphere_hit_t ([ray Ray] [sphere Sphere] [minimum_t f5] [maximum_t f5]) to f5 in
+    {
+      (var [offset Vec3] (vec_sub ray.origin sphere.center))
+      (var [a f5] (vec_dot ray.direction ray.direction))
+      (var [half_b f5] (vec_dot offset ray.direction))
+      (var [c f5] (sub (vec_dot offset offset) (mul sphere.radius sphere.radius)))
+      (var [discriminant f5] (sub (mul half_b half_b) (mul a c)))
+      (if (lt discriminant $0p0^f5)
+        then (sub $0p0^f5 $1p0^f5)
+        else
+          {
+            (var [root_delta f5] (sqrt discriminant))
+            (var [near_root f5] (div (sub (sub $0p0^f5 half_b) root_delta) a))
+            (if (and (gt near_root minimum_t) (lt near_root maximum_t))
+              then near_root
+              else
+                {
+                  (var [far_root f5] (div (add (sub $0p0^f5 half_b) root_delta) a))
+                  (if (and (gt far_root minimum_t) (lt far_root maximum_t))
+                    then far_root
+                    else (sub $0p0^f5 $1p0^f5)
+                  )
+                }
+            )
+          }
+      )
+    }
+  )
+
+  (function plane_hit_t ([ray Ray] [plane Plane] [minimum_t f5] [maximum_t f5]) to f5 in
+    {
+      (var [denominator f5] (vec_dot plane.normal ray.direction))
+      (if (lt (f5_abs denominator) $0p0001^f5)
+        then (sub $0p0^f5 $1p0^f5)
+        else
+          {
+            (var [distance f5] (div (vec_dot (vec_sub plane.point ray.origin) plane.normal) denominator))
+            (if (and (gt distance minimum_t) (lt distance maximum_t))
+              then distance
+              else (sub $0p0^f5 $1p0^f5)
+            )
+          }
+      )
+    }
+  )
+
+  (function trace_hit ([ray Ray] [spheres <Array Sphere>] [planes <Array Plane>]) to HitState in
+    {
+      (var [hit HitState] (class_new HitState))
+      (var [sphere_index i5] $0^i5)
+      (var [sphere_count i5] (<Array_len Sphere> spheres))
+      (while (lt sphere_index sphere_count) in
+        {
+          (var [sphere Sphere] (spheres.get sphere_index))
+          (var [distance f5] (sphere_hit_t ray sphere $0p001^f5 hit.distance))
+          (if (gt distance $0p0^f5)
+            then
+              {
+                (var [point Vec3] (vec_add ray.origin (vec_scale ray.direction distance)))
+                (cm_set hit did_hit true)
+                (cm_set hit distance distance)
+                (cm_set hit point point)
+                (cm_set hit normal (vec_normalize (vec_sub point sphere.center)))
+                (cm_set hit color sphere.color)
+                (cm_set hit shine sphere.shine)
+              }
+            else unit
+          )
+          (var_set sphere_index (add sphere_index $1^i5))
+        }
+      )
+      (var [plane_index i5] $0^i5)
+      (var [plane_count i5] (<Array_len Plane> planes))
+      (while (lt plane_index plane_count) in
+        {
+          (var [plane Plane] (planes.get plane_index))
+          (var [distance f5] (plane_hit_t ray plane $0p001^f5 hit.distance))
+          (if (gt distance $0p0^f5)
+            then
+              {
+                (cm_set hit did_hit true)
+                (cm_set hit distance distance)
+                (cm_set hit point (vec_add ray.origin (vec_scale ray.direction distance)))
+                (cm_set hit normal plane.normal)
+                (cm_set hit color plane.color)
+                (cm_set hit shine plane.shine)
+              }
+            else unit
+          )
+          (var_set plane_index (add plane_index $1^i5))
+        }
+      )
+      hit
+    }
+  )
+
+  (function is_occluded ([origin Vec3] [target Vec3] [spheres <Array Sphere>] [planes <Array Plane>]) to bool in
+    {
+      (var [direction_to_light Vec3] (vec_sub target origin))
+      (var [light_distance f5] (vec_length direction_to_light))
+      (var [shadow_ray Ray] (class_new Ray origin (vec_scale direction_to_light (div $1p0^f5 light_distance))))
+      (var [maximum_t f5] (sub light_distance $0p02^f5))
+      (var [blocked bool] false)
+      (var [sphere_index i5] $0^i5)
+      (var [sphere_count i5] (<Array_len Sphere> spheres))
+      (while (and (lt sphere_index sphere_count) (not blocked)) in
+        {
+          (if (gt (sphere_hit_t shadow_ray (spheres.get sphere_index) $0p001^f5 maximum_t) $0p0^f5)
+            then (var_set blocked true)
+            else unit
+          )
+          (var_set sphere_index (add sphere_index $1^i5))
+        }
+      )
+      (var [plane_index i5] $0^i5)
+      (var [plane_count i5] (<Array_len Plane> planes))
+      (while (and (lt plane_index plane_count) (not blocked)) in
+        {
+          (if (gt (plane_hit_t shadow_ray (planes.get plane_index) $0p001^f5 maximum_t) $0p0^f5)
+            then (var_set blocked true)
+            else unit
+          )
+          (var_set plane_index (add plane_index $1^i5))
+        }
+      )
+      blocked
+    }
+  )
+
+  (function background_color ([ray Ray]) to Vec3 in
+    {
+      (var [t f5] (mul (add ray.direction.y $1p0^f5) $0p5^f5))
+      (vec_mix (class_new Vec3 $0p18^f5 $0p2^f5 $0p24^f5) (class_new Vec3 $0p06^f5 $0p08^f5 $0p1^f5) t)
+    }
+  )
+
+  (function shade_hit ([ray Ray] [hit HitState] [spheres <Array Sphere>] [planes <Array Plane>]) to Vec3 in
+    {
+      (var [light_position Vec3] (class_new Vec3 $0p8^f5 $2p05^f5 $0p9^f5))
+      (var [light_color Vec3] (class_new Vec3 $1p0^f5 $0p96^f5 $0p9^f5))
+      (var [ambient Vec3] (vec_scale hit.color $0p18^f5))
+      (var [shadow_origin Vec3] (vec_add hit.point (vec_scale hit.normal $0p03^f5)))
+      (if (is_occluded shadow_origin light_position spheres planes)
+        then ambient
+        else
+          {
+            (var [light_direction Vec3] (vec_normalize (vec_sub light_position hit.point)))
+            (var [view_direction Vec3] (vec_normalize (vec_scale ray.direction (sub $0p0^f5 $1p0^f5))))
+            (var [half_direction Vec3] (vec_normalize (vec_add light_direction view_direction)))
+            (var [diffuse_amount f5] (f5_max (vec_dot hit.normal light_direction) $0p0^f5))
+            (var [highlight_base f5] (f5_max (vec_dot hit.normal half_direction) $0p0^f5))
+            (var [highlight2 f5] (mul highlight_base highlight_base))
+            (var [highlight4 f5] (mul highlight2 highlight2))
+            (var [highlight8 f5] (mul highlight4 highlight4))
+            (var [specular_amount f5] (mul highlight8 hit.shine))
+            (vec_add ambient (vec_add (vec_hadamard hit.color (vec_scale light_color (mul diffuse_amount $0p82^f5))) (vec_scale light_color specular_amount)))
+          }
+      )
+    }
+  )
+
+  (function trace_ray ([ray Ray] [spheres <Array Sphere>] [planes <Array Plane>]) to Vec3 in
+    {
+      (var [hit HitState] (trace_hit ray spheres planes))
+      (if hit.did_hit
+        then (shade_hit ray hit spheres planes)
+        else (background_color ray)
+      )
+    }
+  )
+
+  (function parse_config ([args <array s3>]) to RenderConfig in
+    {
+      (var [arg_count i5] (array_length args))
+      (var [output_path s3] (if (ge arg_count $1^i5) then (array_get args $0^i5) else $output_default_s3^s3))
+      (var [width i5] (if (ge arg_count $2^i5) then (parse_nonnegative_i5 (array_get args $1^i5)) else $160^i5))
+      (var [height i5] (if (ge arg_count $3^i5) then (parse_nonnegative_i5 (array_get args $2^i5)) else $120^i5))
+      (class_new RenderConfig output_path width height)
+    }
+  )
+
+  (function render_scene ([config RenderConfig]) to unit in
+    {
+      (var [camera Camera] (make_camera config.width config.height))
+      (var [spheres <Array Sphere>] (make_spheres))
+      (var [planes <Array Plane>] (make_planes))
+      (var [fd i5] (sys_fd_creat_s3 config.output_path))
+      (sys_fd_write_s3 fd (ppm_header_s3 config.width config.height))
+      (var [y_index i5] $0^i5)
+      (while (lt y_index config.height) in
+        {
+          (var [x_index i5] $0^i5)
+          (while (lt x_index config.width) in
+            {
+              (var [u f5] (div (add (val_to_f5 x_index) $0p5^f5) (val_to_f5 config.width)))
+              (var [v f5] (div (sub (sub (val_to_f5 config.height) (val_to_f5 y_index)) $0p5^f5) (val_to_f5 config.height)))
+              (var [target Vec3] (vec_add camera.lower_left (vec_add (vec_scale camera.horizontal u) (vec_scale camera.vertical v))))
+              (var [ray Ray] (class_new Ray camera.origin (vec_normalize (vec_sub target camera.origin))))
+              (sys_fd_write_s3 fd (ppm_line_s3 (trace_ray ray spheres planes)))
+              (var_set x_index (add x_index $1^i5))
+            }
+          )
+          (var_set y_index (add y_index $1^i5))
+        }
+      )
+      (sys_fd_close fd)
+      unit
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (quiet_gc_print)
+      (var [config RenderConfig] (parse_config args))
+      (render_scene config)
+      (gc_collect)
+      $0^i5
+    }
+  )
+}

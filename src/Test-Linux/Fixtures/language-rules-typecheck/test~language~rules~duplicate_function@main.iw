@@ -1,0 +1,5 @@
+{program test~language~rules~duplicate_function@main
+  (function measure ([value i5]) to i5 in value)
+  (function measure ([other i5]) to i5 in (add other $1^i5))
+  (function main ([args <array s3>]) to i5 in (measure $0^i5))
+}

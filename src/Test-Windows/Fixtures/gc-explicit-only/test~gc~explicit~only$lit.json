@@ -1,0 +1,6 @@
+{
+  "package": "test~gc~explicit~only$lit",
+  "dead_s3^s3": "dead",
+  "hello_s3^s3": "hello",
+  "junk_s3^s3": "junk"
+}

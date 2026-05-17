@@ -1,0 +1,109 @@
+{program test~closure~generator~matrix@main
+  (import std~array)
+  (import std~list)
+
+  (function identity_i5 ([value i5]) to i5 in value)
+
+  (function make_adder ([base i5]) to <to i5 from i5> in
+    (fn ([delta i5]) to i5 in (add base delta))
+  )
+
+  (function use_factory ([seed i5] [factory <to <to i5 from i5> from i5>]) to i5 in
+    ((factory seed) $2^i5)
+  )
+
+  (function apply_twice ([value i5] [step <to i5 from i5>]) to i5 in
+    (step (step value))
+  )
+
+  (function build_recursive_chain ([count i5] [step <to i5 from i5>]) to <to i5 from i5> in
+    (if (eq count $0^i5)
+      then step
+      else
+        (build_recursive_chain
+          (sub count $1^i5)
+          (fn ([value i5]) to i5 in (step (add value $1^i5)))
+        )
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [factory_result i5] (use_factory $5^i5 make_adder))
+      (var [returned_result i5] (apply_twice $5^i5 (make_adder $2^i5)))
+
+      (var [first <to i5 from i5>] identity_i5)
+      (var [second <to i5 from i5>] identity_i5)
+      (var [third <to i5 from i5>] identity_i5)
+      (var [generator_index i5] $0^i5)
+      (while (lt generator_index $3^i5) in
+        {
+          (var [snapshot i5] (add generator_index $1^i5))
+          (var [generated <to i5 from i5>] (fn ([value i5]) to i5 in (add value snapshot)))
+          (if (eq generator_index $0^i5)
+            then (var_set first generated)
+            else
+              (if (eq generator_index $1^i5)
+                then (var_set second generated)
+                else (var_set third generated)
+              )
+          )
+          (var_set generator_index (add generator_index $1^i5))
+        }
+      )
+      (var [loop_generated_result i5] (add (first $10^i5) (add (second $10^i5) (third $10^i5))))
+
+      (var [recursive_closure <to i5 from i5>] (build_recursive_chain $5^i5 identity_i5))
+      (var [recursive_result i5] (recursive_closure $10^i5))
+
+      (var [base <Array i5>] (<array_new_fill i5> $6^i5 $0^i5))
+      (var [fill_index i5] $0^i5)
+      (while (lt fill_index (<Array_len i5> base)) in
+        {
+          (base.set fill_index (add fill_index $1^i5))
+          (var_set fill_index (add fill_index $1^i5))
+        }
+      )
+
+      (var [items <List i5>] (<list_new i5> $0^i5))
+      (var [list_fill_index i5] $0^i5)
+      (while (lt list_fill_index (<Array_len i5> base)) in
+        {
+          (items.append (base.get list_fill_index))
+          (var_set list_fill_index (add list_fill_index $1^i5))
+        }
+      )
+
+      (var [mapper_shift i5] $3^i5)
+      (var [shift_closure <to i5 from i5>] (fn ([value i5]) to i5 in (add value mapper_shift)))
+      (var_set mapper_shift $4^i5)
+      (var [mapped <Array i5>] (<Array_map i5 i5> base $0^i5 shift_closure))
+      (var [filtered <Array i5>] (<Array_filter i5> mapped (fn ([value i5]) to bool in (gt value $7^i5))))
+      (var [mapped_sum i5] (<Array_fold i5 i5> filtered $0^i5 (fn ([acc i5] [value i5]) to i5 in (add acc value))))
+
+      (var [list_threshold i5] $5^i5)
+      (var [list_predicate <to bool from i5>] (fn ([value i5]) to bool in (gt value list_threshold)))
+      (var_set list_threshold $7^i5)
+      (var [list_mapped <List i5>] (<list_map i5 i5> items $0^i5 (make_adder $3^i5)))
+      (var [list_filtered <List i5>] (<list_filter i5> list_mapped list_predicate))
+      (var [list_sum i5] (<list_fold i5 i5> list_filtered $0^i5 (fn ([acc i5] [value i5]) to i5 in (add acc value))))
+
+      (add
+        factory_result
+        (add
+          (mul returned_result $10^i5)
+          (add
+            (mul loop_generated_result $100^i5)
+            (add
+              (mul recursive_result $1000^i5)
+              (add
+                (mul mapped_sum $10000^i5)
+                (mul list_sum $100000^i5)
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

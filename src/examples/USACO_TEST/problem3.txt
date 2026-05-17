@@ -1,0 +1,254 @@
+**Note: The time limit for this problem is 4s, twice the default.**
+
+Moo! You are given an integer N
+(2≤N≤2000). Consider all permutations p=[p0,p1,…,pN−1] of [0,1,2…,N−1]. Let f(p)=minN−2i=0|pi−pi+1| denote the minimum absolute difference between any two consecutive elements of p. and let S denote the set of all p that achieve the maximum possible value of f(p)
+
+.
+
+You are additionally given K
+(0≤K≤N) constraints of the form pi=j (0≤i,j<N). Count the number of permutations in S satisfying all constraints, modulo 109+7
+
+.
+
+INPUT FORMAT (input arrives from the terminal / stdin):
+The first line contains T
+(1≤TN≤2⋅104) and N, meaning that you will need to solve T independent test cases, each specified by a different set of constraints.
+
+Each test case starts with K
+, followed by K lines each containing i and j
+
+. It is guaranteed that
+
+    The same i
+
+does not appear more than once within the same test case.
+The same j
+
+    does not appear more than once within the same test case.
+
+OUTPUT FORMAT (print output to the terminal / stdout):
+For each test case, the answer modulo 109+7
+on a separate line.
+
+SAMPLE INPUT:
+
+3 4
+0
+1
+1 1
+2
+0 2
+2 3
+
+SAMPLE OUTPUT:
+
+2
+0
+1
+
+The maximum possible value of f(p)
+is 2, and S={[2,0,3,1],[1,3,0,2]}
+
+.
+
+SAMPLE INPUT:
+
+9 11
+2
+0 5
+6 9
+3
+0 5
+6 9
+1 0
+4
+0 5
+6 9
+1 0
+4 7
+5
+0 5
+6 9
+1 0
+4 7
+2 6
+6
+0 5
+6 9
+1 0
+4 7
+2 6
+9 3
+7
+0 5
+6 9
+1 0
+4 7
+2 6
+9 3
+5 2
+8
+0 5
+6 9
+1 0
+4 7
+2 6
+9 3
+5 2
+7 4
+9
+0 5
+6 9
+1 0
+4 7
+2 6
+9 3
+5 2
+7 4
+3 1
+10
+0 5
+6 9
+1 0
+4 7
+2 6
+9 3
+5 2
+7 4
+3 1
+8 10
+
+SAMPLE OUTPUT:
+
+6
+6
+1
+1
+1
+1
+1
+1
+1
+
+p=[5,0,6,1,7,2,9,4,10,3,8]
+
+should be counted for all test cases.
+
+SAMPLE INPUT:
+
+10 11
+0
+1
+3 8
+2
+3 8
+5 7
+3
+3 8
+5 7
+4 2
+4
+3 8
+5 7
+4 2
+10 6
+5
+3 8
+5 7
+4 2
+10 6
+8 10
+6
+3 8
+5 7
+4 2
+10 6
+8 10
+1 9
+7
+3 8
+5 7
+4 2
+10 6
+8 10
+1 9
+7 5
+8
+3 8
+5 7
+4 2
+10 6
+8 10
+1 9
+7 5
+2 3
+9
+3 8
+5 7
+4 2
+10 6
+8 10
+1 9
+7 5
+2 3
+6 0
+
+SAMPLE OUTPUT:
+
+160
+20
+8
+7
+2
+1
+1
+1
+1
+1
+
+p=[4,9,3,8,2,7,0,5,10,1,6]
+
+should be counted for all test cases.
+
+SAMPLE INPUT:
+
+5 987
+3
+654 321
+543 210
+432 106
+2
+654 321
+543 210
+1
+654 321
+1
+0 493
+0
+
+SAMPLE OUTPUT:
+
+0
+538184948
+693625420
+932738155
+251798971
+
+Make sure to output the answer modulo 109+7
+
+.
+
+SCORING:
+
+    Input 5: N=15
+
+Input 6: N=2000
+Inputs 7-9: For all test cases, the constraint p0=⌊N/2⌋
+appears.
+Inputs 10-13: For all test cases, there exists some constraint pi=j
+with j equal to ⌊N/2⌋
+
+    .
+    Inputs 14-20: No additional constraints.
+
+Problem credits: Benjamin Qi 

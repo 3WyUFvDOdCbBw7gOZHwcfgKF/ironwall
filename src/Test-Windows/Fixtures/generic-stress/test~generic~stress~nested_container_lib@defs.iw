@@ -1,0 +1,22 @@
+{program test~generic~stress~nested_container_lib@defs
+  (class <generic Node T>
+    (property [value T])
+    (property [next <union unit <Node T>>])
+    (constructor ([value0 T] [next0 <union unit <Node T>>]) in
+      {
+        (cm_set self value value0)
+        (cm_set self next next0)
+      }
+    )
+  )
+
+  (class <generic Box T>
+    (property [items <union unit <Node T>>])
+    (constructor () in
+      (cm_set self items unit)
+    )
+    (constructor ([items0 <union unit <Node T>>]) in
+      (cm_set self items items0)
+    )
+  )
+}

@@ -1,0 +1,12 @@
+{program test~seq~var~scope~seq~forward_c_abort@main
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [a i5] $1^i5)
+      (var [b i5] (add a $2^i5))
+      (add b c)
+      (add a b)
+      (var [c i5] $3^i5)
+      c
+    }
+  )
+}

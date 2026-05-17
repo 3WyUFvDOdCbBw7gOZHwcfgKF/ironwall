@@ -1,0 +1,174 @@
+{program app~linear~algebra~lu@main
+  (import app~linear~algebra~shared)
+  (import std~io)
+
+  (function build_input_matrix ([size i5]) to <array f5> in
+    {
+      (var [known_l <array f5>] (zero_matrix size))
+      (var [known_u <array f5>] (zero_matrix size))
+      (var [source <array f5>] (zero_matrix size))
+
+      (var [row i5] $0^i5)
+      (while (lt row size) in
+        {
+          (matrix_set known_l size row row $1p0^f5)
+          (matrix_set known_u size row row (val_to_f5 (add row $4^i5)))
+          (if (gt row $0^i5)
+            then (matrix_set known_l size row (sub row $1^i5) $0p5^f5)
+            else unit
+          )
+          (if (lt row (sub size $1^i5))
+            then (matrix_set known_u size row (add row $1^i5) $1p0^f5)
+            else unit
+          )
+          (var_set row (add row $1^i5))
+        }
+      )
+
+      (var [i i5] $0^i5)
+      (while (lt i size) in
+        {
+          (var [j i5] $0^i5)
+          (while (lt j size) in
+            {
+              (var [sum f5] $0p0^f5)
+              (var [k i5] $0^i5)
+              (while (lt k size) in
+                {
+                  (var_set sum (add sum (mul (matrix_get known_l size i k) (matrix_get known_u size k j))))
+                  (var_set k (add k $1^i5))
+                }
+              )
+              (matrix_set source size i j sum)
+              (var_set j (add j $1^i5))
+            }
+          )
+          (var_set i (add i $1^i5))
+        }
+      )
+
+      source
+    }
+  )
+
+  (function fill_lu ([source <array f5>] [size i5] [l <array f5>] [u <array f5>]) to unit in
+    {
+      (var [k i5] $0^i5)
+      (while (lt k size) in
+        {
+          (matrix_set l size k k $1p0^f5)
+
+          (var [j i5] k)
+          (while (lt j size) in
+            {
+              (var [sum f5] $0p0^f5)
+              (var [s i5] $0^i5)
+              (while (lt s k) in
+                {
+                  (var_set sum (add sum (mul (matrix_get l size k s) (matrix_get u size s j))))
+                  (var_set s (add s $1^i5))
+                }
+              )
+              (matrix_set u size k j (sub (matrix_get source size k j) sum))
+              (var_set j (add j $1^i5))
+            }
+          )
+
+          (var [i i5] (add k $1^i5))
+          (while (lt i size) in
+            {
+              (var [sum f5] $0p0^f5)
+              (var [s i5] $0^i5)
+              (while (lt s k) in
+                {
+                  (var_set sum (add sum (mul (matrix_get l size i s) (matrix_get u size s k))))
+                  (var_set s (add s $1^i5))
+                }
+              )
+              (matrix_set l size i k (div (sub (matrix_get source size i k) sum) (matrix_get u size k k)))
+              (var_set i (add i $1^i5))
+            }
+          )
+
+          (var_set k (add k $1^i5))
+        }
+      )
+    }
+  )
+
+  (function reconstruction_error ([source <array f5>] [size i5] [l <array f5>] [u <array f5>]) to f5 in
+    {
+      (var [row i5] $0^i5)
+      (var [error_sum f5] $0p0^f5)
+      (while (lt row size) in
+        {
+          (var [col i5] $0^i5)
+          (while (lt col size) in
+            {
+              (var [sum f5] $0p0^f5)
+              (var [k i5] $0^i5)
+              (while (lt k size) in
+                {
+                  (var_set sum (add sum (mul (matrix_get l size row k) (matrix_get u size k col))))
+                  (var_set k (add k $1^i5))
+                }
+              )
+              (var [diff f5] (sub sum (matrix_get source size row col)))
+              (var_set error_sum (add error_sum (mul diff diff)))
+              (var_set col (add col $1^i5))
+            }
+          )
+          (var_set row (add row $1^i5))
+        }
+      )
+      error_sum
+    }
+  )
+
+  (function lu_demo_metrics ([size i5]) to <array i5> in
+    {
+      (var [source <array f5>] (build_input_matrix size))
+      (var [l <array f5>] (zero_matrix size))
+      (var [u <array f5>] (zero_matrix size))
+      (fill_lu source size l u)
+
+      (var [l_subdiag_sum f5] $0p0^f5)
+      (var [u_diag_sum f5] $0p0^f5)
+      (var [row i5] $1^i5)
+      (while (lt row size) in
+        {
+          (var_set l_subdiag_sum (add l_subdiag_sum (matrix_get l size row (sub row $1^i5))))
+          (var_set row (add row $1^i5))
+        }
+      )
+
+      (var [diag_index i5] $0^i5)
+      (while (lt diag_index size) in
+        {
+          (var_set u_diag_sum (add u_diag_sum (matrix_get u size diag_index diag_index)))
+          (var_set diag_index (add diag_index $1^i5))
+        }
+      )
+
+      (var [metrics <array i5>] (array_new <array i5> $4^i5 $0^i5))
+      (array_set metrics $0^i5 (scaled_i5 l_subdiag_sum $1000p0^f5))
+      (array_set metrics $1^i5 (scaled_i5 u_diag_sum $1000p0^f5))
+      (array_set metrics $2^i5 (scaled_i5 (matrix_get u size (sub size $1^i5) (sub size $1^i5)) $1000p0^f5))
+      (array_set metrics $3^i5 (scaled_i5 (reconstruction_error source size l u) $1000000p0^f5))
+      metrics
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [metrics <array i5>] (lu_demo_metrics $100^i5))
+
+      (println $app_linear_algebra_lu_ok_s3^s3)
+      (print_i5_line $app_linear_algebra_l_subdiag_sum_x1000_s3^s3 (array_get metrics $0^i5))
+      (print_i5_line $app_linear_algebra_u_diag_sum_x1000_s3^s3 (array_get metrics $1^i5))
+      (print_i5_line $app_linear_algebra_u_last_diag_x1000_s3^s3 (array_get metrics $2^i5))
+      (print_i5_line $app_linear_algebra_reconstruction_error_x1e6_s3^s3 (array_get metrics $3^i5))
+      $0^i5
+    }
+  )
+}

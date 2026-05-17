@@ -1,0 +1,40 @@
+{program test~std~array~builder@main
+  (import std~array)
+
+  (function keep_even_i5 ([value i5]) to bool in
+    (eq (mod value $2^i5) $0^i5)
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [source <Array i5>] (<array_new_fill i5> $4^i5 $0^i5))
+      (source.set $0^i5 $1^i5)
+      (source.set $1^i5 $2^i5)
+      (source.set $2^i5 $3^i5)
+      (source.set $3^i5 $4^i5)
+
+      (var [builder <ArrayBuilder i5>] (<array_builder_new i5> $0^i5))
+      (builder.append $9^i5)
+      (<Array_concat_into i5> builder source)
+      (var [joined <Array i5>] (builder.build))
+
+      (var [filtered_builder <ArrayBuilder i5>] (<array_builder_new i5> $0^i5))
+      (<Array_filter_into i5> filtered_builder joined keep_even_i5)
+      (var [filtered <Array i5>] (filtered_builder.build))
+
+      (add
+        (<ArrayBuilder_len i5> builder)
+        (add
+          (<Array_len i5> filtered)
+          (add
+            (joined.get $0^i5)
+            (add
+              (joined.get $4^i5)
+              (filtered.get $1^i5)
+            )
+          )
+        )
+      )
+    }
+  )
+}

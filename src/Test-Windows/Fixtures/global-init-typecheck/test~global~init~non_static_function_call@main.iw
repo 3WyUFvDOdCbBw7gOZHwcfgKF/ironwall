@@ -1,0 +1,4 @@
+{program test~global~init~non_static_function_call@main
+  (function helper () to i5 in $9^i5)
+  (var [bad i5] (helper))
+}

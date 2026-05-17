@@ -1,0 +1,26 @@
+{program test~astvis~match~gallery@main
+  (function score_union ([value <union i5 bool <union i5 bool>>]) to i5 in
+    (match value
+      ([as_i5 i5] (add as_i5 $1^i5))
+      ([as_bool bool] (if as_bool then $100^i5 else $200^i5))
+      ([nested <union i5 bool>]
+        (match nested
+          ([inner_i5 i5]
+            (match value
+              ([again_i5 i5] again_i5)
+              ([again_bool bool] (if again_bool then $9^i5 else $8^i5))
+              ([again_nested <union i5 bool>]
+                (match again_nested
+                  ([deep_i5 i5] deep_i5)
+                  ([deep_bool bool] (if deep_bool then $7^i5 else $6^i5))
+                )
+              )
+            )
+          )
+          ([inner_bool bool] (if inner_bool then $300^i5 else $400^i5))
+        )
+      )
+    )
+  )
+  (function main ([args <array s3>]) to i5 in (score_union $5^i5))
+}

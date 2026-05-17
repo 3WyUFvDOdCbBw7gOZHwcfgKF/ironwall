@@ -1,0 +1,19 @@
+{
+  "package": "app~http~loopback~lib$lit",
+  "digit0_s3^s3": "0",
+  "digit1_s3^s3": "1",
+  "digit2_s3^s3": "2",
+  "digit3_s3^s3": "3",
+  "digit4_s3^s3": "4",
+  "digit5_s3^s3": "5",
+  "digit6_s3^s3": "6",
+  "digit7_s3^s3": "7",
+  "digit8_s3^s3": "8",
+  "digit9_s3^s3": "9",
+  "minus_s3^s3": "-",
+  "newline_s3^s3": "\n",
+  "yes_s3^s3": "yes",
+  "no_s3^s3": "no",
+  "http_content_length_prefix_s3^s3": "Content-Length: ",
+  "http_crlf_s3^s3": "\r\n"
+}

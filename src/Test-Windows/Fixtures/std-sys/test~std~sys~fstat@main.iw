@@ -1,0 +1,33 @@
+{program test~std~sys~fstat@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [file_fd i5] (sys_fd_open_read_s3 $sys_fstat_path_s3^s3))
+      (var [file_stat SysFileStat] (sys_fd_fstat file_fd))
+      (sys_fd_close file_fd)
+      (var [dir_fd i5] (sys_fd_open_read_s3 $sys_fstat_dir_path_s3^s3))
+      (var [dir_stat SysFileStat] (sys_fd_fstat dir_fd))
+      (sys_fd_close dir_fd)
+      (add
+        $310^i5
+        (add
+          (score (eq (sys_stat_size file_stat) (s3_length $sys_fstat_text_s3^s3)))
+          (add
+            (score (gt (sys_stat_inode file_stat) $0^i5))
+            (add
+              (score (gt (sys_stat_block_size file_stat) $0^i5))
+              (add
+                (score (sys_stat_is_regular file_stat))
+                (add
+                  (score (gt (sys_stat_inode dir_stat) $0^i5))
+                  (score (sys_stat_is_dir dir_stat))
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

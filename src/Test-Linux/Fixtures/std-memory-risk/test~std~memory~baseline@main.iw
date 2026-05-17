@@ -1,0 +1,296 @@
+{program test~std~memory~baseline@main
+  (import std~dict)
+  (import std~set)
+  (import std~list)
+  (import std~pair)
+  (import std~eq)
+  (import std~hash)
+
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function id_hash ([value i5]) to i5 in value)
+  (function add_i5 ([acc i5] [value i5]) to i5 in (add acc value))
+  (function dict_add_one_to_value ([key i5] [value i5]) to i5 in (add value $1^i5))
+  (function add_one_i5 ([value i5]) to i5 in (add value $1^i5))
+  (function keep_even_key ([key i5] [value i5]) to bool in (eq (mod key $2^i5) $0^i5))
+  (function keep_multiple_of_three_i5 ([value i5]) to bool in (eq (mod value $3^i5) $0^i5))
+
+  (function slow_dict_fold ([source <Dict i5 i5>]) to i5 in
+    {
+      (var [work <Dict i5 i5>] (source.copy))
+      (var [remaining i5] (<dict_len i5 i5> work))
+      (var [acc i5] $0^i5)
+      (while (gt remaining $0^i5) in
+        {
+          (var [entry <Pair i5 i5>] (work.popitem))
+          (var_set acc (add acc (cm_get entry second)))
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      acc
+    }
+  )
+
+  (function slow_dict_map_values ([source <Dict i5 i5>]) to <Dict i5 i5> in
+    {
+      (var [result <Dict i5 i5>] (class_new <Dict i5 i5> (cm_get source hash_rule) (cm_get source eq_rule) $0^i5 $0^i5 (cm_get source capacity)))
+      (var [work <Dict i5 i5>] (source.copy))
+      (var [pairs <List <Pair i5 i5>>] (<list_new <Pair i5 i5>> (class_new <Pair i5 i5> $0^i5 $0^i5)))
+      (var [remaining i5] (<dict_len i5 i5> work))
+      (while (gt remaining $0^i5) in
+        {
+          (pairs.append (work.popitem))
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      (var [pair_count i5] (<list_len <Pair i5 i5>> pairs))
+      (while (gt pair_count $0^i5) in
+        {
+          (var [entry <Pair i5 i5>] (<list_pop <Pair i5 i5>> pairs))
+          (<dict_store i5 i5> result (cm_get entry first) (dict_add_one_to_value (cm_get entry first) (cm_get entry second)))
+          (var_set pair_count (sub pair_count $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_dict_filter ([source <Dict i5 i5>]) to <Dict i5 i5> in
+    {
+      (var [result <Dict i5 i5>] (class_new <Dict i5 i5> (cm_get source hash_rule) (cm_get source eq_rule) $0^i5 $0^i5 (cm_get source capacity)))
+      (var [work <Dict i5 i5>] (source.copy))
+      (var [pairs <List <Pair i5 i5>>] (<list_new <Pair i5 i5>> (class_new <Pair i5 i5> $0^i5 $0^i5)))
+      (var [remaining i5] (<dict_len i5 i5> work))
+      (while (gt remaining $0^i5) in
+        {
+          (pairs.append (work.popitem))
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      (var [pair_count i5] (<list_len <Pair i5 i5>> pairs))
+      (while (gt pair_count $0^i5) in
+        {
+          (var [entry <Pair i5 i5>] (<list_pop <Pair i5 i5>> pairs))
+          (if (keep_even_key (cm_get entry first) (cm_get entry second))
+            then
+              {
+                (<dict_store i5 i5> result (cm_get entry first) (cm_get entry second))
+                unit
+              }
+            else unit
+          )
+          (var_set pair_count (sub pair_count $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_dict_keys ([source <Dict i5 i5>]) to <List i5> in
+    {
+      (var [result <List i5>] (<list_new i5> $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index (cm_get source capacity)) in
+        {
+          (if (eq (array_get (cm_get source states) index) $1^i5)
+            then
+              {
+                (result.append (<dict_key_unwrap i5> (array_get (cm_get source key_slots) index)))
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_dict_values ([source <Dict i5 i5>]) to <List i5> in
+    {
+      (var [result <List i5>] (<list_new i5> $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index (cm_get source capacity)) in
+        {
+          (if (eq (array_get (cm_get source states) index) $1^i5)
+            then
+              {
+                (result.append (<dict_value_unwrap i5> (array_get (cm_get source value_slots) index)))
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_dict_items ([source <Dict i5 i5>]) to <List <Pair i5 i5>> in
+    {
+      (var [result <List <Pair i5 i5>>] (<list_new <Pair i5 i5>> (class_new <Pair i5 i5> $0^i5 $0^i5)))
+      (var [index i5] $0^i5)
+      (while (lt index (cm_get source capacity)) in
+        {
+          (if (eq (array_get (cm_get source states) index) $1^i5)
+            then
+              {
+                (result.append
+                  (class_new <Pair i5 i5>
+                    (<dict_key_unwrap i5> (array_get (cm_get source key_slots) index))
+                    (<dict_value_unwrap i5> (array_get (cm_get source value_slots) index))
+                  )
+                )
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_set_fold ([source <Set i5>]) to i5 in
+    {
+      (var [work <Set i5>] (source.copy))
+      (var [remaining i5] (<set_len i5> work))
+      (var [acc i5] $0^i5)
+      (while (gt remaining $0^i5) in
+        {
+          (var_set acc (add acc (work.pop)))
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      acc
+    }
+  )
+
+  (function slow_set_map ([source <Set i5>] [hash_rule <Hash i5>] [eq_rule <Eq i5>]) to <Set i5> in
+    {
+      (var [result <Set i5>] (class_new <Set i5> hash_rule eq_rule (cm_get source capacity)))
+      (var [work <Set i5>] (source.copy))
+      (var [remaining i5] (<set_len i5> work))
+      (while (gt remaining $0^i5) in
+        {
+          (result.add (add_one_i5 (work.pop)))
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_set_filter ([source <Set i5>] [hash_rule <Hash i5>] [eq_rule <Eq i5>]) to <Set i5> in
+    {
+      (var [result <Set i5>] (class_new <Set i5> hash_rule eq_rule (cm_get source capacity)))
+      (var [work <Set i5>] (source.copy))
+      (var [remaining i5] (<set_len i5> work))
+      (while (gt remaining $0^i5) in
+        {
+          (var [value i5] (work.pop))
+          (if (keep_multiple_of_three_i5 value)
+            then
+              {
+                (result.add value)
+                unit
+              }
+            else unit
+          )
+          (var_set remaining (sub remaining $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function slow_list_repeat ([source <List i5>] [times i5]) to <List i5> in
+    {
+      (var [result <List i5>] (<list_new i5> $0^i5))
+      (var [repeat_index i5] $0^i5)
+      (while (lt repeat_index times) in
+        {
+          (var [item_index i5] $0^i5)
+          (while (lt item_index (<list_len i5> source)) in
+            {
+              (result.append (source.get item_index))
+              (var_set item_index (add item_index $1^i5))
+            }
+          )
+          (var_set repeat_index (add repeat_index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [eq_rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [hash_rule <Hash i5>] (class_new <Hash i5> id_hash))
+      (var [dict_source <Dict i5 i5>] (<dict_new i5 i5> hash_rule eq_rule $0^i5 $0^i5))
+      (var [set_source <Set i5>] (<set_new i5> hash_rule eq_rule))
+      (var [list_source <List i5>] (<list_new i5> $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index $12000^i5) in
+        {
+          (dict_source.setdefault index index)
+          (set_source.add index)
+          (if (lt index $192^i5)
+            then
+              {
+                (list_source.append index)
+                unit
+              }
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [dict_mapped <Dict i5 i5>] (slow_dict_map_values dict_source))
+      (var [dict_kept <Dict i5 i5>] (slow_dict_filter dict_mapped))
+      (var [dict_sum i5] (slow_dict_fold dict_kept))
+      (var [dict_keys <List i5>] (slow_dict_keys dict_kept))
+      (var [dict_values <List i5>] (slow_dict_values dict_kept))
+      (var [dict_items <List <Pair i5 i5>>] (slow_dict_items dict_kept))
+
+      (var [set_mapped <Set i5>] (slow_set_map set_source hash_rule eq_rule))
+      (var [set_kept <Set i5>] (slow_set_filter set_mapped hash_rule eq_rule))
+      (var [set_sum i5] (slow_set_fold set_kept))
+
+      (var [repeated <List i5>] (slow_list_repeat list_source $64^i5))
+
+      (mod
+        (add
+          dict_sum
+          (add
+            set_sum
+            (add
+              (<list_len i5> repeated)
+              (add
+                (<dict_len i5 i5> dict_kept)
+                (add
+                  (<set_len i5> set_kept)
+                  (add
+                    (dict_keys.get $0^i5)
+                    (add
+                      (dict_values.get $10^i5)
+                      (add
+                        (cm_get (dict_items.get $5^i5) second)
+                        (repeated.get $100^i5)
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+        $251^i5
+      )
+    }
+  )
+}

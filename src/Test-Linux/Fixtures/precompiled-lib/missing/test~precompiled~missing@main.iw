@@ -1,0 +1,9 @@
+{program test~precompiled~missing@main
+  (import test~precompiled~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [single <Box bool>] (<make_box bool> true))
+      (if single.value then $1^i5 else $0^i5)
+    }
+  )
+}

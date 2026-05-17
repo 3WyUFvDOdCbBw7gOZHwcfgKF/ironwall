@@ -1,0 +1,4 @@
+{program test~global~init~invalid_class_type@main
+  (class Marker (constructor () in unit))
+  (var [bad Marker] (class_new Marker))
+}

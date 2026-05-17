@@ -1,0 +1,323 @@
+{program usaco~prob2@main
+  (import std~io)
+  (import usaco~shared)
+
+  (class Info
+    (property [len i5])
+    (property [cells <array <array i7>>])
+    (constructor ([len0 i5] [cells0 <array <array i7>>]) in
+      {
+        (cm_set self len len0)
+        (cm_set self cells cells0)
+      }
+    )
+  )
+
+  (function cell_index ([left_trim i5] [right_trim i5]) to i5 in
+    (add (mul left_trim $3^i5) right_trim)
+  )
+
+  (function min_i7 ([left i7] [right i7]) to i7 in
+    (if (le left right) then left else right)
+  )
+
+  (function make_zero_seq () to <array i7> in
+    (array_new <array i7> $1^i5 $0^i7)
+  )
+
+  (function make_cost_seq ([value i7]) to <array i7> in
+    {
+      (var [result <array i7>] (array_new <array i7> $2^i5 $0^i7))
+      (array_set result $1^i5 value)
+      result
+    }
+  )
+
+  (function make_cells () to <array <array i7>> in
+    {
+      (var [cells <array <array i7>>] (array_new <array <array i7>> $9^i5 (make_zero_seq)))
+      (var [index i5] $0^i5)
+      (while (lt index $9^i5) in
+        {
+          (array_set cells index (make_zero_seq))
+          (var_set index (add index $1^i5))
+        }
+      )
+      cells
+    }
+  )
+
+  (function make_info ([length i5]) to Info in
+    (class_new Info length (make_cells))
+  )
+
+  (function info_get_seq ([info Info] [left_trim i5] [right_trim i5]) to <array i7> in
+    (array_get (cm_get info cells) (cell_index left_trim right_trim))
+  )
+
+  (function info_set_seq ([info Info] [left_trim i5] [right_trim i5] [value <array i7>]) to unit in
+    {
+      (array_set (cm_get info cells) (cell_index left_trim right_trim) value)
+      unit
+    }
+  )
+
+  (function resize_i7_array_with_fill ([source <array i7>] [new_length i5] [fill_value i7]) to <array i7> in
+    {
+      (var [result <array i7>] (array_new <array i7> new_length fill_value))
+      (var [copy_length i5] (min_i5 (array_length source) new_length))
+      (var [index i5] $0^i5)
+      (while (lt index copy_length) in
+        {
+          (array_set result index (array_get source index))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function upd ([target <array i7>] [left_seq <array i7>] [right_seq <array i7>] [start_index i5] [start_value i7]) to <array i7> in
+    {
+      (var [result <array i7>] target)
+      (var [left_len i5] (array_length left_seq))
+      (var [right_len i5] (array_length right_seq))
+      (var [needed_length i5] (add (sub (add left_len right_len) $1^i5) start_index))
+      (if (lt (array_length result) needed_length)
+        then
+          {
+            (var_set result (resize_i7_array_with_fill result needed_length $4000000000000000000^i7))
+            unit
+          }
+        else unit
+      )
+      (var [left_index i5] $0^i5)
+      (var [right_index i5] $0^i5)
+      (var [write_index i5] start_index)
+      (var [current_value i7] start_value)
+      (var [running bool] true)
+      (while running in
+        {
+          (array_set result write_index (min_i7 (array_get result write_index) current_value))
+          (if (lt (add left_index $1^i5) left_len)
+            then
+              (if (lt (add right_index $1^i5) right_len)
+                then
+                  (if (le
+                        (sub (array_get left_seq (add left_index $1^i5)) (array_get left_seq left_index))
+                        (sub (array_get right_seq (add right_index $1^i5)) (array_get right_seq right_index))
+                      )
+                    then
+                      {
+                        (var_set current_value (add current_value (sub (array_get left_seq (add left_index $1^i5)) (array_get left_seq left_index))))
+                        (var_set left_index (add left_index $1^i5))
+                        unit
+                      }
+                    else
+                      {
+                        (var_set current_value (add current_value (sub (array_get right_seq (add right_index $1^i5)) (array_get right_seq right_index))))
+                        (var_set right_index (add right_index $1^i5))
+                        unit
+                      }
+                  )
+                else
+                  {
+                    (var_set current_value (add current_value (sub (array_get left_seq (add left_index $1^i5)) (array_get left_seq left_index))))
+                    (var_set left_index (add left_index $1^i5))
+                    unit
+                  }
+              )
+            else
+              (if (lt (add right_index $1^i5) right_len)
+                then
+                  {
+                    (var_set current_value (add current_value (sub (array_get right_seq (add right_index $1^i5)) (array_get right_seq right_index))))
+                    (var_set right_index (add right_index $1^i5))
+                    unit
+                  }
+                else
+                  {
+                    (var_set running false)
+                    unit
+                  }
+              )
+          )
+          (var_set write_index (add write_index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function cost_if_not_ascii ([text s3] [change_costs <array i5>] [index i5] [target_ascii i5]) to i5 in
+    (if (eq (val_to_i5 (s3_get text index)) target_ascii)
+      then $0^i5
+      else (array_get change_costs index)
+    )
+  )
+
+  (function cost_if_not_ascii_i7 ([text s3] [change_costs <array i7>] [index i5] [target_ascii i5]) to i7 in
+    (if (eq (val_to_i5 (s3_get text index)) target_ascii)
+      then $0^i7
+      else (array_get change_costs index)
+    )
+  )
+
+  (function print_nonnegative_i7 ([value i7]) to unit in
+    {
+      (if (ge value $10^i7)
+        then
+          {
+            (print_nonnegative_i7 (div value $10^i7))
+            unit
+          }
+        else unit
+      )
+      (stdout_write_i5_ascii (val_to_i5 (mod value $10^i7)))
+      unit
+    }
+  )
+
+  (function print_i7_with_sep ([value i7] [separator c3]) to unit in
+    {
+      (print_nonnegative_i7 value)
+      (stdout_write_c3 separator)
+      unit
+    }
+  )
+
+  (function solve ([left i5] [right i5] [moo_length i5] [moo_costs <array i7>]) to Info in
+    {
+      (var [result Info] (make_info (sub right left)))
+      (if (and (eq moo_length $1^i5) (eq (cm_get result len) $1^i5))
+        then
+          {
+            (info_set_seq result $0^i5 $0^i5 (make_cost_seq (array_get moo_costs left)))
+            result
+          }
+        else
+          (if (lt (cm_get result len) moo_length)
+            then result
+            else
+              {
+                (var [mid i5] (div (add left right) $2^i5))
+                (var [left_info Info] (solve left mid moo_length moo_costs))
+                (var [right_info Info] (solve mid right moo_length moo_costs))
+                (var [left_trim i5] $0^i5)
+                (while (lt left_trim moo_length) in
+                  {
+                    (var [right_trim i5] $0^i5)
+                    (while (lt right_trim moo_length) in
+                      {
+                        (if (le (add left_trim right_trim) (cm_get result len))
+                          then
+                            {
+                              (if (ge left_trim (cm_get left_info len))
+                                then
+                                  {
+                                    (info_set_seq result left_trim right_trim (info_get_seq right_info (sub left_trim (cm_get left_info len)) right_trim))
+                                    unit
+                                  }
+                                else
+                                  (if (ge right_trim (cm_get right_info len))
+                                    then
+                                      {
+                                        (info_set_seq result left_trim right_trim (info_get_seq left_info left_trim (sub right_trim (cm_get right_info len))))
+                                        unit
+                                      }
+                                    else
+                                      {
+                                        (var [cell <array i7>] (upd (info_get_seq result left_trim right_trim) (info_get_seq left_info left_trim $0^i5) (info_get_seq right_info $0^i5 right_trim) $0^i5 $0^i7))
+                                        (var [split i5] $1^i5)
+                                        (while (lt split moo_length) in
+                                          {
+                                            (if (and (ge (cm_get left_info len) (add left_trim split)) (ge (cm_get right_info len) (add right_trim (sub moo_length split))))
+                                              then
+                                                {
+                                                  (var_set cell (upd cell (info_get_seq left_info left_trim split) (info_get_seq right_info (sub moo_length split) right_trim) $1^i5 (array_get moo_costs (sub mid split))))
+                                                  unit
+                                                }
+                                              else unit
+                                            )
+                                            (var_set split (add split $1^i5))
+                                          }
+                                        )
+                                        (info_set_seq result left_trim right_trim cell)
+                                        unit
+                                      }
+                                  )
+                              )
+                              unit
+                            }
+                          else unit
+                        )
+                        (var_set right_trim (add right_trim $1^i5))
+                      }
+                    )
+                    (var_set left_trim (add left_trim $1^i5))
+                  }
+                )
+                result
+              }
+          )
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [header_line s3] (stdin_read_nonempty_line_s3))
+      (var [moo_length i5] (pair_line_left_i5 header_line))
+      (var [n i5] (pair_line_right_i5 header_line))
+      (var [output_separator c3] (pair_line_separator header_line))
+      (var [text s3] (stdin_read_nonempty_line_s3))
+      (var [change_costs <array i7>] (array_new <array i7> n $0^i7))
+      (var [index i5] $0^i5)
+      (while (lt index n) in
+        {
+          (array_set change_costs index (val_to_i7 (stdin_read_i5)))
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [moo_count i5] (add (sub n moo_length) $1^i5))
+      (var [moo_costs <array i7>] (array_new <array i7> moo_count $0^i7))
+      (var_set index $0^i5)
+      (while (lt index moo_count) in
+        {
+          (var [current_cost i7] (cost_if_not_ascii_i7 text change_costs index $77^i5))
+          (if (ge moo_length $2^i5)
+            then
+              {
+                (var_set current_cost (add current_cost (cost_if_not_ascii_i7 text change_costs (add index $1^i5) $79^i5)))
+                unit
+              }
+            else unit
+          )
+          (if (ge moo_length $3^i5)
+            then
+              {
+                (var_set current_cost (add current_cost (cost_if_not_ascii_i7 text change_costs (add index $2^i5) $79^i5)))
+                unit
+              }
+            else unit
+          )
+          (array_set moo_costs index current_cost)
+          (var_set index (add index $1^i5))
+        }
+      )
+
+      (var [answer_info Info] (solve $0^i5 n moo_length moo_costs))
+      (var [answer_seq <array i7>] (info_get_seq answer_info $0^i5 $0^i5))
+      (var [answer_count i5] (div n moo_length))
+      (var [answer_index i5] $1^i5)
+      (while (le answer_index answer_count) in
+        {
+          (print_i7_with_sep (array_get answer_seq answer_index) output_separator)
+          (var_set answer_index (add answer_index $1^i5))
+        }
+      )
+      $0^i5
+    }
+  )
+}

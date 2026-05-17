@@ -1,0 +1,8 @@
+{
+  "package": "test~std~sys~windows~spawn_wait_kill$lit",
+  "std_sys_windows_empty_s3^s3": "",
+  "std_sys_windows_cmd_path_s3^s3": "C:\\Windows\\System32\\cmd.exe",
+  "std_sys_windows_slash_c_s3^s3": "/c",
+  "std_sys_windows_exit_command_s3^s3": "exit 0",
+  "std_sys_windows_kill_command_s3^s3": "ping -n 6 127.0.0.1 > NUL"
+}

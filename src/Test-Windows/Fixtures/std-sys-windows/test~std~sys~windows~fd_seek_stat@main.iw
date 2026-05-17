@@ -1,0 +1,105 @@
+{program test~std~sys~windows~fd_seek_stat@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function s3_equals ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if
+        (neq left_length (s3_length right))
+        then
+        false
+        else
+        {
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index left_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get left index) (s3_get right index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (if (sys_path_exists_s3 $std_sys_windows_fd_seek_stat_source_s3^s3) then (sys_path_unlink_s3 $std_sys_windows_fd_seek_stat_source_s3^s3) else unit)
+      (if (sys_path_exists_s3 $std_sys_windows_fd_seek_stat_target_s3^s3) then (sys_path_unlink_s3 $std_sys_windows_fd_seek_stat_target_s3^s3) else unit)
+
+      (var [create_fd i5] (sys_fd_creat_s3 $std_sys_windows_fd_seek_stat_source_s3^s3))
+      (sys_fd_write_s3 create_fd $std_sys_windows_fd_seek_stat_initial_s3^s3)
+      (sys_fd_close create_fd)
+
+      (sys_path_rename_s3 $std_sys_windows_fd_seek_stat_source_s3^s3 $std_sys_windows_fd_seek_stat_target_s3^s3)
+
+      (var [write_fd i5] (sys_fd_open_write_s3 $std_sys_windows_fd_seek_stat_target_s3^s3))
+      (sys_fd_pwrite_s3 write_fd $std_sys_windows_fd_seek_stat_patch_s3^s3 $2^i5)
+      (sys_fd_fsync write_fd)
+      (sys_fd_fdatasync write_fd)
+      (sys_fd_close write_fd)
+
+      (var [read_fd i5] (sys_fd_open_read_s3 $std_sys_windows_fd_seek_stat_target_s3^s3))
+      (var [seek_set_pos i5] (sys_fd_seek_set read_fd $1^i5))
+      (var [seek_cur_pos i5] (sys_fd_seek_cur read_fd $2^i5))
+      (var [seek_end_pos i5] (sys_fd_seek_end read_fd (sub $0^i5 $2^i5)))
+      (var [pread_value s3] (sys_fd_pread_s3 read_fd $4^i5 $1^i5))
+      (var [stat_value SysFileStat] (sys_fd_fstat read_fd))
+      (sys_fd_close read_fd)
+
+      (var [total i5]
+        (add
+          (score (not (sys_path_exists_s3 $std_sys_windows_fd_seek_stat_source_s3^s3)))
+          (add
+            (score (sys_path_exists_s3 $std_sys_windows_fd_seek_stat_target_s3^s3))
+            (add
+              (score (eq seek_set_pos $1^i5))
+              (add
+                (score (eq seek_cur_pos $3^i5))
+                (add
+                  (score (eq seek_end_pos $4^i5))
+                  (add
+                    (score (s3_equals pread_value $std_sys_windows_fd_seek_stat_expected_slice_s3^s3))
+                    (add
+                      (score (eq (sys_stat_size stat_value) (s3_length $std_sys_windows_fd_seek_stat_expected_s3^s3)))
+                      (add
+                        (score (sys_stat_is_regular stat_value))
+                        (add
+                          (score (not (sys_stat_is_dir stat_value)))
+                          (add $1^i5 $1^i5)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+
+      (sys_path_unlink_s3 $std_sys_windows_fd_seek_stat_target_s3^s3)
+      total
+    }
+  )
+}

@@ -1,0 +1,18 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~string~fncall~weave@main.iw",
+        "app~string~fncall~weave$lit.json"
+      ]
+    }
+  ],
+  "main": "app~string~fncall~weave@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

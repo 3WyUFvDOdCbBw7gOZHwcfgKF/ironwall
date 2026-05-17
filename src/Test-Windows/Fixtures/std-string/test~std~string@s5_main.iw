@@ -1,0 +1,118 @@
+{program test~std~string@s5_main
+  (import std~string)
+  (function score_s5 ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function same_s5 ([left s5] [right s5]) to bool in
+    {
+      (var [left_len i5] (s5_length left))
+      (var [right_len i5] (s5_length right))
+      (if
+        (neq left_len right_len)
+        then
+        false
+        else
+        {
+          (var [same bool] true)
+          (var [index i5] $0^i5)
+          (while
+            (and same (lt index left_len))
+            in
+            {
+              (var_set same (eq (s5_get left index) (s5_get right index)))
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [hello StringS5] (class_new StringS5 $hello_s5^s5))
+      (var [ell StringS5] (class_new StringS5 $ell_s5^s5))
+      (var [lo StringS5] (class_new StringS5 $lo_s5^s5))
+      (var [he StringS5] (class_new StringS5 $he_s5^s5))
+      (var [world StringS5] (class_new StringS5 $world_s5^s5))
+      (var [empty StringS5] (class_new StringS5 $empty_s5^s5))
+      (var [ll StringS5] (class_new StringS5 $ll_s5^s5))
+      (var [hello_world StringS5] (string_concat hello world))
+      (var [repeated_lo StringS5] (string_repeat lo $3^i5))
+      (var [reversed_world StringS5] (string_reversed world))
+      (var [double_reversed_world StringS5] (string_reversed reversed_world))
+      (var [repeat_zero StringS5] (string_repeat hello $0^i5))
+      (var [empty_world StringS5] (string_concat empty world))
+      (var [world_empty StringS5] (string_concat world empty))
+      (add
+        (score_s5 (eq (string_len hello) $5^i5))
+        (add
+          (score_s5 (eq (hello.find ell) $1^i5))
+          (add
+            (score_s5 (eq (hello.find lo) $3^i5))
+            (add
+              (score_s5 (eq (hello.find world) (sub $0^i5 $1^i5)))
+              (add
+                (score_s5 (eq (hello.count ll) $1^i5))
+                (add
+                  (score_s5 (eq (hello.count empty) $6^i5))
+                  (add
+                    (score_s5 (hello.startswith he))
+                    (add
+                      (score_s5 (hello.endswith lo))
+                      (add
+                        (score_s5 (hello.endswith empty))
+                        (add
+                          (score_s5 (string_contains hello ell))
+                          (add
+                            (score_s5 (xor (string_contains hello world) true))
+                            (add
+                              (score_s5 (eq (string_len hello_world) $10^i5))
+                              (add
+                                (score_s5 (same_s5 hello_world.raw $helloworld_s5^s5))
+                                (add
+                                  (score_s5 (eq (string_len repeated_lo) $6^i5))
+                                  (add
+                                    (score_s5 (same_s5 repeated_lo.raw $lololo_s5^s5))
+                                    (add
+                                      (score_s5
+                                        (same_s5 reversed_world.raw $dlrow_s5^s5)
+                                      )
+                                      (add
+                                        (score_s5
+                                          (same_s5
+                                            double_reversed_world.raw
+                                            $world_s5^s5
+                                          )
+                                        )
+                                        (add
+                                          (score_s5
+                                            (same_s5 repeat_zero.raw $empty_s5^s5)
+                                          )
+                                          (add
+                                            (score_s5
+                                              (same_s5 empty_world.raw $world_s5^s5)
+                                            )
+                                            (score_s5
+                                              (same_s5 world_empty.raw $world_s5^s5)
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

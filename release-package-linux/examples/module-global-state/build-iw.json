@@ -1,0 +1,12 @@
+{
+  "mode": "build",
+  "directories": [
+    {
+      "path": "src"
+    }
+  ],
+  "main": "example~module~global~state~app@main",
+  "output": "module-global-state.out",
+  "precompiledLibs": [],
+  "ffiLibs": []
+}

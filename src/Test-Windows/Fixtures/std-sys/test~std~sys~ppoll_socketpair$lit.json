@@ -1,0 +1,4 @@
+{
+  "package": "test~std~sys~ppoll_socketpair$lit",
+  "ppoll_socketpair_payload_s3^s3": "ppoll-ready"
+}

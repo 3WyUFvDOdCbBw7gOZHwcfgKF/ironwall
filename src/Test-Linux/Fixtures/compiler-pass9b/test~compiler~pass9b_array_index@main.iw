@@ -1,0 +1,15 @@
+{program test~compiler~pass9b_array_index@main
+  (import std~array)
+  (import std~eq)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [source <Array i5>] (<array_new_fill i5> $4^i5 $0^i5))
+      (source.set $0^i5 $1^i5)
+      (source.set $1^i5 $5^i5)
+      (source.set $2^i5 $7^i5)
+      (source.index rule $7^i5)
+    }
+  )
+}

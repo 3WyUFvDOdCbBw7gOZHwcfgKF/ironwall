@@ -1,0 +1,62 @@
+{program test~astvis~member~block~gallery@main
+  (function cm_get_block_receiver ([flag bool] [fallback i5]) to i5 in
+    (cm_get
+      (let (
+        ([selected i5]
+          (cond
+            (flag source)
+            (else fallback)
+          )
+        )
+      ) in
+        (cm_get selected payload)
+      )
+      value
+    )
+  )
+  (function cm_get_block_field ([flag bool]) to i5 in
+    (cm_get
+      source
+      (cond
+        (flag left)
+        (else right)
+      )
+    )
+  )
+  (function cm_set_block_receiver ([flag bool] [fallback i5]) to i5 in
+    (cm_set
+      (cond
+        (flag (cm_get store active))
+        (else (cm_get store fallback))
+      )
+      value
+      fallback
+    )
+  )
+  (function cm_set_block_value ([payload <union i5 bool>] [fallback i5]) to i5 in
+    (cm_set
+      store
+      value
+      (match payload
+        ([as_i5 i5] (add as_i5 fallback))
+        ([as_bool bool]
+          (cond
+            (as_bool fallback)
+            (else $0^i5)
+          )
+        )
+      )
+    )
+  )
+  (function cm_set_seq_value ([flag bool] [fallback i5]) to i5 in
+    (cm_set
+      (cm_get store nested)
+      result
+      {
+        (cm_set temp left fallback)
+        (cm_get (cm_get temp left) result)
+      }
+    )
+  )
+  (function main ([args <array s3>]) to i5 in (cm_set_seq_value true $7^i5))
+}

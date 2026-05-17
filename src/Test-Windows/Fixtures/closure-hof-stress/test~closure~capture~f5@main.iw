@@ -1,0 +1,25 @@
+{program test~closure~capture~f5@main
+
+  (function make_scaled ([scale f5]) to <to f5 from f5> in
+    (fn ([value f5]) to f5 in (mul scale value))
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [bias f5] $1p5^f5)
+      (var [reader <to f5 from f5>] (fn ([value f5]) to f5 in (add bias value)))
+      (var_set bias $10p0^f5)
+      (var [after_mutation i5] (val_to_i5 (reader $2p25^f5)))
+
+      (var [scale2 <to f5 from f5>] (make_scaled $2p0^f5))
+      (var [scaled i5] (val_to_i5 (scale2 $3p5^f5)))
+
+      (var [captured_left f5] $4p75^f5)
+      (var [captured_right f5] $5p25^f5)
+      (var [sum_pair <to f5 from f5>] (fn ([extra f5]) to f5 in (add captured_left (add captured_right extra))))
+      (var [pair_result i5] (val_to_i5 (sum_pair $6p0^f5)))
+
+      (add after_mutation (add scaled pair_result))
+    }
+  )
+}

@@ -1,0 +1,20 @@
+{
+  "mode": "emit-c",
+  "directories": [
+    {
+      "path": "../../iw",
+      "files": [
+        "usaco~shared@defs.iw",
+        "usaco~prob3@main.iw"
+      ]
+    }
+  ],
+  "main": "usaco~prob3@main",
+  "precompiledLibs": [],
+  "ffiLibs": [],
+  "frontendPipeline": "optimize",
+  "backendPipeline": "c",
+  "output": "../../generated/usaco-prob3.c",
+  "noBaseLib": false,
+  "programArgs": []
+}

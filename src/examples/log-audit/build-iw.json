@@ -1,0 +1,20 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~log~audit@main.iw",
+        "app~log~audit$lit.json",
+        "app~log~audit~lib@defs.iw",
+        "app~log~audit~lib$lit.json"
+      ]
+    }
+  ],
+  "main": "app~log~audit@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

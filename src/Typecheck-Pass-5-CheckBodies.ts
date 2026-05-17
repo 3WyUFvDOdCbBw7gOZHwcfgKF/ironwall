@@ -1,0 +1,1 @@
+export { performTypeChecking as checkBodiesPass, typecheck, TypeCheckError, VarEnv, FunctionEnv } from "./Typecheck-Pipeline";

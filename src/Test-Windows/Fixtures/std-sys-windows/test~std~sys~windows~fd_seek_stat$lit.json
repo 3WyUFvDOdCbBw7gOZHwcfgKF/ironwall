@@ -1,0 +1,9 @@
+{
+  "package": "test~std~sys~windows~fd_seek_stat$lit",
+  "std_sys_windows_fd_seek_stat_source_s3^s3": "artifacts/std-sys-windows-fd-seek-source.txt",
+  "std_sys_windows_fd_seek_stat_target_s3^s3": "artifacts/std-sys-windows-fd-seek-target.txt",
+  "std_sys_windows_fd_seek_stat_initial_s3^s3": "abcdef",
+  "std_sys_windows_fd_seek_stat_patch_s3^s3": "XY",
+  "std_sys_windows_fd_seek_stat_expected_s3^s3": "abXYef",
+  "std_sys_windows_fd_seek_stat_expected_slice_s3^s3": "bXYe"
+}

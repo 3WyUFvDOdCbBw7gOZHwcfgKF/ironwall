@@ -1,0 +1,5 @@
+{program test~language~rules~qualified~app@main
+  (function main ([args <array s3>]) to i5 in
+    (test~language~rules~qualified~lib@value $7^i5)
+  )
+}

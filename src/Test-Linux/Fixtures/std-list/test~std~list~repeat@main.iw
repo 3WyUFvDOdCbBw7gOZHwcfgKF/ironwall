@@ -1,0 +1,56 @@
+{program test~std~list~repeat@main
+  (import std~list)
+  (import std~eq)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [empty <List i5>] (<list_new i5> $0^i5))
+      (var [base <List i5>] (<list_new i5> $0^i5))
+      (base.append $3^i5)
+      (base.append $1^i5)
+      (var [repeat_zero <List i5>] (<list_repeat i5> base $0^i5))
+      (repeat_zero.reverse)
+      (var [repeat_one <List i5>] (<list_repeat i5> base $1^i5))
+      (var [joined_left <List i5>] (<list_concat i5> empty base))
+      (var [joined_right <List i5>] (<list_concat i5> base empty))
+      (var [mut <List i5>] (<list_repeat i5> base $3^i5))
+      (base.set $0^i5 $9^i5)
+      (mut.set $4^i5 $9^i5)
+      (mut.insert $2^i5 $8^i5)
+      (mut.pop $3^i5)
+      (mut.reverse)
+      (add
+        (<list_len i5> mut)
+        (add
+          (repeat_one.get $1^i5)
+          (add
+            (<list_len i5> repeat_zero)
+            (add
+              (<list_len i5> joined_left)
+              (add
+                (joined_right.get $0^i5)
+                (add
+                  (mut.count rule $1^i5)
+                  (add
+                    (mut.index rule $8^i5)
+                    (add
+                      (mut.get $5^i5)
+                      (add
+                        (if (<list_contains i5> mut rule $9^i5) then $100^i5 else $0^i5)
+                        (add
+                          (mut.get $0^i5)
+                          (add (joined_left.get $1^i5) (<list_len i5> joined_right))
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

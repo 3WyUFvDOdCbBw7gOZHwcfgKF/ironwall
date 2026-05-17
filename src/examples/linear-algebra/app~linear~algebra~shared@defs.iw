@@ -1,0 +1,149 @@
+{program app~linear~algebra~shared@defs
+  (import std~io)
+  (import std~math)
+
+  (function digit_char ([value i5]) to c3 in
+    (if (eq value $0^i5)
+      then (s3_get $digit0_s3^s3 $0^i5)
+      else
+        (if (eq value $1^i5)
+          then (s3_get $digit1_s3^s3 $0^i5)
+          else
+            (if (eq value $2^i5)
+              then (s3_get $digit2_s3^s3 $0^i5)
+              else
+                (if (eq value $3^i5)
+                  then (s3_get $digit3_s3^s3 $0^i5)
+                  else
+                    (if (eq value $4^i5)
+                      then (s3_get $digit4_s3^s3 $0^i5)
+                      else
+                        (if (eq value $5^i5)
+                          then (s3_get $digit5_s3^s3 $0^i5)
+                          else
+                            (if (eq value $6^i5)
+                              then (s3_get $digit6_s3^s3 $0^i5)
+                              else
+                                (if (eq value $7^i5)
+                                  then (s3_get $digit7_s3^s3 $0^i5)
+                                  else
+                                    (if (eq value $8^i5)
+                                      then (s3_get $digit8_s3^s3 $0^i5)
+                                      else (s3_get $digit9_s3^s3 $0^i5)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function count_decimal_digits_nonnegative ([value i5]) to i5 in
+    (if (lt value $10^i5)
+      then $1^i5
+      else (add $1^i5 (count_decimal_digits_nonnegative (div value $10^i5)))
+    )
+  )
+
+  (function fill_decimal_digits ([result s3] [slot i5] [value i5]) to s3 in
+    {
+      (if (lt value $10^i5)
+        then
+          {
+            (s3_set result slot (digit_char value))
+          }
+        else
+          {
+            (var [prefix_value i5] (div value $10^i5))
+            (fill_decimal_digits result (sub slot $1^i5) prefix_value)
+            (s3_set result slot (digit_char (mod value $10^i5)))
+          }
+      )
+      result
+    }
+  )
+
+  (function i5_to_s3 ([value i5]) to s3 in
+    (if (lt value $0^i5)
+      then
+        {
+          (var [abs_value i5] (sub $0^i5 value))
+          (var [digits i5] (count_decimal_digits_nonnegative abs_value))
+          (var [result s3] (s3_new (add digits $1^i5) (s3_get $digit0_s3^s3 $0^i5)))
+          (s3_set result $0^i5 (s3_get $minus_s3^s3 $0^i5))
+          (fill_decimal_digits result digits abs_value)
+        }
+      else
+        {
+          (var [digits i5] (count_decimal_digits_nonnegative value))
+          (var [result s3] (s3_new digits (s3_get $digit0_s3^s3 $0^i5)))
+          (fill_decimal_digits result (sub digits $1^i5) value)
+        }
+    )
+  )
+
+  (function f5_abs ([value f5]) to f5 in
+    (if (lt value $0p0^f5)
+      then (sub $0p0^f5 value)
+      else value
+    )
+  )
+
+  (function scaled_i5 ([value f5] [scale f5]) to i5 in
+    (round (mul value scale))
+  )
+
+  (function matrix_index ([size i5] [row i5] [col i5]) to i5 in
+    (add (mul row size) col)
+  )
+
+  (function matrix_get ([matrix <array f5>] [size i5] [row i5] [col i5]) to f5 in
+    (array_get matrix (matrix_index size row col))
+  )
+
+  (function matrix_set ([matrix <array f5>] [size i5] [row i5] [col i5] [value f5]) to unit in
+    (array_set matrix (matrix_index size row col) value)
+  )
+
+  (function vector_get ([vector <array f5>] [slot i5]) to f5 in
+    (array_get vector slot)
+  )
+
+  (function vector_set ([vector <array f5>] [slot i5] [value f5]) to unit in
+    (array_set vector slot value)
+  )
+
+  (function zero_matrix ([size i5]) to <array f5> in
+    (array_new <array f5> (mul size size) $0p0^f5)
+  )
+
+  (function zero_vector ([size i5]) to <array f5> in
+    (array_new <array f5> size $0p0^f5)
+  )
+
+  (function copy_f5_array ([source <array f5>] [target <array f5>]) to unit in
+    {
+      (var [index i5] $0^i5)
+      (while (lt index (array_length source)) in
+        {
+          (array_set target index (array_get source index))
+          (var_set index (add index $1^i5))
+        }
+      )
+    }
+  )
+
+  (function print_i5_line ([label s3] [value i5]) to unit in
+    {
+      (print label)
+      (println (i5_to_s3 value))
+    }
+  )
+
+  (function print_f5_scaled_line ([label s3] [value f5] [scale f5]) to unit in
+    (print_i5_line label (round (mul value scale)))
+  )
+}

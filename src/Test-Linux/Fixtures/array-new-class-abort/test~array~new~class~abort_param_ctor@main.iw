@@ -1,0 +1,13 @@
+{program test~array~new~class~abort_param_ctor@main
+  (class PayloadBox
+    (property [value i5])
+    (constructor ([value0 i5]) in (cm_set self value value0))
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [seed PayloadBox] (class_new PayloadBox $12^i5))
+      (var [raw <array PayloadBox>] (array_new <array PayloadBox> $4^i5 seed))
+      (array_length raw)
+    }
+  )
+}

@@ -1,0 +1,6 @@
+{program test~ffi~sqlite@main
+  (declare (function _4e3d7b21f9c84d7db8c1e45a6f9230ab_clang_iw_release_sqlite_self_check_b8076262 () to i5))
+  (function main ([args <array s3>]) to i5 in
+    (_4e3d7b21f9c84d7db8c1e45a6f9230ab_clang_iw_release_sqlite_self_check_b8076262)
+  )
+}

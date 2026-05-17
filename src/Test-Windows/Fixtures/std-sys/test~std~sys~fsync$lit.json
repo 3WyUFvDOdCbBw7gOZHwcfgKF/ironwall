@@ -1,0 +1,5 @@
+{
+  "package": "test~std~sys~fsync$lit",
+  "fsync_path_s3^s3": "artifacts/std-sys/fsync.txt",
+  "fsync_payload_s3^s3": "fsync-text"
+}

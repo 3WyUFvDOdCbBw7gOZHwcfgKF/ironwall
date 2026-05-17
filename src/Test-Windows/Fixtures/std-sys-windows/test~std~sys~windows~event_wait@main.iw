@@ -1,0 +1,51 @@
+{program test~std~sys~windows~event_wait@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [manual_handle i5] (sys_event_create_manual false))
+      (var [auto_handle i5] (sys_event_create_auto false))
+      (var [handles <array i5>] (array_new <array i5> $2^i5 manual_handle))
+      (array_set handles $1^i5 auto_handle)
+      (var [total i5]
+        (add
+          (score (eq (sys_wait_one manual_handle $0^i5) (sys_wait_timeout_code)))
+          (add
+            {
+              (sys_event_set manual_handle)
+              (score (eq (sys_wait_one manual_handle $0^i5) $0^i5))
+            }
+            (add
+              (score (eq (sys_wait_one manual_handle $0^i5) $0^i5))
+              (add
+                {
+                  (sys_event_reset manual_handle)
+                  (score (eq (sys_wait_one manual_handle $0^i5) (sys_wait_timeout_code)))
+                }
+                (add
+                  {
+                    (sys_event_set auto_handle)
+                    (score (eq (sys_wait_many handles false $0^i5) $1^i5))
+                  }
+                  (add
+                    (score (eq (sys_wait_one auto_handle $0^i5) (sys_wait_timeout_code)))
+                    {
+                      (sys_event_set manual_handle)
+                      (sys_event_set auto_handle)
+                      (score (eq (sys_wait_many handles true $0^i5) $0^i5))
+                    }
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+      (sys_event_close auto_handle)
+      (sys_event_close manual_handle)
+      total
+    }
+  )
+}

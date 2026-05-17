@@ -1,0 +1,25 @@
+{program test~std~sys~wait4@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [pid i5] (sys_process_fork))
+      (if
+        (eq pid $0^i5)
+        then
+        {
+          (sys_process_exit $9^i5)
+          $0^i5
+        }
+        else
+        {
+          (var [status i5] (sys_process_wait4 pid))
+          (add
+            $180^i5
+            (add (score (gt pid $0^i5)) (score (eq status (exit_status_word $9^i5))))
+          )
+        }
+      )
+    }
+  )
+}

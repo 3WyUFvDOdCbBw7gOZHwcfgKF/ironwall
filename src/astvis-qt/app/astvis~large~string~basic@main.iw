@@ -1,0 +1,10 @@
+{program astvis~large~string~basic@main
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [short_box s3] $short_box_s3^s3)
+      (var [medium_box s3] $medium_box_s3^s3)
+      (var [huge_box s3] $huge_box_s3^s3)
+      $0^i5
+    }
+  )
+}

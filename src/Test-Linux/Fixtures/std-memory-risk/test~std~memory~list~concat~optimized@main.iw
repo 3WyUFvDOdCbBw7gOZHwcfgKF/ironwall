@@ -1,0 +1,64 @@
+{program test~std~memory~list~concat~optimized@main
+  (import std~list)
+
+  (function require_joined ([slot <union unit <List i5>>]) to <List i5> in
+    (match slot
+      ([empty unit] (iw_match_unreachable))
+      ([value <List i5>] value)
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [left <List i5>] (<list_new i5> $0^i5))
+      (var [right <List i5>] (<list_new i5> $0^i5))
+      (var [left_index i5] $0^i5)
+      (while (lt left_index $128^i5) in
+        {
+          (left.insert $0^i5 left_index)
+          (var_set left_index (add left_index $1^i5))
+        }
+      )
+      (var [right_index i5] $0^i5)
+      (while (lt right_index $4096^i5) in
+        {
+          (right.insert $0^i5 (add $100000^i5 right_index))
+          (var_set right_index (add right_index $1^i5))
+        }
+      )
+
+      (var [results <array <union unit <List i5>>>] (array_new <array <union unit <List i5>>> $128^i5 unit))
+      (var [join_index i5] $0^i5)
+      (while (lt join_index $128^i5) in
+        {
+          (array_set results join_index (<list_concat i5> left right))
+          (var_set join_index (add join_index $1^i5))
+        }
+      )
+
+      (right.set $0^i5 $999999^i5)
+
+      (var [first_joined <List i5>] (require_joined (array_get results $0^i5)))
+      (var [last_joined <List i5>] (require_joined (array_get results $127^i5)))
+      (mod
+        (add
+          (<list_len i5> first_joined)
+          (add
+            (<list_len i5> last_joined)
+            (add
+              (first_joined.get $0^i5)
+              (add
+                (first_joined.get $127^i5)
+                (add
+                  (first_joined.get $128^i5)
+                  (last_joined.get $4223^i5)
+                )
+              )
+            )
+          )
+        )
+        $251^i5
+      )
+    }
+  )
+}

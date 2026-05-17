@@ -1,0 +1,120 @@
+{program test~std~sys~windows~file_handles@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function s3_equals ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if
+        (neq left_length (s3_length right))
+        then
+        false
+        else
+        {
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index left_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get left index) (s3_get right index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+
+  (function pipe_read_fd ([pipe_fds <array i5>]) to i5 in (array_get pipe_fds $0^i5))
+  (function pipe_write_fd ([pipe_fds <array i5>]) to i5 in (array_get pipe_fds $1^i5))
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (if (sys_path_exists_s3 $std_sys_windows_file_handles_file_s3^s3) then (sys_path_unlink_s3 $std_sys_windows_file_handles_file_s3^s3) else unit)
+      (if (sys_path_exists_s3 $std_sys_windows_file_handles_dir_s3^s3) then (sys_path_rmdir_s3 $std_sys_windows_file_handles_dir_s3^s3) else unit)
+      (sys_path_mkdir_s3 $std_sys_windows_file_handles_dir_s3^s3)
+
+      (var [create_fd i5] (sys_fd_creat_s3 $std_sys_windows_file_handles_file_s3^s3))
+      (sys_fd_write_s3 create_fd $std_sys_windows_file_handles_prefix_s3^s3)
+      (sys_fd_close create_fd)
+
+      (var [append_fd i5] (sys_fd_open_append_s3 $std_sys_windows_file_handles_file_s3^s3))
+      (sys_fd_write_s3 append_fd $std_sys_windows_file_handles_suffix_s3^s3)
+      (sys_fd_close append_fd)
+
+      (var [read_fd i5] (sys_fd_open_read_s3 $std_sys_windows_file_handles_file_s3^s3))
+      (var [content s3] (sys_fd_read_s3 read_fd $64^i5))
+      (sys_fd_close read_fd)
+
+      (var [file_stat SysFileStat] (sys_path_stat_s3 $std_sys_windows_file_handles_file_s3^s3))
+      (var [dir_stat SysFileStat] (sys_path_stat_s3 $std_sys_windows_file_handles_dir_s3^s3))
+
+      (var [pipe_a <array i5>] (sys_pipe_create))
+      (sys_fd_write_s3 (pipe_write_fd pipe_a) $std_sys_windows_file_handles_pipe_a_s3^s3)
+      (sys_fd_close (pipe_write_fd pipe_a))
+      (var [pipe_a_received s3] (sys_fd_read_s3 (pipe_read_fd pipe_a) $64^i5))
+      (sys_fd_close (pipe_read_fd pipe_a))
+
+      (var [pipe_b <array i5>] (sys_fd_pipe2))
+      (sys_fd_write_s3 (pipe_write_fd pipe_b) $std_sys_windows_file_handles_pipe_b_s3^s3)
+      (sys_fd_close (pipe_write_fd pipe_b))
+      (var [pipe_b_received s3] (sys_fd_read_s3 (pipe_read_fd pipe_b) $64^i5))
+      (sys_fd_close (pipe_read_fd pipe_b))
+
+      (var [total i5]
+        (add
+          (score (eq (sys_stdin_handle) $0^i5))
+          (add
+            (score (eq (sys_stdout_handle) $1^i5))
+            (add
+              (score (eq (sys_stderr_handle) $2^i5))
+              (add
+                (score (s3_equals content $std_sys_windows_file_handles_expected_s3^s3))
+                (add
+                  (score (eq (sys_stat_size file_stat) (s3_length $std_sys_windows_file_handles_expected_s3^s3)))
+                  (add
+                    (score (sys_stat_is_regular file_stat))
+                    (add
+                      (score (not (sys_stat_is_dir file_stat)))
+                      (add
+                        (score (sys_stat_is_dir dir_stat))
+                        (add
+                          (score (not (sys_stat_is_regular dir_stat)))
+                          (add
+                            (score (s3_equals pipe_a_received $std_sys_windows_file_handles_pipe_a_s3^s3))
+                            (score (s3_equals pipe_b_received $std_sys_windows_file_handles_pipe_b_s3^s3))
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+
+      (sys_path_unlink_s3 $std_sys_windows_file_handles_file_s3^s3)
+      (sys_path_rmdir_s3 $std_sys_windows_file_handles_dir_s3^s3)
+      total
+    }
+  )
+}

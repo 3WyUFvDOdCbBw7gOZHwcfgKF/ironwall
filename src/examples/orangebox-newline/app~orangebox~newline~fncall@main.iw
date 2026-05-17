@@ -1,0 +1,15 @@
+{program app~orangebox~newline~fncall@main
+  (function pick_left ([left s3] [right s3]) to s3 in left)
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [selected s3]
+        (pick_left
+          $app_orangebox_newline_fncall_left_s3^s3
+          $app_orangebox_newline_fncall_right_s3^s3
+        )
+      )
+      $0^i5
+    }
+  )
+}

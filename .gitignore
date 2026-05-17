@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+build-astvis-qt/
+devlogs/
+
+# Logs and OS/editor noise
+*.log
+.DS_Store
+Thumbs.db

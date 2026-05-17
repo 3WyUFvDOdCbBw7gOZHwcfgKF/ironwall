@@ -1,0 +1,61 @@
+{program usaco~shared@defs
+
+  (function min_i5 ([left i5] [right i5]) to i5 in
+    (if (le left right) then left else right)
+  )
+
+  (function abs_i5 ([value i5]) to i5 in
+    (if (lt value $0^i5) then (sub $0^i5 value) else value)
+  )
+
+  (function mod_add ([left i5] [right i5]) to i5 in
+    {
+      (var [sum i7] (add (val_to_i7 left) (val_to_i7 right)))
+      (if (ge sum $1000000007^i7)
+        then (val_to_i5 (sub sum $1000000007^i7))
+        else (val_to_i5 sum)
+      )
+    }
+  )
+
+  (function mod_sub ([left i5] [right i5]) to i5 in
+    {
+      (var [diff i7] (sub (val_to_i7 left) (val_to_i7 right)))
+      (if (lt diff $0^i7)
+        then (val_to_i5 (add diff $1000000007^i7))
+        else (val_to_i5 diff)
+      )
+    }
+  )
+
+  (function mod_mul ([left i5] [right i5]) to i5 in
+    (val_to_i5 (mod (mul (val_to_i7 left) (val_to_i7 right)) $1000000007^i7))
+  )
+
+  (function pow_mod ([base i5] [exp i5]) to i5 in
+    (if (eq exp $0^i5)
+      then $1^i5
+      else
+        (if (eq (mod exp $2^i5) $0^i5)
+          then (pow_mod (mod_mul base base) (div exp $2^i5))
+          else (mod_mul base (pow_mod (mod_mul base base) (div exp $2^i5)))
+        )
+    )
+  )
+
+  (function copy_i5_array ([source <array i5>]) to <array i5> in
+    {
+      (var [length i5] (array_length source))
+      (var [result <array i5>] (array_new <array i5> length $0^i5))
+      (var [index i5] $0^i5)
+      (while (lt index length) in
+        {
+          (array_set result index (array_get source index))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+}

@@ -1,0 +1,40 @@
+{program test~std~sys~windows~spawn_wait_kill@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function s3_array2 ([first s3] [second s3]) to <array s3> in
+    {
+      (var [result <array s3>] (array_new <array s3> $2^i5 first))
+      (array_set result $1^i5 second)
+      result
+    }
+  )
+  (function empty_s3_array () to <array s3> in
+    (array_new <array s3> $0^i5 $std_sys_windows_empty_s3^s3)
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+        (var [exit_process SysProcess] (sys_process_spawn_s3 $std_sys_windows_cmd_path_s3^s3 (s3_array2 $std_sys_windows_slash_c_s3^s3 $std_sys_windows_exit_command_s3^s3) (empty_s3_array)))
+      (var [exit_pid i5] (sys_process_id exit_process))
+      (var [exit_code i5] (sys_process_wait exit_process))
+      (sys_process_close exit_process)
+        (var [kill_process SysProcess] (sys_process_spawn_s3 $std_sys_windows_cmd_path_s3^s3 (s3_array2 $std_sys_windows_slash_c_s3^s3 $std_sys_windows_kill_command_s3^s3) (empty_s3_array)))
+      (var [kill_pid i5] (sys_process_id kill_process))
+      (sys_sleep_ms $50^i5)
+      (sys_process_kill kill_process)
+      (var [kill_code i5] (sys_process_wait kill_process))
+      (sys_process_close kill_process)
+      (add
+        (score (gt exit_pid $0^i5))
+        (add
+          (score (eq exit_code $0^i5))
+          (add
+            (score (gt kill_pid $0^i5))
+            (score (eq kill_code $1^i5))
+          )
+        )
+      )
+    }
+  )
+}

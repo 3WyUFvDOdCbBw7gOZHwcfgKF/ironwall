@@ -1,0 +1,14 @@
+{
+  "mode": "build",
+  "directories": [
+    {
+      "path": "src"
+    }
+  ],
+  "main": "example~precompiled~app@main",
+  "output": "precompiled-app.out",
+  "precompiledLibs": [
+    "../dist/example-precompiled-lib.tgz"
+  ],
+  "ffiLibs": []
+}

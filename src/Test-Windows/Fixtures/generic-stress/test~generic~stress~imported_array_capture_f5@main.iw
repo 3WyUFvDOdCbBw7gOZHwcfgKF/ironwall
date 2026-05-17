@@ -1,0 +1,70 @@
+{program test~generic~stress~imported_array_capture_f5@main
+  (import std~array)
+
+  (class Sample
+    (property [value f5])
+    (constructor () in
+      {
+        (cm_set self value $0p0^f5)
+      }
+    )
+    (constructor ([value0 f5]) in
+      {
+        (cm_set self value value0)
+      }
+    )
+  )
+
+  (class SampleSplit
+    (property [left <Array Sample>])
+    (property [right <Array Sample>])
+    (constructor ([left0 <Array Sample>] [right0 <Array Sample>]) in
+      {
+        (cm_set self left left0)
+        (cm_set self right right0)
+      }
+    )
+  )
+
+  (class SampleScene
+    (property [samples <Array Sample>])
+    (constructor ([samples0 <Array Sample>]) in
+      {
+        (cm_set self samples samples0)
+      }
+    )
+  )
+
+  (function partition_samples ([scene SampleScene] [threshold f5]) to SampleSplit in
+    (class_new SampleSplit
+      (<Array_filter Sample> scene.samples
+        (fn ([sample Sample]) to bool in (lt sample.value threshold))
+      )
+      (<Array_filter Sample> scene.samples
+        (fn ([sample Sample]) to bool in (ge sample.value threshold))
+      )
+    )
+  )
+
+  (function sum_samples ([samples <Array Sample>]) to i5 in
+    (val_to_i5
+      (<Array_fold Sample f5> samples $0p0^f5
+        (fn ([acc f5] [sample Sample]) to f5 in (add acc sample.value))
+      )
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [seed Sample] (class_new Sample))
+      (var [samples <Array Sample>] (<array_new_fill Sample> $4^i5 seed))
+      (samples.set $0^i5 (class_new Sample $1p5^f5))
+      (samples.set $1^i5 (class_new Sample $2p0^f5))
+      (samples.set $2^i5 (class_new Sample $3p25^f5))
+      (samples.set $3^i5 (class_new Sample $4p25^f5))
+      (var [scene SampleScene] (class_new SampleScene samples))
+      (var [split SampleSplit] (partition_samples scene $3p0^f5))
+      (add (sum_samples split.left) (sum_samples split.right))
+    }
+  )
+}

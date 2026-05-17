@@ -1,0 +1,25 @@
+{program test~std~option@main
+  (import std~option)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [some_i5 <Option i5>] (<option_some i5> $41^i5))
+      (var [none_i5 <Option i5>] (<option_none i5>))
+      (add
+        (if (some_i5.is_some) then $100^i5 else $0^i5)
+        (add
+          (if (none_i5.is_none) then $10^i5 else $0^i5)
+          (add
+            (some_i5.unwrap)
+            (add
+              (if (<option_is_some i5> some_i5) then $1000^i5 else $0^i5)
+              (add
+                (if (<option_is_none i5> none_i5) then $2000^i5 else $0^i5)
+                (<option_unwrap i5> (<option_some i5> $7^i5))
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

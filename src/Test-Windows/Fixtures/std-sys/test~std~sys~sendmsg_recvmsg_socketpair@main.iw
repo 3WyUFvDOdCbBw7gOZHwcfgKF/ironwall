@@ -1,0 +1,55 @@
+{program test~std~sys~sendmsg_recvmsg_socketpair@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [pair_fds <array i5>] (sys_net_socketpair_stream))
+      (var [read_fd i5] (pipe_read_fd pair_fds))
+      (var [write_fd i5] (pipe_write_fd pair_fds))
+      (var [chunks <array s3>] (s3_array3 $sendmsg_chunk0_s3^s3 $sendmsg_chunk1_s3^s3 $sendmsg_chunk2_s3^s3))
+      (var [sizes <array i5>] (array_new <array i5> $3^i5 $0^i5))
+      (array_set sizes $0^i5 $5^i5)
+      (array_set sizes $1^i5 $1^i5)
+      (array_set sizes $2^i5 $4^i5)
+      (var [sent i5] (sys_net_sendmsg_s3 write_fd chunks (sys_net_msg_nosignal_flag)))
+      (var [peeked <array s3>] (sys_net_recvmsg_s3 read_fd sizes (sys_net_msg_peek_flag)))
+      (var [received <array s3>] (sys_net_recvmsg_s3 read_fd sizes $0^i5))
+      (sys_fd_close write_fd)
+      (sys_fd_close read_fd)
+      (add
+        $630^i5
+        (add
+          (score (eq sent $10^i5))
+          (add
+            (score (gt (sys_net_msg_nosignal_flag) $0^i5))
+            (add
+              (score (gt (sys_net_msg_peek_flag) $0^i5))
+              (add
+                (score (eq (array_length peeked) $3^i5))
+                (add
+                  (score (s3_equals (array_get peeked $0^i5) $sendmsg_chunk0_s3^s3))
+                  (add
+                    (score (s3_equals (array_get peeked $1^i5) $sendmsg_chunk1_s3^s3))
+                    (add
+                      (score (s3_equals (array_get peeked $2^i5) $sendmsg_chunk2_s3^s3))
+                      (add
+                        (score (eq (array_length received) $3^i5))
+                        (add
+                          (score (s3_equals (array_get received $0^i5) $sendmsg_chunk0_s3^s3))
+                          (add
+                            (score (s3_equals (array_get received $1^i5) $sendmsg_chunk1_s3^s3))
+                            (score (s3_equals (array_get received $2^i5) $sendmsg_chunk2_s3^s3))
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

@@ -1,0 +1,9 @@
+{program app~orangebox~newline~wide@main
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [wide_multiline s3] $app_orangebox_newline_wide_s3^s3)
+      (var [trailing_newline s3] $app_orangebox_newline_trailing_s3^s3)
+      $0^i5
+    }
+  )
+}

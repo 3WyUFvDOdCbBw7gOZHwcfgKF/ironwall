@@ -1,0 +1,5 @@
+{
+  "package": "test~std~sys~creat$lit",
+  "creat_path_s3^s3": "artifacts/std-sys/creat.txt",
+  "creat_payload_s3^s3": "creat-text"
+}

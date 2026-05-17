@@ -1,0 +1,44 @@
+{program test~astvis~fncall~blocks@main
+  (function merge_three ([left i5] [middle i5] [right i5]) to i5 in
+    (add left (add middle right))
+  )
+  (function choose ([flag bool] [payload <union i5 bool>] [fallback i5]) to i5 in
+    (merge_three
+      (let (
+        ([base i5] fallback)
+      ) in
+        (cond
+          ((eq base $0^i5) (add base $10^i5))
+          ((eq base $1^i5) (add base $20^i5))
+          (else (sub base $3^i5))
+        )
+      )
+      (match payload
+        ([as_i5 i5]
+          (let (
+            ([bump i5] $5^i5)
+          ) in
+            (add as_i5 bump)
+          )
+        )
+        ([as_bool bool]
+          (cond
+            (as_bool $40^i5)
+            (else $50^i5)
+          )
+        )
+      )
+      (let (
+        ([score i5]
+          (match payload
+            ([inner_i5 i5] (add inner_i5 fallback))
+            ([inner_bool bool] (if inner_bool then fallback else (sub $0^i5 fallback)))
+          )
+        )
+      ) in
+        score
+      )
+    )
+  )
+  (function main ([args <array s3>]) to i5 in (choose false $8^i5 $2^i5))
+}

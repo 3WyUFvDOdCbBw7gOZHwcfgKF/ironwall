@@ -1,0 +1,4 @@
+{
+  "bundle": "test~global~init$lit",
+  "hello_s3^s3": "hello"
+}

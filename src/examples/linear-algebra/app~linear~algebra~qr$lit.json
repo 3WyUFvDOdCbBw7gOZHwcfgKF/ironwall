@@ -1,0 +1,9 @@
+{
+  "package": "app~linear~algebra~qr$lit",
+  "app_linear_algebra_qr_ok_s3^s3": "qr ok",
+  "app_linear_algebra_q_trace_x1000_s3^s3": "q-trace-x1000=",
+  "app_linear_algebra_r_diag_sum_x1000_s3^s3": "r-diag-sum-x1000=",
+  "app_linear_algebra_r_last_diag_x1000_s3^s3": "r-last-diag-x1000=",
+  "app_linear_algebra_reconstruction_error_x1e6_s3^s3": "reconstruction-error-x1000000=",
+  "app_linear_algebra_orthogonality_error_x1e6_s3^s3": "orthogonality-error-x1000000="
+}

@@ -1,0 +1,8 @@
+{
+  "package": "app~linear~algebra~qr~eigen$lit",
+  "app_linear_algebra_qr_eigen_ok_s3^s3": "eigen-qr ok",
+  "app_linear_algebra_lambda_max_x1000_s3^s3": "lambda-max-x1000=",
+  "app_linear_algebra_lambda_min_x1000_s3^s3": "lambda-min-x1000=",
+  "app_linear_algebra_trace_x1000_s3^s3": "trace-x1000=",
+  "app_linear_algebra_offdiag_sum_x1000_s3^s3": "offdiag-sum-x1000="
+}

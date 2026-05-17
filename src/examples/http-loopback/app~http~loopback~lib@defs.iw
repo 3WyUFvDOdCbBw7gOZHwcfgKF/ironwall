@@ -1,0 +1,174 @@
+{program app~http~loopback~lib@defs
+  (import std~string)
+  (import std~linux~sys)
+
+  (function digit_char ([value i5]) to c3 in
+    (if (eq value $0^i5)
+      then (s3_get $digit0_s3^s3 $0^i5)
+      else
+        (if (eq value $1^i5)
+          then (s3_get $digit1_s3^s3 $0^i5)
+          else
+            (if (eq value $2^i5)
+              then (s3_get $digit2_s3^s3 $0^i5)
+              else
+                (if (eq value $3^i5)
+                  then (s3_get $digit3_s3^s3 $0^i5)
+                  else
+                    (if (eq value $4^i5)
+                      then (s3_get $digit4_s3^s3 $0^i5)
+                      else
+                        (if (eq value $5^i5)
+                          then (s3_get $digit5_s3^s3 $0^i5)
+                          else
+                            (if (eq value $6^i5)
+                              then (s3_get $digit6_s3^s3 $0^i5)
+                              else
+                                (if (eq value $7^i5)
+                                  then (s3_get $digit7_s3^s3 $0^i5)
+                                  else
+                                    (if (eq value $8^i5)
+                                      then (s3_get $digit8_s3^s3 $0^i5)
+                                      else (s3_get $digit9_s3^s3 $0^i5)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function count_decimal_digits_nonnegative ([value i5]) to i5 in
+    (if (lt value $10^i5)
+      then $1^i5
+      else (add $1^i5 (count_decimal_digits_nonnegative (div value $10^i5)))
+    )
+  )
+
+  (function fill_decimal_digits ([result s3] [slot i5] [value i5]) to s3 in
+    {
+      (if (lt value $10^i5)
+        then
+          {
+            (s3_set result slot (digit_char value))
+          }
+        else
+          {
+            (var [prefix_value i5] (div value $10^i5))
+            (fill_decimal_digits result (sub slot $1^i5) prefix_value)
+            (s3_set result slot (digit_char (mod value $10^i5)))
+          }
+      )
+      result
+    }
+  )
+
+  (function i5_to_s3 ([value i5]) to s3 in
+    (if (lt value $0^i5)
+      then
+        {
+          (var [abs_value i5] (sub $0^i5 value))
+          (var [digits i5] (count_decimal_digits_nonnegative abs_value))
+          (var [result s3] (s3_new (add digits $1^i5) (s3_get $digit0_s3^s3 $0^i5)))
+          (s3_set result $0^i5 (s3_get $minus_s3^s3 $0^i5))
+          (fill_decimal_digits result digits abs_value)
+        }
+      else
+        {
+          (var [digits i5] (count_decimal_digits_nonnegative value))
+          (var [result s3] (s3_new digits (s3_get $digit0_s3^s3 $0^i5)))
+          (fill_decimal_digits result (sub digits $1^i5) value)
+        }
+    )
+  )
+
+  (function content_length_line ([size i5]) to s3 in
+    {
+      (var [prefix_text StringS3] (class_new StringS3 $http_content_length_prefix_s3^s3))
+      (var [size_text StringS3] (class_new StringS3 (i5_to_s3 size)))
+      (var [prefix_and_size StringS3] (string_concat prefix_text size_text))
+      (var [suffix_text StringS3] (class_new StringS3 $http_crlf_s3^s3))
+      (var [line_text StringS3] (string_concat prefix_and_size suffix_text))
+      (cm_get line_text raw)
+    }
+  )
+
+  (function s3_array4 ([first s3] [second s3] [third s3] [fourth s3]) to <array s3> in
+    {
+      (var [result <array s3>] (array_new <array s3> $4^i5 first))
+      (array_set result $1^i5 second)
+      (array_set result $2^i5 third)
+      (array_set result $3^i5 fourth)
+      result
+    }
+  )
+
+  (function s3_array5 ([first s3] [second s3] [third s3] [fourth s3] [fifth s3]) to <array s3> in
+    {
+      (var [result <array s3>] (array_new <array s3> $5^i5 first))
+      (array_set result $1^i5 second)
+      (array_set result $2^i5 third)
+      (array_set result $3^i5 fourth)
+      (array_set result $4^i5 fifth)
+      result
+    }
+  )
+
+  (function digit_value ([value c3]) to i5 in
+    (sub (val_to_i5 value) (val_to_i5 (s3_get $digit0_s3^s3 $0^i5)))
+  )
+
+  (function decimal_text_to_i5 ([value s3]) to i5 in
+    {
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length value))
+      (var [result i5] $0^i5)
+      (while (lt index length) in
+        {
+          (var_set result (add (mul result $10^i5) (digit_value (s3_get value index))))
+          (var_set index (add index $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function sum_s3_chunks ([chunks <array s3>]) to i5 in
+    {
+      (var [index i5] $0^i5)
+      (var [count i5] (array_length chunks))
+      (var [total i5] $0^i5)
+      (while (lt index count) in
+        {
+          (var_set total (add total (s3_length (array_get chunks index))))
+          (var_set index (add index $1^i5))
+        }
+      )
+      total
+    }
+  )
+
+  (function write_label_i5_line ([fd i5] [label s3] [value i5]) to unit in
+    {
+      (sys_fd_write_s3 fd label)
+      (sys_fd_write_s3 fd (i5_to_s3 value))
+      (sys_fd_write_s3 fd $newline_s3^s3)
+      unit
+    }
+  )
+
+  (function write_label_bool_line ([fd i5] [label s3] [value bool]) to unit in
+    {
+      (sys_fd_write_s3 fd label)
+      (if value
+        then (sys_fd_write_s3 fd $yes_s3^s3)
+        else (sys_fd_write_s3 fd $no_s3^s3)
+      )
+      (sys_fd_write_s3 fd $newline_s3^s3)
+      unit
+    }
+  )
+}

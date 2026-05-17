@@ -1,0 +1,12 @@
+Ironwall Programming Language
+Designed by Wei Jin
+
+Ironwall Compiler
+Copyright (C) 2026 Wei Jin
+Licensed under the GNU Lesser General Public License v3.0.
+
+Ironwall Standard Library
+Copyright (C) 2026 Wei Jin
+Licensed under the Apache License 2.0.
+
+Website: ironwall-lang.dev

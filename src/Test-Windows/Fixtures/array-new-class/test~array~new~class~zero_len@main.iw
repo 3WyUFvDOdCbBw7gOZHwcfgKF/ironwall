@@ -1,0 +1,25 @@
+{program test~array~new~class~zero_len@main
+  (class Marker (property [value i5]) (constructor () in (cm_set self value $17^i5)))
+  (class DefaultBox
+    (property [value i5])
+    (property [marker Marker])
+    (constructor () in
+      {
+        (cm_set self value $17^i5)
+        (cm_set self marker (class_new Marker))
+      }
+    )
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [seed DefaultBox] (class_new DefaultBox))
+      (cm_set seed value $44^i5)
+      (cm_set seed.marker value $66^i5)
+      (var [raw <array DefaultBox>] (array_new <array DefaultBox> $0^i5 seed))
+      (add
+        seed.value
+        (add (mul seed.marker.value $100^i5) (mul (array_length raw) $10000^i5))
+      )
+    }
+  )
+}

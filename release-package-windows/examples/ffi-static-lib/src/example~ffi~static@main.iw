@@ -1,0 +1,9 @@
+{program example~ffi~static@main
+  (declare (function _ab6f7ef4c1de43fb8d5cf17ae7e36c50_clang_iw_example_sum4_459b8ded ([a i5] [b i5] [c i5] [d i5]) to i5))
+  (declare (function _c8d5f42b9a1e4d7f8c6b0e2a93f15d04_clang_iw_example_negate_7d06a9f6 ([value i5]) to i5))
+  (function main ([args <array s3>]) to i5 in
+    (_c8d5f42b9a1e4d7f8c6b0e2a93f15d04_clang_iw_example_negate_7d06a9f6
+      (_ab6f7ef4c1de43fb8d5cf17ae7e36c50_clang_iw_example_sum4_459b8ded $4^i5 $9^i5 $12^i5 $6^i5)
+    )
+  )
+}

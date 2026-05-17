@@ -1,0 +1,18 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "demo~gc~multithread@main.iw",
+        "demo~gc~multithread$lit.json"
+      ]
+    }
+  ],
+  "main": "demo~gc~multithread@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

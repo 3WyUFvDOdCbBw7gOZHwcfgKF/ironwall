@@ -1,0 +1,6 @@
+{program test~language~rules~parent~app@main
+  (import test~language~rules~parent)
+  (function main ([args <array s3>]) to i5 in
+    (test~language~rules~parent~child@child_value $9^i5)
+  )
+}

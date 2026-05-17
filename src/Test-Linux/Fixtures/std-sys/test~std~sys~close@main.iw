@@ -1,0 +1,15 @@
+{program test~std~sys~close@main
+  (import std~linux~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [pipe_fds <array i5>] (sys_fd_pipe2))
+      (var [read_fd i5] (pipe_read_fd pipe_fds))
+      (var [write_fd i5] (pipe_write_fd pipe_fds))
+      (sys_fd_close write_fd)
+      (var [received s3] (sys_fd_read_s3 read_fd $8^i5))
+      (sys_fd_close read_fd)
+      (add $120^i5 (score (eq (s3_length received) $0^i5)))
+    }
+  )
+}

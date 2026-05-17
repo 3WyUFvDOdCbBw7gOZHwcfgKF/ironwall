@@ -1,0 +1,224 @@
+#include <sqlite3.h>
+
+typedef struct iw_sqlite_db_slot_t {
+    int active;
+    sqlite3 *db;
+} iw_sqlite_db_slot_t;
+
+static iw_sqlite_db_slot_t iw_sqlite_db_slots[32];
+
+static inline void iw_sqlite_host_assert(int condition, const char *context) {
+    if (!condition) {
+        fprintf(stderr, "Ironwall sqlite ffi assertion failed in %s\n", context);
+        abort();
+    }
+}
+
+static char *iw_sqlite_copy_bytes(const char *data, size_t length, const char *context) {
+    char *buffer = (char*)malloc(length + 1u);
+    iw_sqlite_host_assert(buffer != NULL, context);
+    if (length > 0u) {
+        memcpy(buffer, data, length);
+    }
+    buffer[length] = '\0';
+    return buffer;
+}
+
+static char *iw_sqlite_copy_text_value(iw_value_t raw_value, const char *context) {
+    iw_text_value_t *value = iw_text_expect(raw_value, context);
+    return iw_sqlite_copy_bytes(value->data, (size_t)value->length, context);
+}
+
+static sqlite3 *iw_sqlite_lookup_db(int64_t handle, const char *context) {
+    iw_sqlite_host_assert(handle > 0 && handle <= (int64_t)(sizeof(iw_sqlite_db_slots) / sizeof(iw_sqlite_db_slots[0])), context);
+    iw_sqlite_db_slot_t *slot = &iw_sqlite_db_slots[handle - 1];
+    iw_sqlite_host_assert(slot->active != 0 && slot->db != NULL, context);
+    return slot->db;
+}
+
+static int64_t iw_sqlite_register_db(sqlite3 *db) {
+    for (size_t index = 0; index < sizeof(iw_sqlite_db_slots) / sizeof(iw_sqlite_db_slots[0]); index += 1u) {
+        if (iw_sqlite_db_slots[index].active == 0) {
+            iw_sqlite_db_slots[index].active = 1;
+            iw_sqlite_db_slots[index].db = db;
+            return (int64_t)index + 1;
+        }
+    }
+    fprintf(stderr, "Ironwall sqlite ffi exhausted database handle slots\n");
+    abort();
+}
+
+static void iw_sqlite_release_db(int64_t handle) {
+    iw_sqlite_db_slot_t *slot = &iw_sqlite_db_slots[handle - 1];
+    slot->active = 0;
+    slot->db = NULL;
+}
+
+static void iw_sqlite_fail(sqlite3 *db, const char *context, const char *detail, int rc) {
+    fprintf(stderr, "Ironwall sqlite ffi failure in %s: rc=%d detail=%s sqlite=%s\n", context, rc, detail, db == NULL ? "<null>" : sqlite3_errmsg(db));
+    abort();
+}
+
+static sqlite3_stmt *iw_sqlite_prepare(sqlite3 *db, iw_value_t raw_sql, const char *context) {
+    char *sql = iw_sqlite_copy_text_value(raw_sql, context);
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    free(sql);
+    if (rc != SQLITE_OK || stmt == NULL) {
+        iw_sqlite_fail(db, context, "sqlite3_prepare_v2", rc);
+    }
+    return stmt;
+}
+
+static char *iw_sqlite_format_row(sqlite3_stmt *stmt, const char *context) {
+    int column_count = sqlite3_column_count(stmt);
+    size_t total_length = 0u;
+    for (int column = 0; column < column_count; column += 1) {
+        const unsigned char *raw_text = sqlite3_column_text(stmt, column);
+        size_t text_length = raw_text == NULL ? 4u : (size_t)sqlite3_column_bytes(stmt, column);
+        total_length += text_length;
+        if (column + 1 < column_count) {
+            total_length += 1u;
+        }
+    }
+
+    char *buffer = iw_sqlite_copy_bytes("", total_length, context);
+    size_t cursor = 0u;
+    for (int column = 0; column < column_count; column += 1) {
+        const unsigned char *raw_text = sqlite3_column_text(stmt, column);
+        const char *text = raw_text == NULL ? "NULL" : (const char*)raw_text;
+        size_t text_length = raw_text == NULL ? 4u : (size_t)sqlite3_column_bytes(stmt, column);
+        if (text_length > 0u) {
+            memcpy(buffer + cursor, text, text_length);
+            cursor += text_length;
+        }
+        if (column + 1 < column_count) {
+            buffer[cursor] = '|';
+            cursor += 1u;
+        }
+    }
+    buffer[cursor] = '\0';
+    return buffer;
+}
+
+iw_value_t {{RAW_OPEN_MEMORY_SYMBOL}}(void) {
+    sqlite3 *db = NULL;
+    int rc = sqlite3_open(":memory:", &db);
+    if (rc != SQLITE_OK || db == NULL) {
+        iw_sqlite_fail(db, "iw_sqlite_open_memory", "sqlite3_open", rc);
+    }
+    return iw_from_i64(iw_sqlite_register_db(db));
+}
+
+iw_value_t {{RAW_CLOSE_SYMBOL}}(iw_value_t raw_db_handle) {
+    int64_t handle = iw_as_i64(raw_db_handle);
+    sqlite3 *db = iw_sqlite_lookup_db(handle, "iw_sqlite_close lookup");
+    int rc = sqlite3_close(db);
+    if (rc != SQLITE_OK) {
+        iw_sqlite_fail(db, "iw_sqlite_close", "sqlite3_close", rc);
+    }
+    iw_sqlite_release_db(handle);
+    return iw_from_i64(0);
+}
+
+iw_value_t {{RAW_EXEC_SYMBOL}}(iw_value_t raw_db_handle, iw_value_t raw_sql) {
+    sqlite3 *db = iw_sqlite_lookup_db(iw_as_i64(raw_db_handle), "iw_sqlite_exec lookup");
+    char *sql = iw_sqlite_copy_text_value(raw_sql, "iw_sqlite_exec sql");
+    char *error_message = NULL;
+    int before_changes = sqlite3_total_changes(db);
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &error_message);
+    free(sql);
+    if (rc != SQLITE_OK) {
+        const char *detail = error_message == NULL ? "sqlite3_exec" : error_message;
+        fprintf(stderr, "Ironwall sqlite ffi exec failure detail=%s\n", detail);
+        if (error_message != NULL) {
+            sqlite3_free(error_message);
+        }
+        iw_sqlite_fail(db, "iw_sqlite_exec", "sqlite3_exec", rc);
+    }
+    if (error_message != NULL) {
+        sqlite3_free(error_message);
+    }
+    return iw_from_i64((int64_t)(sqlite3_total_changes(db) - before_changes));
+}
+
+iw_value_t {{RAW_QUERY_ROWS_S3_SYMBOL}}(iw_value_t raw_db_handle, iw_value_t raw_sql) {
+    sqlite3 *db = iw_sqlite_lookup_db(iw_as_i64(raw_db_handle), "iw_sqlite_query_rows_s3 lookup");
+    sqlite3_stmt *stmt = iw_sqlite_prepare(db, raw_sql, "iw_sqlite_query_rows_s3 prepare");
+    char **rows = NULL;
+    int64_t row_count = 0;
+    int64_t row_capacity = 0;
+
+    while (1) {
+        int rc = sqlite3_step(stmt);
+        if (rc == SQLITE_DONE) {
+            break;
+        }
+        if (rc != SQLITE_ROW) {
+            sqlite3_finalize(stmt);
+            iw_sqlite_fail(db, "iw_sqlite_query_rows_s3", "sqlite3_step", rc);
+        }
+        if (row_count == row_capacity) {
+            int64_t next_capacity = row_capacity == 0 ? 4 : row_capacity * 2;
+            char **next_rows = (char**)realloc(rows, (size_t)next_capacity * sizeof(char*));
+            iw_sqlite_host_assert(next_rows != NULL, "iw_sqlite_query_rows_s3 realloc");
+            rows = next_rows;
+            row_capacity = next_capacity;
+        }
+        rows[row_count] = iw_sqlite_format_row(stmt, "iw_sqlite_query_rows_s3 row");
+        row_count += 1;
+    }
+
+    if (sqlite3_finalize(stmt) != SQLITE_OK) {
+        iw_sqlite_fail(db, "iw_sqlite_query_rows_s3", "sqlite3_finalize", SQLITE_ERROR);
+    }
+
+    iw_value_t result = make_iw_array_s3(row_count);
+    for (int64_t index = 0; index < row_count; index += 1) {
+        _iw_array_s3_set(result, index, make_iw_s3(rows[index]));
+        free(rows[index]);
+    }
+    free(rows);
+    return result;
+}
+
+iw_value_t {{RAW_QUERY_ROWS_I5_SYMBOL}}(iw_value_t raw_db_handle, iw_value_t raw_sql) {
+    sqlite3 *db = iw_sqlite_lookup_db(iw_as_i64(raw_db_handle), "iw_sqlite_query_rows_i5 lookup");
+    sqlite3_stmt *stmt = iw_sqlite_prepare(db, raw_sql, "iw_sqlite_query_rows_i5 prepare");
+    int64_t *rows = NULL;
+    int64_t row_count = 0;
+    int64_t row_capacity = 0;
+
+    iw_sqlite_host_assert(sqlite3_column_count(stmt) == 1, "iw_sqlite_query_rows_i5 column_count");
+
+    while (1) {
+        int rc = sqlite3_step(stmt);
+        if (rc == SQLITE_DONE) {
+            break;
+        }
+        if (rc != SQLITE_ROW) {
+            sqlite3_finalize(stmt);
+            iw_sqlite_fail(db, "iw_sqlite_query_rows_i5", "sqlite3_step", rc);
+        }
+        if (row_count == row_capacity) {
+            int64_t next_capacity = row_capacity == 0 ? 4 : row_capacity * 2;
+            int64_t *next_rows = (int64_t*)realloc(rows, (size_t)next_capacity * sizeof(int64_t));
+            iw_sqlite_host_assert(next_rows != NULL, "iw_sqlite_query_rows_i5 realloc");
+            rows = next_rows;
+            row_capacity = next_capacity;
+        }
+        rows[row_count] = sqlite3_column_int64(stmt, 0);
+        row_count += 1;
+    }
+
+    if (sqlite3_finalize(stmt) != SQLITE_OK) {
+        iw_sqlite_fail(db, "iw_sqlite_query_rows_i5", "sqlite3_finalize", SQLITE_ERROR);
+    }
+
+    iw_value_t result = make_iw_array_i5(row_count);
+    for (int64_t index = 0; index < row_count; index += 1) {
+        _iw_array_i5_set(result, index, rows[index]);
+    }
+    free(rows);
+    return result;
+}

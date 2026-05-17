@@ -1,0 +1,190 @@
+{program app~log~audit@main
+  (import app~log~audit~lib)
+  (import std~dict)
+  (import std~eq)
+  (import std~hash)
+  (import std~io)
+  (import std~list)
+  (import std~string)
+  (import std~linux~sys)
+
+  (function same_i5 ([left i5] [right i5]) to bool in
+    (eq left right)
+  )
+
+  (function hash_i5 ([value i5]) to i5 in
+    value
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (sys_path_mkdir_s3 $app_log_audit_reports_dir_s3^s3)
+      (sys_path_mkdir_s3 $app_log_audit_scratch_dir_s3^s3)
+
+      (var [marker_fd i5] (sys_fd_creat_s3 $app_log_audit_marker_path_s3^s3))
+      (sys_fd_write_s3 marker_fd $app_log_audit_marker_text_s3^s3)
+      (sys_fd_close marker_fd)
+      (sys_path_unlink_s3 $app_log_audit_marker_path_s3^s3)
+
+      (var [input_fd i5] (sys_fd_open_read_s3 $app_log_audit_input_path_s3^s3))
+      (var [input_stat SysFileStat] (sys_fd_fstat input_fd))
+      (var [input_size i5] (sys_stat_size input_stat))
+      (var [content s3] (sys_fd_pread_s3 input_fd input_size $0^i5))
+      (var [prefix_from_read s3] (sys_fd_read_s3 input_fd (s3_length $app_log_audit_error_peek_s3^s3)))
+      (sys_fd_close input_fd)
+
+      (var [pread_offset_ok bool] (same_s3 prefix_from_read $app_log_audit_error_peek_s3^s3))
+      (if pread_offset_ok then unit else (iw_match_unreachable))
+      (if (sys_stat_is_regular input_stat) then unit else (iw_match_unreachable))
+
+      (var [content_text StringS3] (class_new StringS3 content))
+      (var [newline_text StringS3] (class_new StringS3 $app_log_audit_newline_s3^s3))
+      (var [error_prefix_text StringS3] (class_new StringS3 $app_log_audit_error_line_prefix_s3^s3))
+      (var [deploy_token_text StringS3] (class_new StringS3 $app_log_audit_deploy_token_s3^s3))
+      (var [login_failed_text StringS3] (class_new StringS3 $app_log_audit_login_failed_token_s3^s3))
+      (var [disk_full_text StringS3] (class_new StringS3 $app_log_audit_disk_full_token_s3^s3))
+      (var [password_expiring_text StringS3] (class_new StringS3 $app_log_audit_password_expiring_token_s3^s3))
+      (var [deploy_started_text StringS3] (class_new StringS3 $app_log_audit_deploy_started_token_s3^s3))
+      (var [deploy_finished_text StringS3] (class_new StringS3 $app_log_audit_deploy_finished_token_s3^s3))
+      (var [content_ends_with_newline bool] ((cm_get content_text endswith) newline_text))
+
+      (var [line_count i5]
+        (if
+          (eq input_size $0^i5)
+          then
+          $0^i5
+          else
+          (if
+            content_ends_with_newline
+            then
+            ((cm_get content_text count) newline_text)
+            else
+            (add ((cm_get content_text count) newline_text) $1^i5)
+          )
+        )
+      )
+      (var [error_count i5] ((cm_get content_text count) error_prefix_text))
+      (var [deploy_count i5] ((cm_get content_text count) deploy_token_text))
+      (var [warning_count i5] (sub (sub line_count error_count) deploy_count))
+      (var [auth_failed bool] (string_contains content_text login_failed_text))
+      (var [disk_full bool] (string_contains content_text disk_full_text))
+      (var [password_expiring bool] (string_contains content_text password_expiring_text))
+      (var [deploy_started bool] (string_contains content_text deploy_started_text))
+      (var [deploy_finished bool] (string_contains content_text deploy_finished_text))
+
+      (var [metric_eq <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [metric_hash <Hash i5>] (class_new <Hash i5> hash_i5))
+      (var [metrics <Dict i5 i5>] (<dict_new i5 i5> metric_hash metric_eq $0^i5 $0^i5))
+      ((cm_get metrics setdefault) $1^i5 error_count)
+      ((cm_get metrics setdefault) $2^i5 warning_count)
+      ((cm_get metrics setdefault) $3^i5 deploy_count)
+
+      (var [metric_order <List i5>] (<list_new i5> $0^i5))
+      ((cm_get metric_order append) $1^i5)
+      ((cm_get metric_order append) $2^i5)
+      ((cm_get metric_order append) $3^i5)
+
+      (var [alert_codes <List i5>] (<list_new i5> $0^i5))
+      (if auth_failed then ((cm_get alert_codes append) $11^i5) else unit)
+      (if disk_full then ((cm_get alert_codes append) $12^i5) else unit)
+      (if password_expiring then ((cm_get alert_codes append) $13^i5) else unit)
+      (if deploy_started then ((cm_get alert_codes append) $14^i5) else unit)
+      (if deploy_finished then ((cm_get alert_codes append) $15^i5) else unit)
+
+      (var [highlights <List i5>] (<list_concat i5> metric_order (<list_reversed i5> alert_codes)))
+
+      (var [child_output s3] $app_log_audit_child_output_s3^s3)
+      (var [wait_status i5] $0^i5)
+
+      (var [child_text StringS3] (class_new StringS3 child_output))
+      (var [newline_text StringS3] (class_new StringS3 $app_log_audit_newline_s3^s3))
+      (var [child_newline_ok bool] ((cm_get child_text endswith) newline_text))
+      (var [child_status_ok bool] (eq wait_status $0^i5))
+      (if (same_s3 child_output $app_log_audit_child_output_s3^s3) then unit else (iw_match_unreachable))
+      (if child_newline_ok then unit else (iw_match_unreachable))
+      (if child_status_ok then unit else (iw_match_unreachable))
+
+      (var [summary_fd i5] (sys_fd_creat_s3 $app_log_audit_summary_tmp_path_s3^s3))
+      (sys_fd_write_s3 summary_fd $app_log_audit_state_build_s3^s3)
+      (write_label_i5_line summary_fd $app_log_audit_input_bytes_label_s3^s3 input_size)
+  (write_label_i5_line summary_fd $app_log_audit_total_lines_label_s3^s3 line_count)
+  (write_label_i5_line summary_fd $app_log_audit_error_events_label_s3^s3 ((cm_get metrics get) $1^i5 $0^i5))
+  (write_label_i5_line summary_fd $app_log_audit_warning_events_label_s3^s3 ((cm_get metrics get) $2^i5 $0^i5))
+  (write_label_i5_line summary_fd $app_log_audit_deploy_events_label_s3^s3 ((cm_get metrics get) $3^i5 $0^i5))
+      (write_label_bool_line summary_fd $app_log_audit_pread_offset_ok_label_s3^s3 pread_offset_ok)
+      (var [summary_cursor_before i5] (sys_fd_seek_cur summary_fd $0^i5))
+      (var [pwrite_written i5] (sys_fd_pwrite_s3 summary_fd $app_log_audit_state_ready_s3^s3 $0^i5))
+      (var [summary_cursor_after i5] (sys_fd_seek_cur summary_fd $0^i5))
+      (var [pwrite_offset_ok bool]
+        (and
+          (eq pwrite_written (s3_length $app_log_audit_state_ready_s3^s3))
+          (eq summary_cursor_before summary_cursor_after)
+        )
+      )
+      (write_label_bool_line summary_fd $app_log_audit_pwrite_offset_ok_label_s3^s3 pwrite_offset_ok)
+      (write_label_bool_line summary_fd $app_log_audit_child_status_ok_label_s3^s3 child_status_ok)
+      (write_blank_line summary_fd)
+      (write_line summary_fd $app_log_audit_metric_order_header_s3^s3)
+      (write_line summary_fd $app_log_audit_error_line_prefix_s3^s3)
+      (write_line summary_fd $app_log_audit_warning_events_label_s3^s3)
+      (write_line summary_fd $app_log_audit_deploy_token_s3^s3)
+      (write_line summary_fd $app_log_audit_alerts_header_s3^s3)
+      (if auth_failed then (write_line summary_fd $app_log_audit_login_failed_token_s3^s3) else unit)
+      (if disk_full then (write_line summary_fd $app_log_audit_disk_full_token_s3^s3) else unit)
+      (if password_expiring then (write_line summary_fd $app_log_audit_password_expiring_token_s3^s3) else unit)
+      (if deploy_started then (write_line summary_fd $app_log_audit_deploy_started_token_s3^s3) else unit)
+      (if deploy_finished then (write_line summary_fd $app_log_audit_deploy_finished_token_s3^s3) else unit)
+      (write_line summary_fd $app_log_audit_highlights_header_s3^s3)
+      (write_line summary_fd $app_log_audit_error_line_prefix_s3^s3)
+      (write_line summary_fd $app_log_audit_warning_events_label_s3^s3)
+      (write_line summary_fd $app_log_audit_deploy_token_s3^s3)
+      (if deploy_finished then (write_line summary_fd $app_log_audit_deploy_finished_token_s3^s3) else unit)
+      (if deploy_started then (write_line summary_fd $app_log_audit_deploy_started_token_s3^s3) else unit)
+      (if password_expiring then (write_line summary_fd $app_log_audit_password_expiring_token_s3^s3) else unit)
+      (if disk_full then (write_line summary_fd $app_log_audit_disk_full_token_s3^s3) else unit)
+      (if auth_failed then (write_line summary_fd $app_log_audit_login_failed_token_s3^s3) else unit)
+
+      (var [summary_end i5] (sys_fd_seek_end summary_fd $0^i5))
+      (var [summary_stat SysFileStat] (sys_fd_fstat summary_fd))
+      (if pwrite_offset_ok then unit else (iw_match_unreachable))
+      (if (sys_stat_is_regular summary_stat) then unit else (iw_match_unreachable))
+      (if (eq summary_end (sys_stat_size summary_stat)) then unit else (iw_match_unreachable))
+      (sys_fd_fsync summary_fd)
+      (sys_fd_close summary_fd)
+      (sys_path_rename_s3 $app_log_audit_summary_tmp_path_s3^s3 $app_log_audit_summary_path_s3^s3)
+
+      (var [status_fd i5] (sys_fd_creat_s3 $app_log_audit_status_tmp_path_s3^s3))
+      (sys_fd_write_s3 status_fd child_output)
+      (write_label_i5_line status_fd $app_log_audit_wait_status_label_s3^s3 wait_status)
+      (write_label_bool_line status_fd $app_log_audit_child_newline_label_s3^s3 child_newline_ok)
+      (sys_fd_fdatasync status_fd)
+      (sys_fd_close status_fd)
+      (sys_path_rename_s3 $app_log_audit_status_tmp_path_s3^s3 $app_log_audit_status_path_s3^s3)
+
+      (var [summary_read_fd i5] (sys_fd_open_read_s3 $app_log_audit_summary_path_s3^s3))
+      (var [summary_size i5] (sys_fd_seek_end summary_read_fd $0^i5))
+      (var [summary_prefix s3] (sys_fd_pread_s3 summary_read_fd (s3_length $app_log_audit_state_ready_s3^s3) $0^i5))
+      (sys_fd_seek_set summary_read_fd $0^i5)
+      (var [summary_loaded s3] (sys_fd_read_s3 summary_read_fd summary_size))
+      (sys_fd_close summary_read_fd)
+
+      (var [summary_text StringS3] (class_new StringS3 summary_loaded))
+      (var [highlights_header_text StringS3] (class_new StringS3 $app_log_audit_highlights_header_s3^s3))
+      (if (same_s3 summary_prefix $app_log_audit_state_ready_s3^s3) then unit else (iw_match_unreachable))
+      (if (string_contains summary_text highlights_header_text) then unit else (iw_match_unreachable))
+
+      (sys_path_rmdir_s3 $app_log_audit_scratch_dir_s3^s3)
+
+      (println $app_log_audit_stdout_title_s3^s3)
+      (print $app_log_audit_stdout_errors_label_s3^s3)
+      (print (i5_to_s3 ((cm_get metrics get) $1^i5 $0^i5)))
+      (print $app_log_audit_stdout_sep_s3^s3)
+      (print $app_log_audit_stdout_warnings_label_s3^s3)
+      (print (i5_to_s3 ((cm_get metrics get) $2^i5 $0^i5)))
+      (print $app_log_audit_stdout_sep_s3^s3)
+      (print $app_log_audit_stdout_deploys_label_s3^s3)
+      (println (i5_to_s3 ((cm_get metrics get) $3^i5 $0^i5)))
+      $0^i5
+    }
+  )
+}

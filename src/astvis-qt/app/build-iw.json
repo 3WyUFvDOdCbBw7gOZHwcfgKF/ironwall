@@ -1,0 +1,22 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "astvis~large~string~assignment$lit.json",
+        "astvis~large~string~basic@main.iw",
+        "astvis~large~string~basic$lit.json",
+        "astvis~large~string~assignment@main.iw",
+        "astvis~large~string~fncall@main.iw",
+        "astvis~large~string~fncall$lit.json"
+      ]
+    }
+  ],
+  "main": "astvis~large~string~basic@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

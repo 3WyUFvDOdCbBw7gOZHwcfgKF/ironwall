@@ -1,0 +1,5 @@
+{program test~builtin~ops~invalid_not_i5@main
+  (function main ([args <array s3>]) to i5 in
+    (if (not $1^i5) then $1^i5 else $0^i5)
+  )
+}

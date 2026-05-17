@@ -1,0 +1,27 @@
+{program test~std~sys~dup@main
+  (import std~linux~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [pipe_fds <array i5>] (sys_fd_pipe2))
+      (var [read_fd i5] (pipe_read_fd pipe_fds))
+      (var [write_fd i5] (pipe_write_fd pipe_fds))
+      (var [dup_fd i5] (sys_fd_dup write_fd))
+      (sys_fd_close write_fd)
+      (var [written i5] (sys_fd_write_s3 dup_fd $dup_payload_s3^s3))
+      (sys_fd_close dup_fd)
+      (var [received s3] (sys_fd_read_s3 read_fd $16^i5))
+      (sys_fd_close read_fd)
+      (add
+        $230^i5
+        (add
+          (score (neq dup_fd write_fd))
+          (add
+            (score (eq written (s3_length $dup_payload_s3^s3)))
+            (score (s3_equals received $dup_payload_s3^s3))
+          )
+        )
+      )
+    }
+  )
+}

@@ -1,0 +1,20 @@
+{program test~std~sys~openat_write@main
+  (import std~linux~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [dir_fd i5] (sys_fd_open_read_s3 $sys_dir_path_s3^s3))
+      (var [fd i5] (sys_fd_openat_write_s3 dir_fd $openat_write_child_s3^s3))
+      (var [written i5] (sys_fd_write_s3 fd $openat_write_payload_s3^s3))
+      (sys_fd_close fd)
+      (sys_fd_close dir_fd)
+      (add
+        $210^i5
+        (add
+          (score (gt fd $2^i5))
+          (score (eq written (s3_length $openat_write_payload_s3^s3)))
+        )
+      )
+    }
+  )
+}

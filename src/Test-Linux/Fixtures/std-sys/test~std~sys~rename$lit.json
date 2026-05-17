@@ -1,0 +1,6 @@
+{
+  "package": "test~std~sys~rename$lit",
+  "sys_rename_source_path_s3^s3": "artifacts/std-sys/rename-from.txt",
+  "sys_rename_target_path_s3^s3": "artifacts/std-sys/rename-to.txt",
+  "sys_rename_payload_s3^s3": "write-text"
+}

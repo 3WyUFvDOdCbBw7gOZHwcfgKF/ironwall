@@ -1,0 +1,10 @@
+{
+  "package": "test~std~sys~windows~spawn_stdio$lit",
+  "std_sys_windows_spawn_stdio_empty_s3^s3": "",
+  "std_sys_windows_cmd_path_s3^s3": "C:\\Windows\\System32\\cmd.exe",
+  "std_sys_windows_slash_c_s3^s3": "/c",
+  "std_sys_windows_stdin_command_s3^s3": "more > NUL",
+  "std_sys_windows_stdout_command_s3^s3": "echo hello through pipe",
+  "std_sys_windows_spawn_stdio_input_s3^s3": "hello through pipe\r\n",
+  "std_sys_windows_stdout_expected_s3^s3": "hello through pipe\r\n"
+}

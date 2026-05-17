@@ -1,0 +1,18 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~string~cond~panorama@main.iw",
+        "app~string~cond~panorama$lit.json"
+      ]
+    }
+  ],
+  "main": "app~string~cond~panorama@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

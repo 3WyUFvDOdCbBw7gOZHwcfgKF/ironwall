@@ -1,0 +1,5 @@
+{
+  "package": "test~std~sys~read$lit",
+  "sys_input_path_s3^s3": "artifacts/std-sys/input.txt",
+  "alpha_beta_s3^s3": "alpha-beta"
+}

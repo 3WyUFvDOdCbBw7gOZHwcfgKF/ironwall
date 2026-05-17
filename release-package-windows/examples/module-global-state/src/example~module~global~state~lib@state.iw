@@ -1,0 +1,26 @@
+{program example~module~global~state~lib@state
+  (class Marker
+    (property [rank i5])
+    (property [code i5])
+    (constructor ([rank0 i5] [code0 i5]) in
+      {
+        (cm_set self rank rank0)
+        (cm_set self code code0)
+      }
+    )
+  )
+  (class Payload
+    (property [marker Marker])
+    (property [weight i5])
+    (constructor ([marker0 Marker] [weight0 i5]) in
+      {
+        (cm_set self marker marker0)
+        (cm_set self weight weight0)
+      }
+    )
+  )
+  (var [shared_value <union i5 Payload>] $1^i5)
+  (function payload_score ([payload Payload]) to i5 in
+    (add payload.weight (add payload.marker.rank payload.marker.code))
+  )
+}

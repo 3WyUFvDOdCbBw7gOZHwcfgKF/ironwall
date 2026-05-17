@@ -1,0 +1,12 @@
+{
+  "package": "test~std~sys~linux~spawn_processes$lit",
+  "std_sys_linux_spawn_empty_s3^s3": "",
+  "std_sys_linux_sh_path_s3^s3": "/bin/sh",
+  "std_sys_linux_sh_dash_c_s3^s3": "-c",
+  "std_sys_linux_exit_command_s3^s3": "exit 0",
+  "std_sys_linux_kill_command_s3^s3": "sleep 5",
+  "std_sys_linux_stdin_command_s3^s3": "cat >/dev/null",
+  "std_sys_linux_stdout_command_s3^s3": "printf 'hello through pipe\\n'",
+  "std_sys_linux_spawn_input_s3^s3": "hello through pipe\n",
+  "std_sys_linux_stdout_expected_s3^s3": "hello through pipe\n"
+}

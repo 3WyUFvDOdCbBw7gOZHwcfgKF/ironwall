@@ -1,0 +1,20 @@
+{
+  "name": "ironwall",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/main.js",
+  "bin": {
+    "ironwall": "build/main.js"
+  },
+  "scripts": {
+    "build": "npx tsc --pretty false"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {}
+}

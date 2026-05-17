@@ -1,0 +1,69 @@
+{program test~std~list@main
+  (import std~list)
+  (import std~eq)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [source <List i5>] (<list_new i5> $0^i5))
+      (source.append $5^i5)
+      (source.append $7^i5)
+      (source.append $7^i5)
+      (source.append $9^i5)
+      (source.insert $1^i5 $6^i5)
+      (source.remove rule $6^i5)
+      (var [count_seven i5] (source.count rule $7^i5))
+      (var [index_nine i5] (source.index rule $9^i5))
+      (var [popped_mid i5] (source.pop $1^i5))
+      (var [copy <List i5>] (source.copy))
+      (copy.reverse)
+      (var [joined <List i5>] (<list_concat i5> source copy))
+      (var [last_copy i5] (<list_pop i5> copy))
+      (var [repeated <List i5>] (<list_repeat i5> source $2^i5))
+      (var [repeat_before_set i5] (repeated.get $3^i5))
+      (repeated.set $3^i5 $4^i5)
+      (var [repeat_after_set i5] (repeated.get $3^i5))
+      (source.clear)
+      (add
+        count_seven
+        (add
+          index_nine
+          (add
+            popped_mid
+            (add
+              last_copy
+              (add
+                (joined.get $3^i5)
+                (add
+                  (joined.get $5^i5)
+                  (add
+                    repeat_before_set
+                    (add
+                      repeat_after_set
+                      (add
+                        (<list_len i5> source)
+                        (add
+                          (<list_len i5> joined)
+                          (add
+                            (<list_len i5> repeated)
+                            (if
+                              (<list_contains i5> repeated rule $4^i5)
+                              then
+                              $100^i5
+                              else
+                              $0^i5
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

@@ -1,0 +1,30 @@
+{program test~std~sys~process_thread_ids@main
+  (import std~windows~sys)
+  (import test~std~sys~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [pid_before i5] (sys_process_getpid))
+      (var [tid_before i5] (sys_thread_gettid))
+      (sys_thread_yield)
+      (sys_thread_tgkill pid_before tid_before $0^i5)
+      (var [pid_after i5] (sys_process_getpid))
+      (var [tid_after i5] (sys_thread_gettid))
+      (add
+        $720^i5
+        (add
+          (score (gt pid_before $0^i5))
+          (add
+            (score (gt tid_before $0^i5))
+            (add
+              (score (eq pid_before tid_before))
+              (add
+                (score (eq pid_before pid_after))
+                (score (eq tid_before tid_after))
+              )
+            )
+          )
+        )
+      )
+    }
+  )
+}

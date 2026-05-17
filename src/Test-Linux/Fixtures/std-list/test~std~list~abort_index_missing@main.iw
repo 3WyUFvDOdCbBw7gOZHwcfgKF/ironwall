@@ -1,0 +1,14 @@
+{program test~std~list~abort_index_missing@main
+  (import std~list)
+  (import std~eq)
+  (function same_i5 ([left i5] [right i5]) to bool in (eq left right))
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [rule <Eq i5>] (class_new <Eq i5> same_i5))
+      (var [source <List i5>] (<list_new i5> $0^i5))
+      (source.append $4^i5)
+      (source.append $5^i5)
+      (source.index rule $9^i5)
+    }
+  )
+}

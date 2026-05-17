@@ -1,0 +1,17 @@
+{
+  "mode": "run",
+  "target": "linux-x64",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "test~ffi~sqlite@main.iw"
+      ]
+    }
+  ],
+  "main": "test~ffi~sqlite@main",
+  "precompiledLibs": [],
+  "ffiLibs": [
+    "native/libsqlite_ffi_example.a"
+  ]
+}

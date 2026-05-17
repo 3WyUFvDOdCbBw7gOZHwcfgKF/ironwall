@@ -1,0 +1,8 @@
+{
+  "package": "test~std~sys~linux~env_platform_time$lit",
+  "std_sys_linux_platform_name_s3^s3": "linux",
+  "std_sys_linux_env_case_name_s3^s3": "IRONWALL_STD_SYS_ENV_CASE",
+  "std_sys_linux_env_case_value_s3^s3": "linux-case",
+  "std_sys_linux_env_set_name_s3^s3": "IRONWALL_STD_SYS_SET_CASE",
+  "std_sys_linux_env_set_value_s3^s3": "set-ok"
+}

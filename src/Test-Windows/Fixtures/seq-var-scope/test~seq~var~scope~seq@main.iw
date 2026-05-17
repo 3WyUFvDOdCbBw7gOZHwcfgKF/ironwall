@@ -1,0 +1,82 @@
+{program test~seq~var~scope~seq@main
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [a i5] $5^i5)
+      (var [b <to i5 from i5>] (fn ([delta i5]) to i5 in (add a delta)))
+
+      {
+        (var [first_probe i5] (b $2^i5))
+        (if
+          (eq first_probe $7^i5)
+          then
+          (var_set a (add a $10^i5))
+          else
+          (var_set a $0^i5)
+        )
+      }
+
+      {
+        (var [bridge <to i5 from i5>] (fn ([delta i5]) to i5 in (add (b delta) a)))
+        (var [local_score i5] $0^i5)
+        (if
+          (eq (bridge $3^i5) $33^i5)
+          then
+          (var_set local_score (add local_score $1000^i5))
+          else
+          (var_set local_score (sub $0^i5 $1000^i5))
+        )
+        (if
+          (eq a $15^i5)
+          then
+          (var_set local_score (add local_score $200^i5))
+          else
+          (var_set local_score (sub local_score $200^i5))
+        )
+        (var_set a (add a (b $1^i5)))
+        (if
+          (eq a $31^i5)
+          then
+          (var_set local_score (add local_score $30^i5))
+          else
+          (var_set local_score (sub local_score $30^i5))
+        )
+        (var_set a (add a local_score))
+      }
+
+      (var [c i5] (add (b $4^i5) a))
+
+      {
+        (var [tail <to i5 from i5>] (fn ([delta i5]) to i5 in
+          {
+            (var [a i5] (add c delta))
+            (add a (b delta))
+          }
+        ))
+        (var [summary i5] $0^i5)
+        (if
+          (eq c $2526^i5)
+          then
+          (var_set summary (add summary $4^i5))
+          else
+          (var_set summary (sub summary $4^i5))
+        )
+        (if
+          (eq (tail $2^i5) $3791^i5)
+          then
+          (var_set summary (add summary $50^i5))
+          else
+          (var_set summary (sub summary $50^i5))
+        )
+        (var_set a (add a c))
+        (if
+          (eq a $3787^i5)
+          then
+          (var_set summary (add summary $6^i5))
+          else
+          (var_set summary (sub summary $6^i5))
+        )
+        (add summary a)
+      }
+    }
+  )
+}

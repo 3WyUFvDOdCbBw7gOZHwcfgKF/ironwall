@@ -1,0 +1,64 @@
+{program test~std~sys~windows~cwd_chdir@main
+  (import std~windows~sys)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+  (function s3_equals ([left s3] [right s3]) to bool in
+    {
+      (var [left_length i5] (s3_length left))
+      (if
+        (neq left_length (s3_length right))
+        then
+        false
+        else
+        {
+          (var [index i5] $0^i5)
+          (var [same bool] true)
+          (while
+            (lt index left_length)
+            in
+            {
+              (if
+                same
+                then
+                (if
+                  (neq (s3_get left index) (s3_get right index))
+                  then
+                  {
+                    (var_set same false)
+                    unit
+                  }
+                  else
+                  unit
+                )
+                else
+                unit
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          same
+        }
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (if (sys_path_exists_s3 $std_sys_windows_cwd_chdir_dir_s3^s3) then (sys_path_rmdir_s3 $std_sys_windows_cwd_chdir_dir_s3^s3) else unit)
+      (var [initial_cwd s3] (sys_path_getcwd_s3))
+      (sys_path_mkdir_s3 $std_sys_windows_cwd_chdir_dir_s3^s3)
+      (sys_path_chdir_s3 $std_sys_windows_cwd_chdir_dir_s3^s3)
+      (var [changed_cwd s3] (sys_path_getcwd_s3))
+      (sys_path_chdir_s3 initial_cwd)
+      (var [restored_cwd s3] (sys_path_getcwd_s3))
+      (sys_path_rmdir_s3 $std_sys_windows_cwd_chdir_dir_s3^s3)
+      (add
+        (score (not (s3_equals initial_cwd changed_cwd)))
+        (add
+          (score (s3_equals initial_cwd restored_cwd))
+          (score (not (sys_path_exists_s3 $std_sys_windows_cwd_chdir_dir_s3^s3)))
+        )
+      )
+    }
+  )
+}
