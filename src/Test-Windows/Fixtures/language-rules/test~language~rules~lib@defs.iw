@@ -50,4 +50,22 @@
       (if flag then (cm_set self value $22^i5) else (cm_set self value $33^i5))
     )
   )
+  (function constructor_seed ([value i5]) to i5 in (add value $1^i5))
+  (function constructor_adjust ([value i5]) to i5 in (sub value $1^i5))
+  (class ConstructorAnalysisOk
+    (property [left i5])
+    (property [right i5])
+    (method read_left () to i5 in (cm_get self left))
+    (method read_right () to i5 in (cm_get self right))
+    (method read_both () to i5 in (add ((cm_get self read_left)) ((cm_get self read_right))))
+    (constructor ([seed i5]) in
+      {
+        (constructor_adjust seed)
+        (cm_set self left (constructor_seed seed))
+        ((cm_get self read_left))
+        (cm_set self right (constructor_adjust (cm_get self left)))
+        ((cm_get self read_both))
+      }
+    )
+  )
 }

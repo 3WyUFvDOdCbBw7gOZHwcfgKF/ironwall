@@ -1,11 +1,4 @@
-/**
- * @file Typecheck-Pipeline.ts
- * @author week
- * @date 2025-06-12
- * @description
- *   Typechecking Pass 2: 完整的 Ironwall 语言类型检查器
- *   遵循 iw-spec.md 规范：类型安全、强制垃圾回收、无类型别名
- */
+
 
 import { randomUUID } from "crypto";
 import {
@@ -2244,16 +2237,24 @@ function intersectSets(sets: Set<string>[]): Set<string> {
     return result;
 }
 
-interface ConstructorPropertyInitializer {
-    readonly propertyName: string;
-    readonly dependencies: ReadonlySet<string>;
-    readonly order: number;
+interface MethodDirectConstructorEffects {
+    readonly directFieldReads: Set<string>;
+    readonly directSelfEscape: boolean;
+    readonly directInternalMethodCalls: Set<string>;
 }
 
-interface MethodPropertyRequirementSummary {
-    readonly directPropertyReads: Set<string>;
-    readonly selfMethodDependencies: Set<string>;
+interface MethodConstructorEffects {
+    readonly fieldReads: Set<string>;
+    escapesSelf: boolean;
 }
+
+interface ConstructorClassAnalysis {
+    readonly propertyNameSet: ReadonlySet<string>;
+    readonly methodNameSet: ReadonlySet<string>;
+    readonly methodEffects: ReadonlyMap<string, MethodConstructorEffects>;
+}
+
+const METHOD_CONSTRUCTOR_EFFECT_FIXPOINT_BASE_LIMIT = 256;
 
 function getSelfPropertyReadName(ast: AstNode, propertyNameSet: ReadonlySet<string>): string | null {
     if (!(ast instanceof FunctionCallNode)) {
@@ -2303,6 +2304,13 @@ function getSelfMethodAccessName(ast: AstNode, methodNameSet: ReadonlySet<string
     return ast.args[1].name;
 }
 
+function getSelfMethodCallName(ast: AstNode, methodNameSet: ReadonlySet<string>): string | null {
+    if (!(ast instanceof FunctionCallNode)) {
+        return null;
+    }
+    return getSelfMethodAccessName(ast.callee, methodNameSet);
+}
+
 function formatNameList(names: readonly string[]): string {
     if (names.length === 1) {
         return names[0];
@@ -2310,489 +2318,290 @@ function formatNameList(names: readonly string[]): string {
     return names.join(", ");
 }
 
-function collectMethodBodyRequirements(
-    ast: AstNode,
-    propertyNameSet: ReadonlySet<string>,
-    methodNameSet: ReadonlySet<string>,
-    directPropertyReads: Set<string>,
-    selfMethodDependencies: Set<string>,
-): void {
-    const propertyRead = getSelfPropertyReadName(ast, propertyNameSet);
-    if (propertyRead !== null) {
-        directPropertyReads.add(propertyRead);
-    }
-
-    const methodAccess = getSelfMethodAccessName(ast, methodNameSet);
-    if (methodAccess !== null) {
-        selfMethodDependencies.add(methodAccess);
-    }
-
-    if (
-        ast instanceof FnNode
-        || ast instanceof DfunNode
+function isNestedDefinitionNode(ast: AstNode): boolean {
+    return ast instanceof DfunNode
         || ast instanceof DeclaredDfunNode
         || ast instanceof GenericDfunNode
         || ast instanceof ClassNode
         || ast instanceof GenericClassNode
         || ast instanceof ClassMethodNode
-        || ast instanceof ClassConstructorNode
-    ) {
-        return;
-    }
+        || ast instanceof ClassConstructorNode;
+}
 
+function containsSelfReference(ast: AstNode): boolean {
+    if (ast instanceof IdentifierNode) {
+        return ast.name === "self";
+    }
+    if (ast instanceof FnNode) {
+        return containsSelfReference(ast.body);
+    }
+    if (isNestedDefinitionNode(ast)) {
+        return false;
+    }
     if (ast instanceof SeqNode) {
-        for (const expr of ast.expressions) {
-            collectMethodBodyRequirements(expr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        return ast.expressions.some((expr) => containsSelfReference(expr));
+    }
+    if (ast instanceof IfNode) {
+        return containsSelfReference(ast.condExpr)
+            || containsSelfReference(ast.trueBranchExpr)
+            || containsSelfReference(ast.falseBranchExpr);
+    }
+    if (ast instanceof WhileNode) {
+        return containsSelfReference(ast.condExpr) || containsSelfReference(ast.bodyExpr);
+    }
+    if (ast instanceof CondNode) {
+        return ast.clausesExprs.some((clause) => containsSelfReference(clause.cond) || containsSelfReference(clause.body));
+    }
+    if (ast instanceof MatchNode) {
+        return containsSelfReference(ast.unionExpr)
+            || ast.branches.some((branch) => containsSelfReference(branch.body));
+    }
+    if (ast instanceof DvarNode) {
+        return containsSelfReference(ast.value);
+    }
+    if (ast instanceof SetNode) {
+        return containsSelfReference(ast.value);
+    }
+    if (ast instanceof LetNode) {
+        return ast.bindings.some((binding) => containsSelfReference(binding.value))
+            || containsSelfReference(ast.body);
+    }
+    if (ast instanceof FunctionCallNode) {
+        return containsSelfReference(ast.callee)
+            || ast.args.some((arg) => containsSelfReference(arg));
+    }
+    if (ast instanceof GenericCallNode) {
+        return containsSelfReference(ast.callee);
+    }
+    return false;
+}
+
+function collectMethodConstructorEffects(
+    ast: AstNode,
+    propertyNameSet: ReadonlySet<string>,
+    methodNameSet: ReadonlySet<string>,
+    effects: { directFieldReads: Set<string>; directSelfEscape: boolean; directInternalMethodCalls: Set<string> },
+): void {
+    if (ast instanceof IdentifierNode) {
+        if (ast.name === "self") {
+            effects.directSelfEscape = true;
         }
         return;
     }
 
+    if (ast instanceof FnNode) {
+        if (containsSelfReference(ast.body)) {
+            effects.directSelfEscape = true;
+        }
+        return;
+    }
+
+    if (isNestedDefinitionNode(ast)) {
+        return;
+    }
+
+    if (ast instanceof SeqNode) {
+        ast.expressions.forEach((expr) => collectMethodConstructorEffects(expr, propertyNameSet, methodNameSet, effects));
+        return;
+    }
+
     if (ast instanceof IfNode) {
-        collectMethodBodyRequirements(ast.condExpr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
-        collectMethodBodyRequirements(ast.trueBranchExpr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
-        collectMethodBodyRequirements(ast.falseBranchExpr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        collectMethodConstructorEffects(ast.condExpr, propertyNameSet, methodNameSet, effects);
+        collectMethodConstructorEffects(ast.trueBranchExpr, propertyNameSet, methodNameSet, effects);
+        collectMethodConstructorEffects(ast.falseBranchExpr, propertyNameSet, methodNameSet, effects);
         return;
     }
 
     if (ast instanceof WhileNode) {
-        collectMethodBodyRequirements(ast.condExpr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
-        collectMethodBodyRequirements(ast.bodyExpr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        collectMethodConstructorEffects(ast.condExpr, propertyNameSet, methodNameSet, effects);
+        collectMethodConstructorEffects(ast.bodyExpr, propertyNameSet, methodNameSet, effects);
         return;
     }
 
     if (ast instanceof CondNode) {
         for (const clause of ast.clausesExprs) {
-            collectMethodBodyRequirements(clause.cond, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
-            collectMethodBodyRequirements(clause.body, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+            collectMethodConstructorEffects(clause.cond, propertyNameSet, methodNameSet, effects);
+            collectMethodConstructorEffects(clause.body, propertyNameSet, methodNameSet, effects);
         }
         return;
     }
 
     if (ast instanceof MatchNode) {
-        collectMethodBodyRequirements(ast.unionExpr, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        collectMethodConstructorEffects(ast.unionExpr, propertyNameSet, methodNameSet, effects);
         for (const branch of ast.branches) {
-            collectMethodBodyRequirements(branch.body, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+            collectMethodConstructorEffects(branch.body, propertyNameSet, methodNameSet, effects);
         }
         return;
     }
 
     if (ast instanceof DvarNode) {
-        collectMethodBodyRequirements(ast.value, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        collectMethodConstructorEffects(ast.value, propertyNameSet, methodNameSet, effects);
         return;
     }
 
     if (ast instanceof SetNode) {
-        collectMethodBodyRequirements(ast.value, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        collectMethodConstructorEffects(ast.value, propertyNameSet, methodNameSet, effects);
         return;
     }
 
     if (ast instanceof LetNode) {
         for (const binding of ast.bindings) {
-            collectMethodBodyRequirements(binding.value, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+            collectMethodConstructorEffects(binding.value, propertyNameSet, methodNameSet, effects);
         }
-        collectMethodBodyRequirements(ast.body, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        collectMethodConstructorEffects(ast.body, propertyNameSet, methodNameSet, effects);
         return;
     }
 
     if (ast instanceof FunctionCallNode) {
-        collectMethodBodyRequirements(ast.callee, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
-        for (const arg of ast.args) {
-            collectMethodBodyRequirements(arg, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
+        const writeName = getSelfPropertyWriteName(ast, propertyNameSet);
+        if (writeName !== null) {
+            collectMethodConstructorEffects(ast.args[2], propertyNameSet, methodNameSet, effects);
+            return;
         }
+
+        const readName = getSelfPropertyReadName(ast, propertyNameSet);
+        if (readName !== null) {
+            effects.directFieldReads.add(readName);
+            return;
+        }
+
+        const methodCallName = getSelfMethodCallName(ast, methodNameSet);
+        if (methodCallName !== null) {
+            effects.directInternalMethodCalls.add(methodCallName);
+            ast.args.forEach((arg) => collectMethodConstructorEffects(arg, propertyNameSet, methodNameSet, effects));
+            return;
+        }
+
+        const methodAccessName = getSelfMethodAccessName(ast, methodNameSet);
+        if (methodAccessName !== null) {
+            effects.directSelfEscape = true;
+            return;
+        }
+
+        collectMethodConstructorEffects(ast.callee, propertyNameSet, methodNameSet, effects);
+        ast.args.forEach((arg) => collectMethodConstructorEffects(arg, propertyNameSet, methodNameSet, effects));
+        return;
+    }
+
+    if (ast instanceof GenericCallNode) {
+        collectMethodConstructorEffects(ast.callee, propertyNameSet, methodNameSet, effects);
     }
 }
 
-function computeMethodPropertyReadRequirements(
-    methods: readonly ClassMethodNode[],
+function buildConstructorClassAnalysis(
     propertyNames: readonly string[],
-): ReadonlyMap<string, ReadonlySet<string>> {
+    methods: readonly ClassMethodNode[],
+    context: string,
+): ConstructorClassAnalysis {
     const propertyNameSet = new Set<string>(propertyNames);
     const methodNameSet = new Set<string>(methods.map((method) => method.methodName.name));
-    const summaries = new Map<string, MethodPropertyRequirementSummary>();
-    const requirements = new Map<string, Set<string>>();
+    const directEffects = new Map<string, MethodDirectConstructorEffects>();
+    const methodEffects = new Map<string, MethodConstructorEffects>();
 
     for (const method of methods) {
-        const directPropertyReads = new Set<string>();
-        const selfMethodDependencies = new Set<string>();
-        collectMethodBodyRequirements(method.body, propertyNameSet, methodNameSet, directPropertyReads, selfMethodDependencies);
-        selfMethodDependencies.delete(method.methodName.name);
-        summaries.set(method.methodName.name, {
-            directPropertyReads,
-            selfMethodDependencies,
+        const mutableDirectEffects = {
+            directFieldReads: new Set<string>(),
+            directSelfEscape: false,
+            directInternalMethodCalls: new Set<string>(),
+        };
+        collectMethodConstructorEffects(method.body, propertyNameSet, methodNameSet, mutableDirectEffects);
+        directEffects.set(method.methodName.name, mutableDirectEffects);
+        methodEffects.set(method.methodName.name, {
+            fieldReads: new Set<string>(mutableDirectEffects.directFieldReads),
+            escapesSelf: mutableDirectEffects.directSelfEscape,
         });
-        requirements.set(method.methodName.name, new Set<string>(directPropertyReads));
     }
 
-    let changed = true;
-    while (changed) {
-        changed = false;
-        for (const [methodName, summary] of summaries.entries()) {
-            const aggregate = requirements.get(methodName);
-            if (!aggregate) {
+    const maxIterations = Math.max(
+        METHOD_CONSTRUCTOR_EFFECT_FIXPOINT_BASE_LIMIT,
+        methods.length * Math.max(1, propertyNames.length + methods.length + 1),
+    );
+    for (let iteration = 0; iteration < maxIterations; iteration += 1) {
+        let changed = false;
+        for (const [methodName, direct] of directEffects.entries()) {
+            const aggregate = methodEffects.get(methodName);
+            if (aggregate === undefined) {
                 continue;
             }
-            for (const dependency of summary.selfMethodDependencies) {
-                const dependencyReads = requirements.get(dependency);
-                if (!dependencyReads) {
+            for (const calleeName of direct.directInternalMethodCalls) {
+                const calleeEffects = methodEffects.get(calleeName);
+                if (calleeEffects === undefined) {
                     continue;
                 }
-                const previousSize = aggregate.size;
-                for (const readName of dependencyReads) {
-                    aggregate.add(readName);
+                const previousReadCount = aggregate.fieldReads.size;
+                for (const fieldName of calleeEffects.fieldReads) {
+                    aggregate.fieldReads.add(fieldName);
                 }
-                if (aggregate.size !== previousSize) {
+                if (aggregate.fieldReads.size !== previousReadCount) {
+                    changed = true;
+                }
+                if (calleeEffects.escapesSelf && !aggregate.escapesSelf) {
+                    aggregate.escapesSelf = true;
                     changed = true;
                 }
             }
         }
+        if (!changed) {
+            return { propertyNameSet, methodNameSet, methodEffects };
+        }
     }
 
-    return requirements;
+    throw new TypeCheckError(`${context}: constructor method effect analysis did not converge after ${maxIterations} iterations`);
 }
 
-function collectSelfPropertyRequirements(
+function analyzeConstructorExpression(
     ast: AstNode,
-    propertyNameSet: ReadonlySet<string>,
-    methodNameSet: ReadonlySet<string>,
-    methodPropertyRequirements: ReadonlyMap<string, ReadonlySet<string>>,
-    reads: Set<string> = new Set<string>(),
-): Set<string> {
-    const propertyRead = getSelfPropertyReadName(ast, propertyNameSet);
-    if (propertyRead !== null) {
-        reads.add(propertyRead);
-    }
-
-    const methodAccess = getSelfMethodAccessName(ast, methodNameSet);
-    if (methodAccess !== null) {
-        const methodReads = methodPropertyRequirements.get(methodAccess) ?? new Set<string>();
-        for (const methodRead of methodReads) {
-            reads.add(methodRead);
-        }
-    }
-
-    if (
-        ast instanceof FnNode
-        || ast instanceof DfunNode
-        || ast instanceof DeclaredDfunNode
-        || ast instanceof GenericDfunNode
-        || ast instanceof ClassNode
-        || ast instanceof GenericClassNode
-        || ast instanceof ClassMethodNode
-        || ast instanceof ClassConstructorNode
-    ) {
-        return reads;
-    }
-
-    if (ast instanceof SeqNode) {
-        for (const expr of ast.expressions) {
-            collectSelfPropertyRequirements(expr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        }
-        return reads;
-    }
-
-    if (ast instanceof IfNode) {
-        collectSelfPropertyRequirements(ast.condExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        collectSelfPropertyRequirements(ast.trueBranchExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        collectSelfPropertyRequirements(ast.falseBranchExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        return reads;
-    }
-
-    if (ast instanceof WhileNode) {
-        collectSelfPropertyRequirements(ast.condExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        collectSelfPropertyRequirements(ast.bodyExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        return reads;
-    }
-
-    if (ast instanceof CondNode) {
-        for (const clause of ast.clausesExprs) {
-            collectSelfPropertyRequirements(clause.cond, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-            collectSelfPropertyRequirements(clause.body, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        }
-        return reads;
-    }
-
-    if (ast instanceof MatchNode) {
-        collectSelfPropertyRequirements(ast.unionExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        for (const branch of ast.branches) {
-            collectSelfPropertyRequirements(branch.body, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        }
-        return reads;
-    }
-
-    if (ast instanceof DvarNode) {
-        collectSelfPropertyRequirements(ast.value, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        return reads;
-    }
-
-    if (ast instanceof SetNode) {
-        collectSelfPropertyRequirements(ast.value, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        return reads;
-    }
-
-    if (ast instanceof LetNode) {
-        for (const binding of ast.bindings) {
-            collectSelfPropertyRequirements(binding.value, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        }
-        collectSelfPropertyRequirements(ast.body, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        return reads;
-    }
-
-    if (ast instanceof FunctionCallNode) {
-        collectSelfPropertyRequirements(ast.callee, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        for (const arg of ast.args) {
-            collectSelfPropertyRequirements(arg, propertyNameSet, methodNameSet, methodPropertyRequirements, reads);
-        }
-        return reads;
-    }
-
-    return reads;
-}
-
-function collectDefiniteConstructorPropertyInitializers(
-    ast: AstNode,
-    propertyNameSet: ReadonlySet<string>,
-    methodNameSet: ReadonlySet<string>,
-    methodPropertyRequirements: ReadonlyMap<string, ReadonlySet<string>>,
-    initializers: ConstructorPropertyInitializer[],
-    orderState: { next: number },
-    definite: boolean = true,
-): void {
-    if (
-        ast instanceof FnNode
-        || ast instanceof DfunNode
-        || ast instanceof DeclaredDfunNode
-        || ast instanceof GenericDfunNode
-        || ast instanceof ClassNode
-        || ast instanceof GenericClassNode
-        || ast instanceof ClassMethodNode
-        || ast instanceof ClassConstructorNode
-    ) {
-        return;
-    }
-
-    if (ast instanceof SeqNode) {
-        for (const expr of ast.expressions) {
-            collectDefiniteConstructorPropertyInitializers(expr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        }
-        return;
-    }
-
-    if (ast instanceof IfNode) {
-        collectDefiniteConstructorPropertyInitializers(ast.condExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        collectDefiniteConstructorPropertyInitializers(ast.trueBranchExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, false);
-        collectDefiniteConstructorPropertyInitializers(ast.falseBranchExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, false);
-        return;
-    }
-
-    if (ast instanceof WhileNode) {
-        collectDefiniteConstructorPropertyInitializers(ast.condExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        collectDefiniteConstructorPropertyInitializers(ast.bodyExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, false);
-        return;
-    }
-
-    if (ast instanceof CondNode) {
-        for (const clause of ast.clausesExprs) {
-            collectDefiniteConstructorPropertyInitializers(clause.cond, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-            collectDefiniteConstructorPropertyInitializers(clause.body, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, false);
-        }
-        return;
-    }
-
-    if (ast instanceof MatchNode) {
-        collectDefiniteConstructorPropertyInitializers(ast.unionExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        for (const branch of ast.branches) {
-            collectDefiniteConstructorPropertyInitializers(branch.body, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, false);
-        }
-        return;
-    }
-
-    if (ast instanceof DvarNode) {
-        collectDefiniteConstructorPropertyInitializers(ast.value, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        return;
-    }
-
-    if (ast instanceof SetNode) {
-        collectDefiniteConstructorPropertyInitializers(ast.value, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        return;
-    }
-
-    if (ast instanceof LetNode) {
-        for (const binding of ast.bindings) {
-            collectDefiniteConstructorPropertyInitializers(binding.value, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        }
-        collectDefiniteConstructorPropertyInitializers(ast.body, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        return;
-    }
-
-    if (ast instanceof FunctionCallNode) {
-        collectDefiniteConstructorPropertyInitializers(ast.callee, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        for (const arg of ast.args) {
-            collectDefiniteConstructorPropertyInitializers(arg, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, orderState, definite);
-        }
-
-        const propertyName = getSelfPropertyWriteName(ast, propertyNameSet);
-        if (definite && propertyName !== null) {
-            initializers.push({
-                propertyName,
-                dependencies: collectSelfPropertyRequirements(ast.args[2], propertyNameSet, methodNameSet, methodPropertyRequirements),
-                order: orderState.next++,
-            });
-        }
-    }
-}
-
-function buildConstructorInitializationGraph(
-    propertyNames: readonly string[],
-    initializers: readonly ConstructorPropertyInitializer[],
-): Map<string, ConstructorPropertyInitializer> {
-    const initializerByProperty = new Map<string, ConstructorPropertyInitializer>();
-    const propertyNameSet = new Set<string>(propertyNames);
-    for (const initializer of initializers) {
-        if (!propertyNameSet.has(initializer.propertyName) || initializerByProperty.has(initializer.propertyName)) {
-            continue;
-        }
-        initializerByProperty.set(initializer.propertyName, initializer);
-    }
-    return initializerByProperty;
-}
-
-function computeConstructorTopologicalOrder(
-    initializerByProperty: ReadonlyMap<string, ConstructorPropertyInitializer>,
-    context: string,
-): readonly string[] {
-    const remaining = new Set<string>(initializerByProperty.keys());
-    const remainingDeps = new Map<string, Set<string>>();
-    for (const [propertyName, initializer] of initializerByProperty.entries()) {
-        remainingDeps.set(
-            propertyName,
-            new Set<string>(Array.from(initializer.dependencies).filter((dependency) => initializerByProperty.has(dependency))),
-        );
-    }
-
-    const topologicalOrder: string[] = [];
-    while (remaining.size > 0) {
-        const ready = Array.from(remaining)
-            .filter((propertyName) => (remainingDeps.get(propertyName)?.size ?? 0) === 0)
-            .sort((left, right) => {
-                const leftOrder = initializerByProperty.get(left)?.order ?? 0;
-                const rightOrder = initializerByProperty.get(right)?.order ?? 0;
-                return leftOrder - rightOrder;
-            });
-        if (ready.length === 0) {
-            const cycle = Array.from(remaining)
-                .sort((left, right) => {
-                    const leftOrder = initializerByProperty.get(left)?.order ?? 0;
-                    const rightOrder = initializerByProperty.get(right)?.order ?? 0;
-                    return leftOrder - rightOrder;
-                })
-                .join(", ");
-            throw new TypeCheckError(`${context}: constructor property initializers contain a cycle among ${cycle}`);
-        }
-
-        for (const propertyName of ready) {
-            remaining.delete(propertyName);
-            topologicalOrder.push(propertyName);
-        }
-        for (const deps of remainingDeps.values()) {
-            for (const propertyName of ready) {
-                deps.delete(propertyName);
-            }
-        }
-    }
-
-    return topologicalOrder;
-}
-
-function validateConstructorInitializerDependencies(
-    propertyNames: readonly string[],
-    methods: readonly ClassMethodNode[],
-    body: AstNode,
-    context: string,
-    methodPropertyRequirements: ReadonlyMap<string, ReadonlySet<string>>,
-): void {
-    const propertyNameSet = new Set<string>(propertyNames);
-    const methodNameSet = new Set<string>(methods.map((method) => method.methodName.name));
-    const initializers: ConstructorPropertyInitializer[] = [];
-    collectDefiniteConstructorPropertyInitializers(body, propertyNameSet, methodNameSet, methodPropertyRequirements, initializers, { next: 0 });
-    const initializerByProperty = buildConstructorInitializationGraph(propertyNames, initializers);
-    const topologicalOrder = computeConstructorTopologicalOrder(initializerByProperty, context);
-    const firstAssignmentOrder = new Map<string, number>();
-    for (const propertyName of topologicalOrder) {
-        firstAssignmentOrder.set(propertyName, initializerByProperty.get(propertyName)?.order ?? 0);
-    }
-
-    for (const propertyName of topologicalOrder) {
-        const initializer = initializerByProperty.get(propertyName);
-        if (!initializer) {
-            continue;
-        }
-        for (const dependency of initializer.dependencies) {
-            const dependencyOrder = firstAssignmentOrder.get(dependency);
-            if (dependencyOrder === undefined) {
-                continue;
-            }
-            if (dependencyOrder > initializer.order) {
-                throw new TypeCheckError(
-                    `${context}: property ${propertyName} depends on property ${dependency}, but ${propertyName} is initialized before ${dependency}; constructor initializers must follow a legal topological order (${topologicalOrder.join(" -> ")})`
-                );
-            }
-        }
-    }
-}
-
-function validateConstructorReadsOnlyInitializedProperties(
-    ast: AstNode,
-    propertyNameSet: ReadonlySet<string>,
-    methodNameSet: ReadonlySet<string>,
-    methodPropertyRequirements: ReadonlyMap<string, ReadonlySet<string>>,
+    analysis: ConstructorClassAnalysis,
     initializedProperties: Set<string>,
     context: string,
 ): Set<string> {
-    if (
-        ast instanceof FnNode
-        || ast instanceof DfunNode
-        || ast instanceof DeclaredDfunNode
-        || ast instanceof GenericDfunNode
-        || ast instanceof ClassNode
-        || ast instanceof GenericClassNode
-        || ast instanceof ClassMethodNode
-        || ast instanceof ClassConstructorNode
-    ) {
+    if (ast instanceof IdentifierNode) {
+        if (ast.name === "self") {
+            throw new TypeCheckError(`${context}: constructor cannot let self escape before initialization is complete`);
+        }
         return new Set<string>(initializedProperties);
     }
 
-    const readName = getSelfPropertyReadName(ast, propertyNameSet);
+    if (ast instanceof FnNode) {
+        if (containsSelfReference(ast.body)) {
+            throw new TypeCheckError(`${context}: constructor cannot capture self in a function before initialization is complete`);
+        }
+        return new Set<string>(initializedProperties);
+    }
+
+    if (isNestedDefinitionNode(ast)) {
+        return new Set<string>(initializedProperties);
+    }
+
+    const readName = getSelfPropertyReadName(ast, analysis.propertyNameSet);
     if (readName !== null && !initializedProperties.has(readName)) {
         throw new TypeCheckError(`${context}: reads property ${readName} before it is initialized`);
     }
 
-    const methodAccess = getSelfMethodAccessName(ast, methodNameSet);
+    const methodAccess = getSelfMethodAccessName(ast, analysis.methodNameSet);
     if (methodAccess !== null) {
-        const missing = Array.from(methodPropertyRequirements.get(methodAccess) ?? []).filter((propertyName) => !initializedProperties.has(propertyName));
-        if (missing.length > 0) {
-            throw new TypeCheckError(`${context}: method ${methodAccess} may read properties ${formatNameList(missing)} before they are initialized`);
-        }
+        throw new TypeCheckError(`${context}: constructor cannot let self escape through method ${methodAccess} before initialization is complete`);
     }
 
     if (ast instanceof SeqNode) {
         let current = new Set<string>(initializedProperties);
         for (const expr of ast.expressions) {
-            current = validateConstructorReadsOnlyInitializedProperties(expr, propertyNameSet, methodNameSet, methodPropertyRequirements, current, context);
+            current = analyzeConstructorExpression(expr, analysis, current, context);
         }
         return current;
     }
 
     if (ast instanceof IfNode) {
-        const afterCond = validateConstructorReadsOnlyInitializedProperties(ast.condExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
+        const afterCond = analyzeConstructorExpression(ast.condExpr, analysis, initializedProperties, context);
         return intersectSets([
-            validateConstructorReadsOnlyInitializedProperties(ast.trueBranchExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(afterCond), context),
-            validateConstructorReadsOnlyInitializedProperties(ast.falseBranchExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(afterCond), context),
+            analyzeConstructorExpression(ast.trueBranchExpr, analysis, new Set<string>(afterCond), context),
+            analyzeConstructorExpression(ast.falseBranchExpr, analysis, new Set<string>(afterCond), context),
         ]);
     }
 
     if (ast instanceof WhileNode) {
-        const afterCond = validateConstructorReadsOnlyInitializedProperties(ast.condExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
-        validateConstructorReadsOnlyInitializedProperties(ast.bodyExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(afterCond), context);
+        const afterCond = analyzeConstructorExpression(ast.condExpr, analysis, initializedProperties, context);
+        analyzeConstructorExpression(ast.bodyExpr, analysis, new Set<string>(afterCond), context);
         return afterCond;
     }
 
@@ -2803,11 +2612,11 @@ function validateConstructorReadsOnlyInitializedProperties(
             const isElseClause = clause.cond instanceof IdentifierNode && clause.cond.name === "else";
             if (isElseClause) {
                 hasElseClause = true;
-                branchResults.push(validateConstructorReadsOnlyInitializedProperties(clause.body, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(initializedProperties), context));
+                branchResults.push(analyzeConstructorExpression(clause.body, analysis, new Set<string>(initializedProperties), context));
                 continue;
             }
-            const afterCond = validateConstructorReadsOnlyInitializedProperties(clause.cond, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
-            branchResults.push(validateConstructorReadsOnlyInitializedProperties(clause.body, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(afterCond), context));
+            const afterCond = analyzeConstructorExpression(clause.cond, analysis, initializedProperties, context);
+            branchResults.push(analyzeConstructorExpression(clause.body, analysis, new Set<string>(afterCond), context));
         }
         if (!hasElseClause) {
             branchResults.push(new Set<string>(initializedProperties));
@@ -2816,127 +2625,80 @@ function validateConstructorReadsOnlyInitializedProperties(
     }
 
     if (ast instanceof MatchNode) {
-        const afterUnion = validateConstructorReadsOnlyInitializedProperties(ast.unionExpr, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
+        const afterUnion = analyzeConstructorExpression(ast.unionExpr, analysis, initializedProperties, context);
         return intersectSets(ast.branches.map((branch) =>
-            validateConstructorReadsOnlyInitializedProperties(branch.body, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(afterUnion), context)
+            analyzeConstructorExpression(branch.body, analysis, new Set<string>(afterUnion), context)
         ));
     }
 
     if (ast instanceof DvarNode) {
-        validateConstructorReadsOnlyInitializedProperties(ast.value, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
-        return new Set<string>(initializedProperties);
+        return analyzeConstructorExpression(ast.value, analysis, initializedProperties, context);
     }
 
     if (ast instanceof SetNode) {
-        validateConstructorReadsOnlyInitializedProperties(ast.value, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
-        return new Set<string>(initializedProperties);
+        return analyzeConstructorExpression(ast.value, analysis, initializedProperties, context);
     }
 
     if (ast instanceof LetNode) {
         let current = new Set<string>(initializedProperties);
         for (const binding of ast.bindings) {
-            current = validateConstructorReadsOnlyInitializedProperties(binding.value, propertyNameSet, methodNameSet, methodPropertyRequirements, current, context);
+            current = analyzeConstructorExpression(binding.value, analysis, current, context);
         }
-        return validateConstructorReadsOnlyInitializedProperties(ast.body, propertyNameSet, methodNameSet, methodPropertyRequirements, current, context);
+        return analyzeConstructorExpression(ast.body, analysis, current, context);
     }
 
     if (ast instanceof FunctionCallNode) {
-        let current = validateConstructorReadsOnlyInitializedProperties(ast.callee, propertyNameSet, methodNameSet, methodPropertyRequirements, initializedProperties, context);
-        for (const arg of ast.args) {
-            current = validateConstructorReadsOnlyInitializedProperties(arg, propertyNameSet, methodNameSet, methodPropertyRequirements, current, context);
-        }
-        const writeName = getSelfPropertyWriteName(ast, propertyNameSet);
+        const writeName = getSelfPropertyWriteName(ast, analysis.propertyNameSet);
         if (writeName !== null) {
+            const current = analyzeConstructorExpression(ast.args[2], analysis, initializedProperties, context);
             current.add(writeName);
+            return current;
         }
-        return current;
-    }
 
-    return new Set<string>(initializedProperties);
-}
-
-function collectInitializedProperties(ast: AstNode, alreadyInitialized: Set<string>): Set<string> {
-    if (ast instanceof SeqNode) {
-        let current = new Set<string>(alreadyInitialized);
-        for (const expr of ast.expressions) {
-            current = collectInitializedProperties(expr, current);
+        const propertyReadName = getSelfPropertyReadName(ast, analysis.propertyNameSet);
+        if (propertyReadName !== null) {
+            if (!initializedProperties.has(propertyReadName)) {
+                throw new TypeCheckError(`${context}: reads property ${propertyReadName} before it is initialized`);
+            }
+            return new Set<string>(initializedProperties);
         }
-        return current;
-    }
 
-    if (ast instanceof IfNode) {
-        const afterCond = collectInitializedProperties(ast.condExpr, alreadyInitialized);
-        return intersectSets([
-            collectInitializedProperties(ast.trueBranchExpr, new Set<string>(afterCond)),
-            collectInitializedProperties(ast.falseBranchExpr, new Set<string>(afterCond))
-        ]);
-    }
+        const methodCallName = getSelfMethodCallName(ast, analysis.methodNameSet);
+        if (methodCallName !== null) {
+            let current = new Set<string>(initializedProperties);
+            for (const arg of ast.args) {
+                current = analyzeConstructorExpression(arg, analysis, current, context);
+            }
+            const methodEffects = analysis.methodEffects.get(methodCallName);
+            if (methodEffects !== undefined) {
+                const missing = Array.from(methodEffects.fieldReads).filter((propertyName) => !current.has(propertyName));
+                if (missing.length > 0) {
+                    throw new TypeCheckError(`${context}: method ${methodCallName} may read properties ${formatNameList(missing)} before they are initialized`);
+                }
+                if (methodEffects.escapesSelf) {
+                    throw new TypeCheckError(`${context}: method ${methodCallName} may let self escape before initialization is complete`);
+                }
+            }
+            return current;
+        }
 
-    if (ast instanceof WhileNode) {
-        return collectInitializedProperties(ast.condExpr, alreadyInitialized);
-    }
-
-    if (ast instanceof CondNode) {
-        return intersectSets(ast.clausesExprs.map((clause) => collectInitializedProperties(clause.body, new Set<string>(alreadyInitialized))));
-    }
-
-    if (ast instanceof MatchNode) {
-        return intersectSets(ast.branches.map((branch) => collectInitializedProperties(branch.body, new Set<string>(alreadyInitialized))));
-    }
-
-    if (ast instanceof DvarNode) {
-        return collectInitializedProperties(ast.value, alreadyInitialized);
-    }
-
-    if (ast instanceof SetNode) {
-        return collectInitializedProperties(ast.value, alreadyInitialized);
-    }
-
-    if (ast instanceof FunctionCallNode) {
-        let current = collectInitializedProperties(ast.callee, alreadyInitialized);
+        let current = analyzeConstructorExpression(ast.callee, analysis, initializedProperties, context);
         for (const arg of ast.args) {
-            current = collectInitializedProperties(arg, current);
-        }
-
-        if (
-            ast.callee instanceof IdentifierNode
-            && ast.callee.name === "cm_set"
-            && ast.args.length === 3
-            && ast.args[0] instanceof IdentifierNode
-            && ast.args[0].name === "self"
-            && ast.args[1] instanceof IdentifierNode
-        ) {
-            current.add(ast.args[1].name);
+            current = analyzeConstructorExpression(arg, analysis, current, context);
         }
         return current;
     }
 
     if (ast instanceof GenericCallNode) {
-        let current = collectInitializedProperties(ast.callee, alreadyInitialized);
-        for (const arg of ast.typeArgs) {
-            current = collectInitializedProperties(arg, current);
-        }
-        return current;
+        return analyzeConstructorExpression(ast.callee, analysis, initializedProperties, context);
     }
 
-    if (ast instanceof LetNode) {
-        let current = new Set<string>(alreadyInitialized);
-        for (const binding of ast.bindings) {
-            current = collectInitializedProperties(binding.value, current);
-        }
-        return collectInitializedProperties(ast.body, current);
-    }
-
-    return new Set<string>(alreadyInitialized);
+    return new Set<string>(initializedProperties);
 }
 
 function ensureConstructorInitializesProperties(propertyNames: string[], methods: readonly ClassMethodNode[], body: AstNode, context: string): void {
-    const methodPropertyRequirements = computeMethodPropertyReadRequirements(methods, propertyNames);
-    const propertyNameSet = new Set<string>(propertyNames);
-    const methodNameSet = new Set<string>(methods.map((method) => method.methodName.name));
-    validateConstructorInitializerDependencies(propertyNames, methods, body, context, methodPropertyRequirements);
-    validateConstructorReadsOnlyInitializedProperties(body, propertyNameSet, methodNameSet, methodPropertyRequirements, new Set<string>(), context);
-    const initialized = collectInitializedProperties(body, new Set<string>());
+    const analysis = buildConstructorClassAnalysis(propertyNames, methods, context);
+    const initialized = analyzeConstructorExpression(body, analysis, new Set<string>(), context);
     const missing = propertyNames.filter((propertyName) => !initialized.has(propertyName));
     if (missing.length > 0) {
         throw new TypeCheckError(`${context}: constructor must initialize properties ${missing.join(', ')}`);

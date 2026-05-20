@@ -60,6 +60,26 @@ const abortCases: readonly AbortCase[] = [
         expectedMessage: "duplicate constructor with the same parameter list"
     },
     {
+        name: "constructor-direct-read-before-init",
+        inputPath: join(abortFixtureDir, "test~language~rules~constructor_direct_read_before_init@main.iw"),
+        expectedMessage: "reads property value before it is initialized"
+    },
+    {
+        name: "constructor-method-transitive-read-before-init",
+        inputPath: join(abortFixtureDir, "test~language~rules~constructor_method_transitive_read_before_init@main.iw"),
+        expectedMessage: "method read_via may read properties right before they are initialized"
+    },
+    {
+        name: "constructor-direct-self-escape",
+        inputPath: join(abortFixtureDir, "test~language~rules~constructor_direct_self_escape@main.iw"),
+        expectedMessage: "constructor cannot let self escape before initialization is complete"
+    },
+    {
+        name: "constructor-method-transitive-self-escape",
+        inputPath: join(abortFixtureDir, "test~language~rules~constructor_method_transitive_self_escape@main.iw"),
+        expectedMessage: "method leak_via may let self escape before initialization is complete"
+    },
+    {
         name: "duplicate-union-member",
         inputPath: join(abortFixtureDir, "test~language~rules~duplicate_union_member@main.iw"),
         expectedMessage: "Duplicate union member type: i5"

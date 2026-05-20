@@ -1,0 +1,12 @@
+{program test~language~rules~constructor_direct_read_before_init@main
+  (class DirectReadBeforeInit
+    (property [value i5])
+    (constructor () in
+      {
+        (cm_get self value)
+        (cm_set self value $1^i5)
+      }
+    )
+  )
+  (function main ([args <array s3>]) to i5 in $0^i5)
+}
