@@ -188,7 +188,47 @@ Where:
 - `remove` performs an explicit runtime abort when the element is not found; `discard` does nothing when it is not found; `pop` also performs a runtime abort on an empty set
 - `isdisjoint` / `issubset` / `issuperset` and set operations depend on per-element membership checks against another `Set<T>`
 
-### 4.6 `std~pair`
+### 4.6 `std~dict`
+
+`std~dict` provides a mutable dict wrapper represented with open-addressed slot arrays:
+
+- `<Dict K V>`
+- `<dict_new K V>`
+- `<dict_len K V>`
+- `<dict_contains K V>`
+- `<dict_fold K V Acc>`
+- `<dict_map_values K V U>`
+- `<dict_map K V U>`
+- `<dict_filter K V>`
+- `<dict_merge K V>`
+- `<dict_equals K V>`
+
+`Dict<K, V>` publicly provides the following methods:
+
+- `get`
+- `pop`
+- `popitem`
+- `update`
+- `setdefault`
+- `clear`
+- `copy`
+- `keys`
+- `values`
+- `items`
+
+Where:
+
+- `Dict<K, V>` is represented as an ordinary generic class containing explicit `Hash<K>` / `Eq<K>` support objects, key/value seeds, key/value slot arrays, hash/state arrays, size/used/capacity, and an insertion-order `List<K>`
+- Key slots and value slots use `<union unit <Box T>>` to represent empty and occupied slots; the state array uses integer states to distinguish empty / occupied / tombstone
+- `dict_new` requires the caller to provide `Hash<K>`, `Eq<K>`, a key seed, and a value seed; initial storage is created with an implementation-fixed capacity and later resized according to the used/capacity threshold
+- `get` returns the caller-provided fallback when the key is missing; `setdefault` inserts the fallback on miss and returns that value
+- `pop` performs an explicit runtime abort when the key is not found; `popitem` also performs a runtime abort on an empty dict
+- `keys` / `values` / `items` return new `List` snapshots; `items` has element type `<Pair K V>`
+- `dict_merge` returns a new `Dict<K, V>` where same-name keys from the right-hand dict overwrite values from the left-hand dict
+- In addition to the key `Eq<K>`, `dict_equals` requires the caller to provide an extra `Eq<V>` support object for comparing values
+- `dict_fold` / `dict_map_values` / `dict_map` / `dict_filter` use explicit function values as step / mapper / predicate and do not introduce language-level iterator or closure special cases
+
+### 4.7 `std~pair`
 
 `std~pair` provides the smallest generic two-tuple nominal wrapper:
 
@@ -198,7 +238,7 @@ Where:
 
 `Pair<K, V>` is represented as an ordinary generic class with two properties, `first` and `second`.
 
-### 4.7 `std~eq`
+### 4.8 `std~eq`
 
 `std~eq` provides an explicit equality support object:
 
@@ -207,7 +247,7 @@ Where:
 
 `Eq<T>` wraps one comparator of type `<to bool from T T>` and exposes calls through the `equals` method.
 
-### 4.8 `std~ord`
+### 4.9 `std~ord`
 
 `std~ord` provides an explicit ordering support object:
 
@@ -216,7 +256,7 @@ Where:
 
 `Ord<T>` wraps one comparator of type `<to i5 from T T>`. Its `compare` method follows the negative / zero / positive return convention.
 
-### 4.9 `std~hash`
+### 4.10 `std~hash`
 
 `std~hash` provides an explicit hashing support object:
 
@@ -243,11 +283,11 @@ The following names are ordinary top-level overloads, not builtins:
 - `flush : () -> unit`
 - `flusherr : () -> unit`
 
-## 5.3 Platform System Packages
+## 6. Platform System Packages
 
 System-boundary standard packages are explicit by target platform: `std~linux~sys` and `std~windows~sys`. Both are thin host-wrapper packages that abort directly on host-call failure instead of returning errno/result objects.
 
-### 5.3.1 Linux (`std~linux~sys`)
+### 6.1 Linux (`std~linux~sys`)
 
 The public `std~linux~sys` surface is grouped into three slices:
 
@@ -264,7 +304,7 @@ Where:
 - `sys_fd_fstat()` / `sys_file_stat()` / `sys_path_stat_s3()` all produce nominal `SysFileStat` values. On Linux this structure preserves `device/inode/mode/link_count/uid/gid/rdevice/size/block_size/block_count/atime_sec/mtime_sec/ctime_sec`; common file-type checks should prefer `sys_stat_is_regular` / `sys_stat_is_dir`.
 - `std~linux~sys` does not export `sys_process_fork`, `sys_process_execve_s3`, `sys_process_wait4`, or `sys_thread_tgkill` as public wrappers. The Linux runtime may still use lower-level host primitives internally to implement spawn / wait behavior.
 
-### 5.3.2 Windows (`std~windows~sys`)
+### 6.2 Windows (`std~windows~sys`)
 
 `std~windows~sys` follows the same cross-platform policy slice and adds the Windows-side handle, event, wait, and TCP socket wrappers:
 
@@ -280,18 +320,18 @@ Where:
 - `std~windows~sys` does not expose Linux-only raw primitives such as `fork` / `execve` / `wait4` / `tgkill`, and it does not expose Linux-specific `epoll` / `eventfd` / `timerfd` / `signalfd` / `poll` surfaces.
 - Portable code should target the shared policy slice first, and depend on `std~linux~sys` explicitly only when Linux readiness / signal primitives are actually required.
 
-## 6. `std~math`
+## 7. `std~math`
 
 `std~math` provides floating-point, complex-number, and scalar-conversion APIs.
 
-### 6.1 constants
+### 7.1 constants
 
 Use explicit typed variants rather than overloading on return type:
 
 - `pi_f5`, `pi_f6`, `pi_f7`
 - `tau_f5`, `tau_f6`, `tau_f7`
 
-### 6.2 floating-point API
+### 7.2 floating-point API
 
 The following names form ordinary overloads on `f5` / `f6` / `f7`:
 
@@ -311,7 +351,7 @@ Where:
 - `abs` / `sin` / `cos` / `sqrt` / `hypot` / `atan2` return floating-point values of the same type
 - `round` / `floor` / `ceil` / `trunc` return `i5`
 
-### 6.3 complex-number API
+### 7.3 complex-number API
 
 The following names form ordinary overloads on `z5` / `z6` / `z7`:
 
@@ -331,7 +371,7 @@ The following names form ordinary overloads on `z5` / `z6` / `z7`:
 - `zsqrt`
 - `zpow`
 
-### 6.4 scalar-conversion API
+### 7.4 scalar-conversion API
 
 `std~math` divides scalar conversion into two naming families:
 
@@ -362,19 +402,14 @@ The semantic split is:
 
 Therefore `val_to_i5`, `val_to_u5`, `bin_to_i5`, and `bin_to_u5` each have 12 overloads, while every other target family has 9 overloads. Overload resolution may depend only on name and parameter type, never on return type.
 
-## 7. `std~string`
+## 8. `std~string`
 
 `std~string` provides the first nominal wrapper layer around the text primitive families:
 
 - `StringS3`
 - `StringS4`
 - `StringS5`
-- `StringBuilderS3`
-- `StringBuilderS4`
-- `StringBuilderS5`
 - `string_len`
-- `string_builder_new`
-- `string_builder_len`
 - `string_contains`
 - `string_concat`
 - `string_repeat`
@@ -387,29 +422,21 @@ It publicly provides the following query methods:
 - `startswith`
 - `endswith`
 
-It publicly provides the following builder methods:
-
-- `append`
-- `build`
-
 Where:
 
 - `StringS3` / `StringS4` / `StringS5` wrap `s3` / `s4` / `s5` respectively
-- `StringBuilderS3` / `StringBuilderS4` / `StringBuilderS5` accumulate string chunks and materialize the final string on `build`
-- `string_builder_new` derives the empty-string seed from the provided wrapper value so an empty builder can still build a correctly typed empty string
-- `string_builder_len` reports the total character length accumulated in the builder
 - `find` / `count` / `startswith` / `endswith` / `string_contains` are implemented through per-character `c3/c4/c5` comparison and do not rely on whole-`sN` equality builtins
 - `string_concat` / `string_repeat` / `string_reversed` use explicit reconstruction through `sN_new` / `sN_set` / `sN_get`; `string_reversed` returns a reversed snapshot string, not an iterator
 - Semantics are defined by a single code-unit / byte text model; there is no Unicode normalization or grapheme-cluster handling
 - `find` returns `-1` when the substring is not found; `count` follows Python-style `len + 1` semantics for an empty needle
 
-## 8. Builtin Boundary
+## 9. Builtin Boundary
 
 - `std~...` packages are ordinary packages, not part of the builtin name set
 - They may wrap runtime helpers exposed through `declare`, and may wrap language primitives, but the top-level names they expose after wrapping are still ordinary package exports
 - These names are usable only when visible through the current package or an imported package
 
-## 9. Compatibility Requirements
+## 10. Compatibility Requirements
 
 - Future standard-library evolution should happen primarily by adding new `std~...` packages or new ordinary exports to existing `std~...` packages
 - Synthetic `std` injection, base-lib AST injection, or special static-check / codegen branches for the base lib should not be introduced

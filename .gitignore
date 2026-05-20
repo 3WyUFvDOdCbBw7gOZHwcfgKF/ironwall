@@ -5,8 +5,10 @@ node_modules/
 build/
 build-astvis-qt/
 devlogs/
+.vscode/
 
 # Logs and OS/editor noise
 *.log
 .DS_Store
 Thumbs.db
+package-lock.json

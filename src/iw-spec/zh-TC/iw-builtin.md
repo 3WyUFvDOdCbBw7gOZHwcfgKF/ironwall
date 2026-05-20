@@ -84,7 +84,8 @@ Ironwall 將可用能力分成兩層：
 - `z5_new` / `z6_new` / `z7_new` 的簽名為 `(zN) -> zN`
 - `z5_set` / `z6_set` / `z7_set` 支持兩組簽名：`(zN, zN) -> unit` 與 `(zN, fN, fN) -> unit`
 - `z5_real` / `z5_img` 返回 `f5`；`z6_real` / `z6_img` 返回 `f6`；`z7_real` / `z7_img` 返回 `f7`
-- frontend surface sugar 另外接受 `add` / `sub` / `mul` / `and` / `or` 的 `>= 2` 參數寫法，語義上收斂成右結合 binary tree；例如 `(add a b c d)` 等價於 `(add a (add b (add c d)))`
+- frontend surface sugar 另外接受 `add` / `mul` / `and` / `or` 的 `>= 2` 參數寫法，語義上收斂成右結合 binary tree；例如 `(add a b c d)` 等價於 `(add a (add b (add c d)))`
+- frontend surface sugar 另外接受 `sub` 的 `>= 2` 參數寫法，語義上收斂成左結合 binary tree；例如 `(sub a b c d)` 等價於 `(sub (sub (sub a b) c) d)`
 - frontend surface sugar 另外接受 `le` / `lt` / `ge` / `gt` / `eq` 的 `>= 2` 參數寫法；語義上展開成 pairwise comparison chain 並用右結合 `and` 連起來
 - 上述 variadic surface sugar 不改變 builtin 的核心 type boundary：`0` 參數 form 仍然非法，`not` 保持爲獨立的 unary `(bool) -> bool` builtin，而 `div` / `mod` / `neq` / `xor` / `not` 也不自動加入這組 sugar
 

@@ -80,8 +80,8 @@ strictEqual(
 );
 strictEqual(
     astToString(getFunctionBody(parserSurfaceProgram, "fold_sub")),
-    "(sub $10^i5 (sub $3^i5 (sub $2^i5 $1^i5)))",
-    "variadic sub should normalize to a right-associated binary tree"
+    "(sub (sub (sub $10^i5 $3^i5) $2^i5) $1^i5)",
+    "variadic sub should normalize to a left-associated binary tree"
 );
 strictEqual(
     astToString(getFunctionBody(parserSurfaceProgram, "fold_mul")),
@@ -135,7 +135,7 @@ for (const run of runs) {
         timeout: 15000
     });
 
-    assertRunResult(result, [], 13540 & 0xff, run.label);
+    assertRunResult(result, [], 13530 & 0xff, run.label);
     process.stdout.write(`variadic-builtins ${run.label} ok\n`);
 }
 

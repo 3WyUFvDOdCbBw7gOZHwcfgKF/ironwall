@@ -18,13 +18,33 @@ Example:
 
 ## 2. Keywords
 
-The formal specification uses the following keywords:
+The core syntax uses the following reserved syntactic words:
 
+- `program`
+- `import`
 - `var`
 - `var_set`
+- `fn`
 - `function`
+- `declare`
+- `let`
+- `in`
+- `if`
+- `then`
+- `else`
+- `while`
+- `cond`
+- `match`
+- `class`
+- `property`
+- `method`
+- `constructor`
+- `generic`
+- `to`
+- `from`
+- `union`
 
-Only the keywords above are accepted.
+Language builtin names and package-exported names are defined by the builtin and module specifications respectively, and are not repeated in this section.
 
 ## 3. Binding Syntax
 
@@ -237,7 +257,8 @@ Rules:
 
 For the following builtins, the frontend also accepts additional variadic surface sugar:
 
-- `add` / `sub` / `mul` / `and` / `or` may be written with `>= 2` parameters; the parser lowers them into a right-associative binary tree
+- `add` / `mul` / `and` / `or` may be written with `>= 2` parameters; the parser lowers them into a right-associative binary tree
+- `sub` may also be written with `>= 2` parameters, but the parser lowers it into a left-associative binary tree
 
 ```ironwall
 (add a b c d)
@@ -247,6 +268,16 @@ Equivalent to:
 
 ```ironwall
 (add a (add b (add c d)))
+```
+
+```ironwall
+(sub a b c d)
+```
+
+Equivalent to:
+
+```ironwall
+(sub (sub (sub a b) c) d)
 ```
 
 - `le` / `lt` / `ge` / `gt` / `eq` may be written with `>= 2` parameters; semantically, they form a pairwise comparison chain joined by right-associative `and`
@@ -315,7 +346,7 @@ If a short-name database reference is not unique within the visible package set,
 (array_length xs)
 ```
 
-## 15. import
+## 16. import
 
 ```ironwall
 (import a~b~c)

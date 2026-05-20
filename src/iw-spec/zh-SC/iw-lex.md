@@ -35,16 +35,16 @@ Ironwall 区分四种括号，词法上必须保留其括号类型：
 
 ### 4.2 package path
 
-- 正则：`seg (~ seg)+`
+- 正则：`seg (~ seg)*`
 - 其中 `seg` 必须是普通标识符。
-- 例：`a~b`、`std~time`、`test~fixtures~parser_structures`
+- 例：`app`、`a~b`、`std~time`、`test~fixtures~parser_structures`
 
 ### 4.3 package-qualified-name
 
 - 正则：`<package-path>@<name>`
 - `@` 左侧必须是完整 package path。
 - `@` 右侧必须是单个普通标识符。
-- 例：`app~cli@main`、`std~time@timestamp`
+- 例：`app@main`、`app~cli@main`、`std~time@timestamp`
 
 ### 4.4 typed atom
 

@@ -188,7 +188,47 @@
 - `remove` 在找不到元素時走明確的 runtime abort；`discard` 在找不到元素時不做任何事；`pop` 在空 set 上也會走 runtime abort。
 - `isdisjoint` / `issubset` / `issuperset` 與集合運算依賴對另一個 `Set<T>` 逐項做 membership 檢查。
 
-### 4.6 `std~pair`
+### 4.6 `std~dict`
+
+`std~dict` 提供以 open-addressed slot array 表示的 mutable dict wrapper：
+
+- `<Dict K V>`
+- `<dict_new K V>`
+- `<dict_len K V>`
+- `<dict_contains K V>`
+- `<dict_fold K V Acc>`
+- `<dict_map_values K V U>`
+- `<dict_map K V U>`
+- `<dict_filter K V>`
+- `<dict_merge K V>`
+- `<dict_equals K V>`
+
+`Dict<K, V>` 公開提供以下 method：
+
+- `get`
+- `pop`
+- `popitem`
+- `update`
+- `setdefault`
+- `clear`
+- `copy`
+- `keys`
+- `values`
+- `items`
+
+其中：
+
+- `Dict<K, V>` 的表示是普通 generic class，內含顯式 `Hash<K>` / `Eq<K>` support object、key/value seed、key/value slot array、hash/state array、size/used/capacity 與插入順序 `List<K>`。
+- key slot 與 value slot 使用 `<union unit <Box T>>` 表示空槽與已佔用槽；state array 使用整數狀態區分 empty / occupied / tombstone。
+- `dict_new` 需要 caller 提供 `Hash<K>`、`Eq<K>`、key seed 與 value seed；初始 storage 由實作固定容量建立，後續按 used/capacity 閾值 resize。
+- `get` 在找不到 key 時返回 caller 提供的 fallback；`setdefault` 在缺失時插入 fallback 並返回該值。
+- `pop` 在找不到 key 時走明確的 runtime abort；`popitem` 在空 dict 上也會走 runtime abort。
+- `keys` / `values` / `items` 回傳新的 `List` snapshot；`items` 的元素型別為 `<Pair K V>`。
+- `dict_merge` 返回新 `Dict<K, V>`，right-hand dict 的同名 key 會覆蓋 left-hand dict 的值。
+- `dict_equals` 除 key 的 `Eq<K>` 外，還需要 caller 額外提供 `Eq<V>` support object 來比較 value。
+- `dict_fold` / `dict_map_values` / `dict_map` / `dict_filter` 以顯式函數值作為 step / mapper / predicate，不引入語言級 iterator 或 closure 特例。
+
+### 4.7 `std~pair`
 
 `std~pair` 提供最小泛型二元組 nominal wrapper：
 
@@ -198,7 +238,7 @@
 
 `Pair<K, V>` 的表示是普通 generic class，內含 `first` / `second` 兩個 property。
 
-### 4.7 `std~eq`
+### 4.8 `std~eq`
 
 `std~eq` 提供顯式等值支撐物件：
 
@@ -207,7 +247,7 @@
 
 `Eq<T>` 內部包一個 `<to bool from T T>` comparator，並透過 `equals` method 暴露呼叫。
 
-### 4.8 `std~ord`
+### 4.9 `std~ord`
 
 `std~ord` 提供顯式排序支撐物件：
 
@@ -216,7 +256,7 @@
 
 `Ord<T>` 內部包一個 `<to i5 from T T>` comparator；其 `compare` method 的返回約定是負數 / 零 / 正數。
 
-### 4.9 `std~hash`
+### 4.10 `std~hash`
 
 `std~hash` 提供顯式雜湊支撐物件：
 
@@ -243,11 +283,11 @@
 - `flush : () -> unit`
 - `flusherr : () -> unit`
 
-## 5.3 平台系統包
+## 6. 平台系統包
 
 系統邊界標準包依 target platform 顯式分成 `std~linux~sys` 與 `std~windows~sys`。兩者都是 thin host wrapper，host call 失敗時直接 runtime abort，而不是回傳 errno/result object。
 
-### 5.3.1 Linux (`std~linux~sys`)
+### 6.1 Linux (`std~linux~sys`)
 
 `std~linux~sys` 的 public surface 分成三組：
 
@@ -264,7 +304,7 @@
 - `sys_fd_fstat()` / `sys_file_stat()` / `sys_path_stat_s3()` 都回傳 nominal `SysFileStat`；Linux 版本保留 `device/inode/mode/link_count/uid/gid/rdevice/size/block_size/block_count/atime_sec/mtime_sec/ctime_sec` 等欄位，常見 file-type 判斷應優先用 `sys_stat_is_regular` / `sys_stat_is_dir`。
 - `std~linux~sys` 不把 `sys_process_fork`、`sys_process_execve_s3`、`sys_process_wait4`、`sys_thread_tgkill` 作為 public wrapper 輸出；Linux runtime 仍可在內部用較低層 host primitive 實作 spawn / wait 行為。
 
-### 5.3.2 Windows (`std~windows~sys`)
+### 6.2 Windows (`std~windows~sys`)
 
 `std~windows~sys` 對齊同一個跨平台 policy slice，並補上 Windows 需要的 handle、event、wait 與 TCP socket wrapper：
 
@@ -280,18 +320,18 @@
 - `std~windows~sys` 不公開 Linux-only raw primitive，例如 `fork` / `execve` / `wait4` / `tgkill`，也不公開 Linux-specific `epoll` / `eventfd` / `timerfd` / `signalfd` / `poll` surface。
 - 可移植程式碼應優先依賴兩個平台共有的 policy slice；只有明確需要 Linux readiness / signal primitive 時，才應顯式依賴 `std~linux~sys`。
 
-## 6. `std~math`
+## 7. `std~math`
 
 `std~math` 提供浮點、複數與純量轉換 API。
 
-### 6.1 常數
+### 7.1 常數
 
 使用顯式型別版本，而不是依返回型別做 overload：
 
 - `pi_f5`, `pi_f6`, `pi_f7`
 - `tau_f5`, `tau_f6`, `tau_f7`
 
-### 6.2 浮點 API
+### 7.2 浮點 API
 
 以下名字在 `f5` / `f6` / `f7` 上形成普通 overload：
 
@@ -311,7 +351,7 @@
 - `abs` / `sin` / `cos` / `sqrt` / `hypot` / `atan2` 返回同型別浮點值。
 - `round` / `floor` / `ceil` / `trunc` 返回 `i5`。
 
-### 6.3 複數 API
+### 7.3 複數 API
 
 以下名字在 `z5` / `z6` / `z7` 上形成普通 overload：
 
@@ -331,7 +371,7 @@
 - `zsqrt`
 - `zpow`
 
-### 6.4 純量轉換 API
+### 7.4 純量轉換 API
 
 `std~math` 把純量轉換分成兩個命名族：
 
@@ -362,19 +402,14 @@
 
 因此 `val_to_i5`、`val_to_u5`、`bin_to_i5`、`bin_to_u5` 各有 12 個 overload，其餘每個目標族各有 9 個 overload。overload 解析只能依名字與參數型別決定，不能依返回型別決定。
 
-## 7. `std~string`
+## 8. `std~string`
 
 `std~string` 提供對文字 primitive family 的第一層 nominal wrapper：
 
 - `StringS3`
 - `StringS4`
 - `StringS5`
-- `StringBuilderS3`
-- `StringBuilderS4`
-- `StringBuilderS5`
 - `string_len`
-- `string_builder_new`
-- `string_builder_len`
 - `string_contains`
 - `string_concat`
 - `string_repeat`
@@ -387,29 +422,21 @@
 - `startswith`
 - `endswith`
 
-公開提供以下 builder method：
-
-- `append`
-- `build`
-
 其中：
 
 - `StringS3` / `StringS4` / `StringS5` 分別包裝 `s3` / `s4` / `s5`。
-- `StringBuilderS3` / `StringBuilderS4` / `StringBuilderS5` 先累積字串 chunk，再在 `build` 時一次性實化最終字串。
-- `string_builder_new` 會從傳入 wrapper 推導同型別 empty string seed，讓空 builder 也能正確 build 出空字串。
-- `string_builder_len` 回報 builder 目前累積的總字元長度。
 - `find` / `count` / `startswith` / `endswith` / `string_contains` 以逐字 `c3/c4/c5` 比較實作，不依賴整段 `sN` equality builtin。
 - `string_concat` / `string_repeat` / `string_reversed` 走 `sN_new` / `sN_set` / `sN_get` 的顯式重建路徑；`string_reversed` 返回反轉後的新字串 snapshot，不是 iterator。
 - 語義以單一 code-unit / byte 文字模型為準，不做 Unicode normalization 或 grapheme cluster 處理。
 - `find` 對找不到的子字串返回 `-1`；`count` 對空 needle 採 Python 風格 `len + 1` 語義。
 
-## 8. builtin 邊界
+## 9. builtin 邊界
 
 - `std~...` packages 是普通 package，不是 builtin 名字集合的一部分。
 - 它們可以包裝 `declare` 的 runtime helper，也可以包裝語言 primitive，但包裝後暴露出的 top-level 名字仍然是普通 package export。
 - 這些名字只有在本 package 或 imported package 可見時才可用。
 
-## 9. 相容性要求
+## 10. 相容性要求
 
 - 新的標準庫演進應優先透過新增 `std~...` package 或在現有 `std~...` package 中新增普通 export 完成。
 - 不應引入 synthetic `std` 注入、base lib AST 注入、或對 base lib 的特殊靜態檢查 / 生成分支。

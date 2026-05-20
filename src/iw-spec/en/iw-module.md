@@ -12,12 +12,13 @@ This document defines Ironwall's multi-file module semantics. The core principle
 ### 1.2 package path
 
 - A package path is formed by joining ordinary identifiers with `~`
-- Example: `a~b~c`
+- A package path may be either single-segment or multi-segment
+- Examples: `app`, `a~b~c`
 
 ### 1.3 unit id
 
 - The canonical unit id shape is `<package-path>@<unit-name>`
-- Example: `app~cli@main`
+- Examples: `app@main`, `app~cli@main`
 
 ### 1.4 literal db asset
 
@@ -287,9 +288,9 @@ The following cases must be errors:
 - Visible globals from other packages may also be read and written
 - When accessing another package through either a short name or a fully-qualified name, exact `import` is required for visibility; fully-qualified names remove short-name ambiguity but do not bypass import
 
-### 11.3 initializer bans
+### 11.3 initializer constraints
 
-A global initializer must not do the following:
+A global initializer must satisfy the following:
 
 - The initializer must statically converge into a primitive payload at compile time
 - The initializer must not read any global
@@ -303,7 +304,7 @@ The static-primitive subset contains at least:
 - Primitive typed literals
 - Literal-db text references
 - `true`, `false`, `unit`
-- `if`, `cond`, `seq`
+- `if`, `cond`, `{...}` block
 - Local `let` with explicit types
 - Local `var` with explicit types and `var_set` on that local
 - Direct pure builtin calls whose results remain primitive payloads

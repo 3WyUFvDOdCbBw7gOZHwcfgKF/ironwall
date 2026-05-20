@@ -31,6 +31,7 @@ import { inheritAstSource, withActiveParserNode } from "./Diagnostics";
 
 const binaryBuiltinArity: number = 2;
 const variadicFoldBuiltinNames: ReadonlySet<string> = new Set(["add", "sub", "mul", "and", "or"]);
+const leftAssociatedVariadicFoldBuiltinNames: ReadonlySet<string> = new Set(["sub"]);
 
 export function parsePass5(node: AstNode): AstNode {
 	return rewriteAstNode(node, foldVariadicBuiltinCall);
@@ -200,7 +201,21 @@ function foldVariadicBuiltinCall(node: FunctionCallNode): AstNode {
 	if (!variadicFoldBuiltinNames.has(node.callee.name) || node.args.length <= binaryBuiltinArity) {
 		return node;
 	}
+	if (leftAssociatedVariadicFoldBuiltinNames.has(node.callee.name)) {
+		return buildLeftAssociatedBuiltinCall(node.callee.name, node.args);
+	}
 	return buildRightAssociatedBuiltinCall(node.callee.name, node.args);
+}
+
+function buildLeftAssociatedBuiltinCall(name: string, args: readonly AstNode[]): FunctionCallNode {
+	if (args.length < binaryBuiltinArity) {
+		throw new Error(`${name} requires at least ${binaryBuiltinArity} arguments for left-associated folding`);
+	}
+	let current: FunctionCallNode = new FunctionCallNode(new IdentifierNode(name), [args[0], args[1]]);
+	for (let index: number = 2; index < args.length; index += 1) {
+		current = new FunctionCallNode(new IdentifierNode(name), [current, args[index]]);
+	}
+	return current;
 }
 
 function buildRightAssociatedBuiltinCall(name: string, args: readonly AstNode[]): FunctionCallNode {

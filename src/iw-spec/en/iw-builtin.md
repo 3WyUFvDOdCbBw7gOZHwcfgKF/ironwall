@@ -84,7 +84,8 @@ Only the spellings above are accepted. Object primitives accept only `class_new`
 - `z5_new` / `z6_new` / `z7_new` have the signature `(zN) -> zN`
 - `z5_set` / `z6_set` / `z7_set` support two signatures: `(zN, zN) -> unit` and `(zN, fN, fN) -> unit`
 - `z5_real` / `z5_img` return `f5`; `z6_real` / `z6_img` return `f6`; `z7_real` / `z7_img` return `f7`
-- The frontend surface sugar additionally accepts `>= 2` argument forms for `add` / `sub` / `mul` / `and` / `or`; semantically, they are lowered into a right-associative binary tree. For example, `(add a b c d)` is equivalent to `(add a (add b (add c d)))`
+- The frontend surface sugar additionally accepts `>= 2` argument forms for `add` / `mul` / `and` / `or`; semantically, they are lowered into a right-associative binary tree. For example, `(add a b c d)` is equivalent to `(add a (add b (add c d)))`
+- The frontend surface sugar additionally accepts `>= 2` argument forms for `sub`; semantically, they are lowered into a left-associative binary tree. For example, `(sub a b c d)` is equivalent to `(sub (sub (sub a b) c) d)`
 - The frontend surface sugar additionally accepts `>= 2` argument forms for `le` / `lt` / `ge` / `gt` / `eq`; semantically, they are expanded into a pairwise comparison chain and joined with right-associative `and`
 - The variadic surface sugar above does not change the builtin core type boundary: the `0` argument form is still illegal, `not` remains a standalone unary `(bool) -> bool` builtin, and `div` / `mod` / `neq` / `xor` / `not` are not automatically included in this sugar family
 

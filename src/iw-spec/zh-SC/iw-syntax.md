@@ -18,13 +18,33 @@
 
 ## 2. 关键字
 
-正式规格使用以下关键字：
+核心语法使用以下保留的语法词：
 
+- `program`
+- `import`
 - `var`
 - `var_set`
+- `fn`
 - `function`
+- `declare`
+- `let`
+- `in`
+- `if`
+- `then`
+- `else`
+- `while`
+- `cond`
+- `match`
+- `class`
+- `property`
+- `method`
+- `constructor`
+- `generic`
+- `to`
+- `from`
+- `union`
 
-只接受上述关键字。
+语言 builtin 名字与 package 导出名字由 builtin 与模组规格分别定义，不在本节重复列出。
 
 ## 3. 绑定语法
 
@@ -237,7 +257,8 @@
 
 针对下列 builtin，frontend 还接受额外的 variadic surface sugar：
 
-- `add` / `sub` / `mul` / `and` / `or` 可写成 `>= 2` 参数；parser 会把它们收敛成右结合 binary tree
+- `add` / `mul` / `and` / `or` 可写成 `>= 2` 参数；parser 会把它们收敛成右结合 binary tree
+- `sub` 也可写成 `>= 2` 参数，但 parser 会把它收敛成左结合 binary tree
 
 ```ironwall
 (add a b c d)
@@ -247,6 +268,16 @@
 
 ```ironwall
 (add a (add b (add c d)))
+```
+
+```ironwall
+(sub a b c d)
+```
+
+等价于：
+
+```ironwall
+(sub (sub (sub a b) c) d)
 ```
 
 - `le` / `lt` / `ge` / `gt` / `eq` 可写成 `>= 2` 参数；语义等价于 pairwise comparison chain，最后用右结合 `and` 连起来
@@ -315,7 +346,7 @@ $payload^type
 (array_length xs)
 ```
 
-## 15. import
+## 16. import
 
 ```ironwall
 (import a~b~c)

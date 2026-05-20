@@ -31,6 +31,10 @@ const QSet<QString> VARIADIC_FOLD_BUILTIN_NAMES = {
     QStringLiteral("or")
 };
 
+const QSet<QString> LEFT_ASSOCIATED_VARIADIC_FOLD_BUILTIN_NAMES = {
+    QStringLiteral("sub")
+};
+
 class Pass1Parser final {
 public:
     explicit Pass1Parser(const TokenList &tokens)
@@ -790,6 +794,25 @@ AstNodePtr buildRightAssociatedBuiltinCall(const QString &name, const AstNodeLis
     return current;
 }
 
+AstNodePtr buildLeftAssociatedBuiltinCall(const QString &name, const AstNodeList &args) {
+    if (args.size() < 2) {
+        throw std::runtime_error(QStringLiteral("%1 requires at least 2 arguments for left-associated folding").arg(name).toStdString());
+    }
+
+    AstNodePtr current = std::make_shared<FunctionCallNode>(
+        std::make_shared<IdentifierNode>(name),
+        AstNodeList{args.at(0), args.at(1)}
+    );
+
+    for (std::size_t index = 2; index < args.size(); index += 1) {
+        current = std::make_shared<FunctionCallNode>(
+            std::make_shared<IdentifierNode>(name),
+            AstNodeList{current, args.at(index)}
+        );
+    }
+    return current;
+}
+
 AstNodePtr foldVariadicBuiltinCall(const std::shared_ptr<FunctionCallNode> &node) {
     const IdentifierNodePtr callee = std::dynamic_pointer_cast<IdentifierNode>(node->callee());
     if (!callee) {
@@ -797,6 +820,9 @@ AstNodePtr foldVariadicBuiltinCall(const std::shared_ptr<FunctionCallNode> &node
     }
     if (!VARIADIC_FOLD_BUILTIN_NAMES.contains(callee->name()) || node->args().size() <= 2) {
         return node;
+    }
+    if (LEFT_ASSOCIATED_VARIADIC_FOLD_BUILTIN_NAMES.contains(callee->name())) {
+        return buildLeftAssociatedBuiltinCall(callee->name(), node->args());
     }
     return buildRightAssociatedBuiltinCall(callee->name(), node->args());
 }

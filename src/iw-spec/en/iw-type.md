@@ -172,5 +172,5 @@ The following are not allowed:
 
 ## 12. Overloading
 
-- Functions are overloaded by the uniqueness of the function name and parameter list
-- Generic classes and generic functions are overloaded by the uniqueness of the generic name and generic parameter count
+- Functions are overloaded by the uniqueness of the function name and parameter-type signature
+- Generic classes and generic functions are overloaded by the uniqueness of the generic name and type-parameter count

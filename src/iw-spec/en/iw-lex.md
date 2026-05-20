@@ -35,16 +35,16 @@ The four bracket kinds are not interchangeable containers. Each bracket kind cor
 
 ### 4.2 package path
 
-- Regex: `seg (~ seg)+`
+- Regex: `seg (~ seg)*`
 - Here `seg` must be an ordinary identifier
-- Examples: `a~b`, `std~time`, `test~fixtures~parser_structures`
+- Examples: `app`, `a~b`, `std~time`, `test~fixtures~parser_structures`
 
 ### 4.3 package-qualified-name
 
 - Regex: `<package-path>@<name>`
 - The left side of `@` must be a complete package path
 - The right side of `@` must be a single ordinary identifier
-- Examples: `app~cli@main`, `std~time@timestamp`
+- Examples: `app@main`, `app~cli@main`, `std~time@timestamp`
 
 ### 4.4 typed atom
 

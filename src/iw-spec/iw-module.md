@@ -12,12 +12,13 @@
 ### 1.2 package path
 
 - package path 由普通標識符以 `~` 串接而成。
-- 例：`a~b~c`
+- package path 可以是單段，也可以是多段。
+- 例：`app`、`a~b~c`
 
 ### 1.3 unit id
 
 - 規範 unit id 形狀為 `<package-path>@<unit-name>`。
-- 例：`app~cli@main`
+- 例：`app@main`、`app~cli@main`
 
 ### 1.4 literal db asset
 
@@ -287,9 +288,9 @@ literal db 文件必須滿足：
 - 其他 package 的可見 global 也可讀寫。
 - 對其他 package 使用短名或全限定名時，均需由 exact `import` 提供可見性；全限定名只消除短名歧義，不會繞過 import。
 
-### 11.3 initializer 禁令
+### 11.3 initializer 約束
 
-global initializer 不得：
+global initializer 必須滿足：
 
 - initializer 必須在 compile time 靜態收斂成 primitive payload。
 - initializer 不得讀取任何 global。
@@ -303,7 +304,7 @@ static primitive subset 至少包含：
 - primitive typed literal
 - literal db text reference
 - `true`、`false`、`unit`
-- `if`、`cond`、`seq`
+- `if`、`cond`、`{...}` block
 - 帶顯式型別的 local `let`
 - 帶顯式型別的 local `var` 與對該 local 的 `var_set`
 - 直接 pure builtin call，且結果仍為 primitive payload

@@ -1,6 +1,6 @@
 # Ironwall Overview
 
-Ironwall is a strongly typed, safety-first language designed for explicit boundaries, predictable runtime behavior, and low implementation complexity. Its design favors clear rules over language magic, auditable runtime costs over hidden mechanisms, and direct failure over recovery machinery that can hide broken invariants.
+Ironwall is a strongly typed, safety-first language. Its design favors clear rules over language complexity, auditable runtime costs over hidden mechanisms, and direct failure over recovery machinery that can hide broken invariants.
 
 Ironwall is intended to compile to native targets while keeping the core language model compact and inspectable. It accepts only a limited set of abstractions that improve practical expression without turning the language into a hard-to-audit system.
 
