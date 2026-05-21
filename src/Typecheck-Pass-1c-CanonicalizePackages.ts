@@ -10,6 +10,7 @@ import {
     DeclaredDfunNode,
     DfunNode,
     DvarNode,
+    ExportNode,
     FnNode,
     FunctionCallNode,
     GenericCallNode,
@@ -419,6 +420,10 @@ function canonicalizeValueAst(node: AstNode, context: CanonicalizeContext): void
         for (const expression of node.topLevelExpressions) {
             canonicalizeValueAst(expression, context.with(context.valueScope, context.typeParamScope, true));
         }
+        return;
+    }
+    if (node instanceof ExportNode) {
+        canonicalizeValueAst(node.inner, context.with(context.valueScope, context.typeParamScope, context.topLevel));
         return;
     }
     if (node instanceof IdentifierNode) {

@@ -11,6 +11,7 @@ export interface PackageSymbolRecord {
     readonly exportedName: string;
     readonly canonicalName: string;
     readonly kind: PackageSymbolKind;
+    readonly isExported: boolean;
     readonly genericArity?: number;
 }
 
@@ -161,16 +162,28 @@ function formatPackageSymbolRecord(record: PackageSymbolRecord): string {
     return `${record.canonicalName} from unit ${unitLabel} (${formatDiagnosticPath(record.filePath)})`;
 }
 
-function collectRecordsForPackage(packageName: string, exportedName: string, acceptedKindSet: ReadonlySet<PackageSymbolKind>): PackageSymbolRecord[] {
+function collectRecordsForPackage(packageName: string, exportedName: string, acceptedKindSet: ReadonlySet<PackageSymbolKind>, includeNonExported = false): PackageSymbolRecord[] {
     const packageExports = packageSymbolTable.get(packageName);
     const records = packageExports?.get(exportedName) ?? [];
-    return records.filter((record) => acceptedKindSet.has(record.kind));
+    return records.filter((record) => acceptedKindSet.has(record.kind) && (includeNonExported || record.isExported));
 }
 
-function collectGenericRecordsForPackage(packageName: string, exportedName: string, kind: "generic_class" | "generic_function", genericArity?: number): PackageSymbolRecord[] {
+function collectHiddenRecordsForPackage(packageName: string, exportedName: string, acceptedKindSet: ReadonlySet<PackageSymbolKind>): PackageSymbolRecord[] {
     const packageExports = packageSymbolTable.get(packageName);
     const records = packageExports?.get(exportedName) ?? [];
-    return records.filter((record) => record.kind === kind && (genericArity === undefined || record.genericArity === genericArity));
+    return records.filter((record) => acceptedKindSet.has(record.kind) && !record.isExported);
+}
+
+function collectGenericRecordsForPackage(packageName: string, exportedName: string, kind: "generic_class" | "generic_function", genericArity?: number, includeNonExported = false): PackageSymbolRecord[] {
+    const packageExports = packageSymbolTable.get(packageName);
+    const records = packageExports?.get(exportedName) ?? [];
+    return records.filter((record) => record.kind === kind && (genericArity === undefined || record.genericArity === genericArity) && (includeNonExported || record.isExported));
+}
+
+function collectHiddenGenericRecordsForPackage(packageName: string, exportedName: string, kind: "generic_class" | "generic_function", genericArity?: number): PackageSymbolRecord[] {
+    const packageExports = packageSymbolTable.get(packageName);
+    const records = packageExports?.get(exportedName) ?? [];
+    return records.filter((record) => record.kind === kind && (genericArity === undefined || record.genericArity === genericArity) && !record.isExported);
 }
 
 function collectDbRecordsForPackage(packageName: string, exportedName: string): PackageSymbolRecord[] {
@@ -227,8 +240,13 @@ function getVisibleQualifiedPackageName(referenceNode: AstNode, qualifiedName: s
     if (metadata === undefined) {
         return packageName;
     }
+    const sourcePackageName = getSourcePackageNameForMonomorphizedPackage(packageName);
 
     if (metadata.packageName === packageName) {
+        return packageName;
+    }
+
+    if (metadata.packageName.startsWith("std~") && (packageName.startsWith("std~") || sourcePackageName?.startsWith("std~") === true)) {
         return packageName;
     }
 
@@ -237,7 +255,6 @@ function getVisibleQualifiedPackageName(referenceNode: AstNode, qualifiedName: s
         return packageName;
     }
 
-    const sourcePackageName = getSourcePackageNameForMonomorphizedPackage(packageName);
     if (sourcePackageName !== undefined) {
         if (metadata.packageName === sourcePackageName) {
             return packageName;
@@ -271,7 +288,15 @@ function getQualifiedPackageSymbolCanonicalNames(referenceNode: AstNode, qualifi
     }
 
     const exportedName = qualifiedName.slice(separatorIndex + 1);
-    const records = collectRecordsForPackage(packageName, exportedName, acceptedKindSet);
+    const metadata = getCompilationUnitMetadata(referenceNode);
+    const includeNonExported = metadata !== undefined && metadata.packageName === packageName;
+    const records = collectRecordsForPackage(packageName, exportedName, acceptedKindSet, includeNonExported);
+    if (records.length === 0 && !includeNonExported && metadata !== undefined) {
+        const hiddenRecords = collectHiddenRecordsForPackage(packageName, exportedName, acceptedKindSet);
+        if (hiddenRecords.length > 0) {
+            throw new Error(`unit ${metadata.unitId}: symbol '${exportedName}' is not exported by package '${packageName}'`);
+        }
+    }
     markImportedPackageSymbolRecordsUsed(referenceNode, packageName, exportedName, records);
     return Array.from(new Set(records.map((record) => record.canonicalName)));
 }
@@ -287,7 +312,7 @@ export function getVisiblePackageSymbolCanonicalNames(referenceNode: AstNode, ex
         return [];
     }
 
-    const currentPackageRecords = collectRecordsForPackage(metadata.packageName, exportedName, acceptedKindSet);
+    const currentPackageRecords = collectRecordsForPackage(metadata.packageName, exportedName, acceptedKindSet, true);
     const currentPackageMatches = Array.from(new Set(currentPackageRecords.map((record) => record.canonicalName)));
     if (currentPackageMatches.length > 1) {
         const candidates = currentPackageRecords.map((record) => formatPackageSymbolRecord(record)).join(", ");
@@ -300,6 +325,7 @@ export function getVisiblePackageSymbolCanonicalNames(referenceNode: AstNode, ex
     const canonicalNames = new Set<string>();
     const matchedPackages = new Set<string>();
     const matchedRecords: PackageSymbolRecord[] = [];
+    const hiddenMatchedPackages = new Set<string>();
 
     for (const packageName of getImportedPackagesForUnit(metadata.unitId)) {
         const packageRecords = collectRecordsForPackage(packageName, exportedName, acceptedKindSet);
@@ -308,6 +334,10 @@ export function getVisiblePackageSymbolCanonicalNames(referenceNode: AstNode, ex
         if (packageMatches.length > 0) {
             matchedPackages.add(packageName);
             matchedRecords.push(...packageRecords);
+            continue;
+        }
+        if (collectHiddenRecordsForPackage(packageName, exportedName, acceptedKindSet).length > 0) {
+            hiddenMatchedPackages.add(packageName);
         }
     }
 
@@ -315,6 +345,14 @@ export function getVisiblePackageSymbolCanonicalNames(referenceNode: AstNode, ex
         const packageList = Array.from(matchedPackages).sort().join(", ");
         const candidates = matchedRecords.map((record) => formatPackageSymbolRecord(record)).join(", ");
         throw new Error(`unit ${metadata.unitId}: ambiguous imported symbol '${exportedName}'${packageList.length > 0 ? ` from packages ${packageList}` : ""}; candidates: ${candidates}`);
+    }
+
+    if (canonicalNames.size === 0 && hiddenMatchedPackages.size > 0) {
+        const packageList = Array.from(hiddenMatchedPackages).sort();
+        if (packageList.length === 1) {
+            throw new Error(`unit ${metadata.unitId}: symbol '${exportedName}' is not exported by package '${packageList[0]}'`);
+        }
+        throw new Error(`unit ${metadata.unitId}: symbol '${exportedName}' is not exported by imported packages ${packageList.join(", ")}`);
     }
 
     if (canonicalNames.size === 1 && matchedPackages.size === 1) {
@@ -335,7 +373,16 @@ export function getVisibleGenericPackageSymbolCanonicalNames(referenceNode: AstN
             return [];
         }
         const shortName = exportedName.slice(separatorIndex + 1);
-        return Array.from(new Set(collectGenericRecordsForPackage(packageName, shortName, kind, genericArity).map((record) => record.canonicalName)));
+        const metadata = getCompilationUnitMetadata(referenceNode);
+        const includeNonExported = metadata !== undefined && metadata.packageName === packageName;
+        const records = collectGenericRecordsForPackage(packageName, shortName, kind, genericArity, includeNonExported);
+        if (records.length === 0 && !includeNonExported && metadata !== undefined) {
+            const hiddenRecords = collectHiddenGenericRecordsForPackage(packageName, shortName, kind, genericArity);
+            if (hiddenRecords.length > 0) {
+                throw new Error(`unit ${metadata.unitId}: symbol '${shortName}' is not exported by package '${packageName}'`);
+            }
+        }
+        return Array.from(new Set(records.map((record) => record.canonicalName)));
     }
 
     const metadata = getCompilationUnitMetadata(referenceNode);
@@ -344,7 +391,7 @@ export function getVisibleGenericPackageSymbolCanonicalNames(referenceNode: AstN
     }
 
     const currentPackageMatches = Array.from(new Set(
-        collectGenericRecordsForPackage(metadata.packageName, exportedName, kind, genericArity).map((record) => record.canonicalName)
+        collectGenericRecordsForPackage(metadata.packageName, exportedName, kind, genericArity, true).map((record) => record.canonicalName)
     ));
     if (currentPackageMatches.length > 0) {
         return currentPackageMatches;
@@ -353,6 +400,7 @@ export function getVisibleGenericPackageSymbolCanonicalNames(referenceNode: AstN
     const canonicalNames = new Set<string>();
     const matchedPackages = new Set<string>();
     const matchedRecords: PackageSymbolRecord[] = [];
+    const hiddenMatchedPackages = new Set<string>();
 
     for (const packageName of getImportedPackagesForUnit(metadata.unitId)) {
         const packageRecords = collectGenericRecordsForPackage(packageName, exportedName, kind, genericArity);
@@ -361,6 +409,10 @@ export function getVisibleGenericPackageSymbolCanonicalNames(referenceNode: AstN
         if (packageMatches.length > 0) {
             matchedPackages.add(packageName);
             matchedRecords.push(...packageRecords);
+            continue;
+        }
+        if (collectHiddenGenericRecordsForPackage(packageName, exportedName, kind, genericArity).length > 0) {
+            hiddenMatchedPackages.add(packageName);
         }
     }
 
@@ -368,6 +420,14 @@ export function getVisibleGenericPackageSymbolCanonicalNames(referenceNode: AstN
         const packageList = Array.from(matchedPackages).sort().join(", ");
         const candidates = matchedRecords.map((record) => formatPackageSymbolRecord(record)).join(", ");
         throw new Error(`unit ${metadata.unitId}: ambiguous imported symbol '${exportedName}'${packageList.length > 0 ? ` from packages ${packageList}` : ""}; candidates: ${candidates}`);
+    }
+
+    if (canonicalNames.size === 0 && hiddenMatchedPackages.size > 0) {
+        const packageList = Array.from(hiddenMatchedPackages).sort();
+        if (packageList.length === 1) {
+            throw new Error(`unit ${metadata.unitId}: symbol '${exportedName}' is not exported by package '${packageList[0]}'`);
+        }
+        throw new Error(`unit ${metadata.unitId}: symbol '${exportedName}' is not exported by imported packages ${packageList.join(", ")}`);
     }
 
     if (canonicalNames.size > 0 && matchedPackages.size === 1) {

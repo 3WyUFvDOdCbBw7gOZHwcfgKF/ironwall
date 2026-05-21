@@ -23,6 +23,7 @@ import {
     DvarNode,
     DfunNode,
     DeclaredDfunNode,
+    ExportNode,
     SeqNode,
     SetNode,
     TypeVarBindNode,
@@ -37,7 +38,9 @@ import {
     MatchNode,
     FunctionCallNode,
     GenericCallNode,
-    AngleParenListNode
+    AngleParenListNode,
+    isExportableTopLevelAstNode,
+    unwrapExportNode
 } from "./AstNode";
 import { getAnnotatedProgramPackageStringDatabase, StringDatabase } from "./StringDatabase";
 
@@ -132,6 +135,7 @@ function registerAnnotatedPackageStringDatabaseSymbols(ast: AstNode): void {
             kind: "db",
             exportedName: record.exportedName,
             canonicalName: record.canonicalName,
+            isExported: true,
             packageName: record.packageName,
             unitId: null,
             filePath: record.filePath,
@@ -883,6 +887,10 @@ function expandVariadicComparisonCallAfterTypecheck(node: FunctionCallNode, varE
 }
 
 function rewriteTypedVariadicComparisonsAfterTypecheck(ast: AstNode, varEnv: VarEnv, funcEnv: FunctionEnv, typeEnv: GenericTypeEnv): AstNode {
+    if (ast instanceof ExportNode) {
+        ast.inner = rewriteTypedVariadicComparisonsAfterTypecheck(ast.inner, varEnv, funcEnv, typeEnv);
+        return ast;
+    }
     if (ast instanceof DvarNode) {
         ast.value = rewriteTypedVariadicComparisonsAfterTypecheck(ast.value, varEnv, funcEnv, typeEnv);
         if (ast.bind instanceof TypeVarBindNode) {
@@ -1130,6 +1138,13 @@ export function typecheck(ast: AstNode, varEnv: VarEnv, funcEnv: FunctionEnv, ty
                 throw new TypeCheckError("internal error: expected NumberLiteralNode");
             }
             return new PrimitiveTypeValue(ast.typeName);
+        }
+
+        case AstNodeType.ExportNode: {
+            if (!(ast instanceof ExportNode)) {
+                throw new TypeCheckError("internal error: expected ExportNode");
+            }
+            return typecheck(ast.inner, varEnv, funcEnv, typeEnv);
         }
 
         case AstNodeType.DvarNode: {
@@ -2881,23 +2896,25 @@ function isMainArgsType(type: TypeValue): boolean {
 
 function validateMainSignature(ast: AstNode, unitId: string): void {
     withActiveTypecheckNode(ast, (): void => {
-        if (ast instanceof DeclaredDfunNode && ast.name.name === "main") {
+        const node = unwrapExportNode(ast);
+
+        if (node instanceof DeclaredDfunNode && node.name.name === "main") {
             throw new TypeCheckError(`unit ${unitId}: main must be a non-declare top-level function`);
         }
 
-        if (ast instanceof GenericDfunNode && ast.genericName.name.name === "main") {
+        if (node instanceof GenericDfunNode && node.genericName.name.name === "main") {
             throw new TypeCheckError(`unit ${unitId}: main must be a non-generic top-level function`);
         }
 
-        if (!(ast instanceof DfunNode) || ast.name.name !== "main") {
+        if (!(node instanceof DfunNode) || node.name.name !== "main") {
             return;
         }
 
-        if (ast.params.length !== 1) {
+        if (node.params.length !== 1) {
             throw new TypeCheckError(`unit ${unitId}: main must take exactly one parameter`);
         }
 
-        const [mainParam] = ast.params;
+        const [mainParam] = node.params;
         if (mainParam.var.name !== "args") {
             throw new TypeCheckError(`unit ${unitId}: main parameter must be named args`);
         }
@@ -2907,11 +2924,20 @@ function validateMainSignature(ast: AstNode, unitId: string): void {
             throw new TypeCheckError(`unit ${unitId}: main parameter must have type <array s3>`);
         }
 
-        const mainReturnType = astToTypeValue(ast.returnType, new GenericTypeEnv());
+        const mainReturnType = astToTypeValue(node.returnType, new GenericTypeEnv());
         if (!typeEqual(mainReturnType, new PrimitiveTypeValue("i5"))) {
             throw new TypeCheckError(`unit ${unitId}: main must return i5`);
         }
     });
+}
+
+function validateTopLevelExportNode(node: ExportNode): void {
+    if (node.inner instanceof ExportNode) {
+        throw new TypeCheckError("export declarations must appear at top level");
+    }
+    if (!isExportableTopLevelAstNode(node.inner)) {
+        throw new TypeCheckError("export may only wrap top-level definitions and top-level var");
+    }
 }
 
 function validateModuleTopLevelStructure(program: ProgramNode): void {
@@ -2924,13 +2950,17 @@ function validateModuleTopLevelStructure(program: ProgramNode): void {
                 return;
             }
 
-            if (!isAllowedModuleTopLevelNode(expr)) {
+            const topLevelNode = unwrapExportNode(expr);
+
+            if (expr instanceof ExportNode) {
+                validateTopLevelExportNode(expr);
+            } else if (!isAllowedModuleTopLevelNode(expr)) {
                 throw new TypeCheckError(`unit ${metadata.unitId}: module mode only allows import, top-level definitions, and top-level var`);
             }
 
-            validateMainSignature(expr, metadata.unitId);
+            validateMainSignature(topLevelNode, metadata.unitId);
 
-            if (expr instanceof DfunNode && expr.name.name === "main") {
+            if (topLevelNode instanceof DfunNode && topLevelNode.name.name === "main") {
                 mainCountByUnit.set(metadata.unitId, (mainCountByUnit.get(metadata.unitId) ?? 0) + 1);
             }
         });
@@ -2947,6 +2977,9 @@ function validateNestedDefinitions(ast: AstNode): void {
     withActiveTypecheckNode(ast, (): void => {
         if (isDefinitionNode(ast)) {
             return;
+        }
+        if (ast instanceof ExportNode) {
+            throw new TypeCheckError("export declarations must appear at top level");
         }
         if (ast instanceof ImportNode) {
             throw new TypeCheckError("import declarations must appear at top level");
@@ -3046,6 +3079,39 @@ function validateNestedDefinitions(ast: AstNode): void {
     });
 }
 
+function validateTopLevelNodeContents(ast: AstNode): void {
+    if (ast instanceof DfunNode) {
+        ast.params.forEach(validateNestedDefinitions);
+        validateNestedDefinitions(ast.returnType);
+        validateNestedDefinitions(ast.body);
+        return;
+    }
+    if (ast instanceof DeclaredDfunNode) {
+        ast.params.forEach(validateNestedDefinitions);
+        validateNestedDefinitions(ast.returnType);
+        return;
+    }
+    if (ast instanceof GenericDfunNode) {
+        ast.params.forEach(validateNestedDefinitions);
+        validateNestedDefinitions(ast.returnType);
+        validateNestedDefinitions(ast.body);
+        return;
+    }
+    if (ast instanceof ClassNode) {
+        ast.propertyNodeList.forEach(validateNestedDefinitions);
+        ast.methodNodeList.forEach(validateNestedDefinitions);
+        ast.constructorNodeList.forEach(validateNestedDefinitions);
+        return;
+    }
+    if (ast instanceof GenericClassNode) {
+        ast.propertyNodeList.forEach(validateNestedDefinitions);
+        ast.methodNodeList.forEach(validateNestedDefinitions);
+        ast.constructorNodeList.forEach(validateNestedDefinitions);
+        return;
+    }
+    validateNestedDefinitions(ast);
+}
+
 function validateTopLevelDefinitions(ast: AstNode): void {
     if (ast instanceof ProgramNode) {
         validateModuleTopLevelStructure(ast);
@@ -3053,11 +3119,12 @@ function validateTopLevelDefinitions(ast: AstNode): void {
             if (expr instanceof ImportNode) {
                 return;
             }
-            if (isDefinitionNode(expr) || expr instanceof DvarNode || expr instanceof SetNode || expr instanceof LetNode || expr instanceof FnNode || expr instanceof IfNode || expr instanceof WhileNode || expr instanceof CondNode || expr instanceof MatchNode || expr instanceof FunctionCallNode || expr instanceof GenericCallNode || expr instanceof SeqNode || expr instanceof IdentifierNode || expr instanceof NumberLiteralNode || expr instanceof TextDatabaseReferenceNode) {
-                validateNestedDefinitions(expr);
+            const topLevelNode = expr instanceof ExportNode ? expr.inner : expr;
+            if (isDefinitionNode(topLevelNode) || topLevelNode instanceof DvarNode || topLevelNode instanceof SetNode || topLevelNode instanceof LetNode || topLevelNode instanceof FnNode || topLevelNode instanceof IfNode || topLevelNode instanceof WhileNode || topLevelNode instanceof CondNode || topLevelNode instanceof MatchNode || topLevelNode instanceof FunctionCallNode || topLevelNode instanceof GenericCallNode || topLevelNode instanceof SeqNode || topLevelNode instanceof IdentifierNode || topLevelNode instanceof NumberLiteralNode || topLevelNode instanceof TextDatabaseReferenceNode) {
+                validateTopLevelNodeContents(topLevelNode);
                 return;
             }
-            validateNestedDefinitions(expr);
+            validateNestedDefinitions(topLevelNode);
         });
         return;
     }

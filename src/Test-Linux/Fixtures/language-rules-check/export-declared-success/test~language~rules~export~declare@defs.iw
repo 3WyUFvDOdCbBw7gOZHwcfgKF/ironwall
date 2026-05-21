@@ -1,0 +1,3 @@
+{program test~language~rules~export~declare@defs
+  (export (declare (function _2e5a592513cbf7c516add0ab3f485299_clang_iw_ffi_make_s3_ad56f991 () to s3)))
+}

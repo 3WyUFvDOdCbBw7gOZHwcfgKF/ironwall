@@ -2,7 +2,7 @@
   (import std~eq)
   (import std~ord)
 
-  (function checked_mul_nonnegative_i5 ([left i5] [right i5]) to i5 in
+  (export (function checked_mul_nonnegative_i5 ([left i5] [right i5]) to i5 in
     (if (or (eq left $0^i5) (eq right $0^i5))
       then $0^i5
       else
@@ -14,13 +14,13 @@
           )
         }
     )
-  )
+  ))
 
-  (function min_i5 ([left i5] [right i5]) to i5 in
+  (export (function min_i5 ([left i5] [right i5]) to i5 in
     (if (lt left right) then left else right)
-  )
+  ))
 
-  (class <generic ListNode T>
+  (export (class <generic ListNode T>
     (property [value T])
     (property [next <union unit <ListNode T>>])
     (property [shared bool])
@@ -31,9 +31,9 @@
         (cm_set self shared false)
       }
     )
-  )
+  ))
 
-  (class <generic ListPopResult T>
+  (export (class <generic ListPopResult T>
     (property [items <union unit <ListNode T>>])
     (property [value T])
     (constructor ([items0 <union unit <ListNode T>>] [value0 T]) in
@@ -42,9 +42,9 @@
         (cm_set self value value0)
       }
     )
-  )
+  ))
 
-  (class <generic ListFilterResult T>
+  (export (class <generic ListFilterResult T>
     (property [items <union unit <ListNode T>>])
     (property [length i5])
     (constructor ([items0 <union unit <ListNode T>>] [length0 i5]) in
@@ -53,9 +53,9 @@
         (cm_set self length length0)
       }
     )
-  )
+  ))
 
-  (function <generic list_get_items T> ([items <union unit <ListNode T>>] [index i5]) to T in
+  (export (function <generic list_get_items T> ([items <union unit <ListNode T>>] [index i5]) to T in
     (match items
       ([empty unit] (iw_match_unreachable))
       ([node <ListNode T>]
@@ -65,9 +65,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_set_items T> ([items <union unit <ListNode T>>] [index i5] [value T]) to <union unit <ListNode T>> in
+  (export (function <generic list_set_items T> ([items <union unit <ListNode T>>] [index i5] [value T]) to <union unit <ListNode T>> in
     (match items
       ([empty unit] (iw_match_unreachable))
       ([node <ListNode T>]
@@ -81,9 +81,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_append_items T> ([items <union unit <ListNode T>>] [value T]) to <union unit <ListNode T>> in
+  (export (function <generic list_append_items T> ([items <union unit <ListNode T>>] [value T]) to <union unit <ListNode T>> in
     (match items
       ([empty unit] (class_new <ListNode T> value unit))
       ([node <ListNode T>]
@@ -93,9 +93,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_insert_items T> ([items <union unit <ListNode T>>] [index i5] [value T]) to <union unit <ListNode T>> in
+  (export (function <generic list_insert_items T> ([items <union unit <ListNode T>>] [index i5] [value T]) to <union unit <ListNode T>> in
     (if (eq index $0^i5)
       then (class_new <ListNode T> value items)
       else
@@ -109,9 +109,9 @@
           )
         )
     )
-  )
+  ))
 
-  (function <generic list_copy_items T> ([items <union unit <ListNode T>>]) to <union unit <ListNode T>> in
+  (export (function <generic list_copy_items T> ([items <union unit <ListNode T>>]) to <union unit <ListNode T>> in
     (match items
       ([empty unit] unit)
       ([node <ListNode T>]
@@ -121,9 +121,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_tail_items T> ([items <union unit <ListNode T>>]) to <union unit <ListNode T>> in
+  (export (function <generic list_tail_items T> ([items <union unit <ListNode T>>]) to <union unit <ListNode T>> in
     {
       (var [cursor <union unit <ListNode T>>] items)
       (var [tail <union unit <ListNode T>>] unit)
@@ -149,9 +149,9 @@
       )
       tail
     }
-  )
+  ))
 
-  (function <generic list_has_shared_items T> ([items <union unit <ListNode T>>]) to bool in
+  (export (function <generic list_has_shared_items T> ([items <union unit <ListNode T>>]) to bool in
     {
       (var [cursor <union unit <ListNode T>>] items)
       (var [found bool] false)
@@ -182,9 +182,9 @@
       )
       found
     }
-  )
+  ))
 
-  (function <generic list_mark_shared_items T> ([items <union unit <ListNode T>>]) to unit in
+  (export (function <generic list_mark_shared_items T> ([items <union unit <ListNode T>>]) to unit in
     {
       (var [cursor <union unit <ListNode T>>] items)
       (var [running bool] true)
@@ -204,9 +204,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic list_reverse_items T> ([items <union unit <ListNode T>>] [acc <union unit <ListNode T>>]) to <union unit <ListNode T>> in
+  (export (function <generic list_reverse_items T> ([items <union unit <ListNode T>>] [acc <union unit <ListNode T>>]) to <union unit <ListNode T>> in
     (match items
       ([empty unit] acc)
       ([node <ListNode T>]
@@ -216,9 +216,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_concat_items T> ([left <union unit <ListNode T>>] [right <union unit <ListNode T>>]) to <union unit <ListNode T>> in
+  (export (function <generic list_concat_items T> ([left <union unit <ListNode T>>] [right <union unit <ListNode T>>]) to <union unit <ListNode T>> in
     (match left
       ([empty unit] right)
       ([node <ListNode T>]
@@ -228,9 +228,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_pop_items T> ([items <union unit <ListNode T>>] [index i5]) to <ListPopResult T> in
+  (export (function <generic list_pop_items T> ([items <union unit <ListNode T>>] [index i5]) to <ListPopResult T> in
     (match items
       ([empty unit] (iw_match_unreachable))
       ([node <ListNode T>]
@@ -247,9 +247,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_count_items T> ([items <union unit <ListNode T>>] [rule <Eq T>] [value T]) to i5 in
+  (export (function <generic list_count_items T> ([items <union unit <ListNode T>>] [rule <Eq T>] [value T]) to i5 in
     (match items
       ([empty unit] $0^i5)
       ([node <ListNode T>]
@@ -259,9 +259,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_fold_items T Acc> ([items <union unit <ListNode T>>] [init Acc] [step <to Acc from Acc T>]) to Acc in
+  (export (function <generic list_fold_items T Acc> ([items <union unit <ListNode T>>] [init Acc] [step <to Acc from Acc T>]) to Acc in
     (match items
       ([empty unit] init)
       ([node <ListNode T>]
@@ -272,9 +272,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_map_items T U> ([items <union unit <ListNode T>>] [mapper <to U from T>]) to <union unit <ListNode U>> in
+  (export (function <generic list_map_items T U> ([items <union unit <ListNode T>>] [mapper <to U from T>]) to <union unit <ListNode U>> in
     (match items
       ([empty unit] unit)
       ([node <ListNode T>]
@@ -284,9 +284,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_filter_items T> ([items <union unit <ListNode T>>] [predicate <to bool from T>]) to <ListFilterResult T> in
+  (export (function <generic list_filter_items T> ([items <union unit <ListNode T>>] [predicate <to bool from T>]) to <ListFilterResult T> in
     (match items
       ([empty unit] (class_new <ListFilterResult T> unit $0^i5))
       ([node <ListNode T>]
@@ -303,9 +303,9 @@
         }
       )
     )
-  )
+  ))
 
-  (function <generic list_index_items T> ([items <union unit <ListNode T>>] [rule <Eq T>] [value T]) to i5 in
+  (export (function <generic list_index_items T> ([items <union unit <ListNode T>>] [rule <Eq T>] [value T]) to i5 in
     (match items
       ([empty unit] (iw_match_unreachable))
       ([node <ListNode T>]
@@ -315,9 +315,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_prepend_reversed_items T> ([reversed_items <union unit <ListNode T>>] [acc <union unit <ListNode T>>]) to <union unit <ListNode T>> in
+  (export (function <generic list_prepend_reversed_items T> ([reversed_items <union unit <ListNode T>>] [acc <union unit <ListNode T>>]) to <union unit <ListNode T>> in
     (match reversed_items
       ([empty unit] acc)
       ([node <ListNode T>]
@@ -327,9 +327,9 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_repeat_items T> ([items <union unit <ListNode T>>] [times i5]) to <union unit <ListNode T>> in
+  (export (function <generic list_repeat_items T> ([items <union unit <ListNode T>>] [times i5]) to <union unit <ListNode T>> in
     (if (le times $0^i5)
       then unit
       else
@@ -351,9 +351,9 @@
           )
         )
     )
-  )
+  ))
 
-  (function <generic list_copy_items_to_array T> ([items <union unit <ListNode T>>] [seed T] [length i5]) to <array T> in
+  (export (function <generic list_copy_items_to_array T> ([items <union unit <ListNode T>>] [seed T] [length i5]) to <array T> in
     {
       (var [result_raw <array T>] (array_new <array T> length seed))
       (var [index i5] $0^i5)
@@ -375,9 +375,9 @@
       )
       result_raw
     }
-  )
+  ))
 
-  (function <generic list_merge_sort_runs T> ([target_raw <array T>] [scratch_raw <array T>] [left_start i5] [mid i5] [right_end i5] [rule <Ord T>]) to unit in
+  (export (function <generic list_merge_sort_runs T> ([target_raw <array T>] [scratch_raw <array T>] [left_start i5] [mid i5] [right_end i5] [rule <Ord T>]) to unit in
     {
       (var [left_index i5] left_start)
       (var [right_index i5] mid)
@@ -428,9 +428,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic list_sort_array_items T> ([target_raw <array T>] [length i5] [seed T] [rule <Ord T>]) to unit in
+  (export (function <generic list_sort_array_items T> ([target_raw <array T>] [length i5] [seed T] [rule <Ord T>]) to unit in
     (if (le length $1^i5)
       then unit
       else
@@ -464,9 +464,9 @@
           unit
         }
     )
-  )
+  ))
 
-  (function <generic list_build_items_from_array T> ([source_raw <array T>] [length i5]) to <union unit <ListNode T>> in
+  (export (function <generic list_build_items_from_array T> ([source_raw <array T>] [length i5]) to <union unit <ListNode T>> in
     {
       (var [items <union unit <ListNode T>>] unit)
       (var [index i5] length)
@@ -478,17 +478,17 @@
       )
       items
     }
-  )
+  ))
 
-  (function <generic list_sort_items T> ([items <union unit <ListNode T>>] [seed T] [length i5] [rule <Ord T>]) to <union unit <ListNode T>> in
+  (export (function <generic list_sort_items T> ([items <union unit <ListNode T>>] [seed T] [length i5] [rule <Ord T>]) to <union unit <ListNode T>> in
     {
       (var [target_raw <array T>] (<list_copy_items_to_array T> items seed length))
       (<list_sort_array_items T> target_raw length seed rule)
       (<list_build_items_from_array T> target_raw length)
     }
-  )
+  ))
 
-  (function <generic list_max_items_acc T> ([items <union unit <ListNode T>>] [rule <Ord T>] [best T]) to T in
+  (export (function <generic list_max_items_acc T> ([items <union unit <ListNode T>>] [rule <Ord T>] [best T]) to T in
     (match items
       ([empty unit] best)
       ([node <ListNode T>]
@@ -498,16 +498,16 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_max_items T> ([items <union unit <ListNode T>>] [rule <Ord T>]) to T in
+  (export (function <generic list_max_items T> ([items <union unit <ListNode T>>] [rule <Ord T>]) to T in
     (match items
       ([empty unit] (iw_match_unreachable))
       ([node <ListNode T>] (<list_max_items_acc T> (cm_get node next) rule (cm_get node value)))
     )
-  )
+  ))
 
-  (function <generic list_min_items_acc T> ([items <union unit <ListNode T>>] [rule <Ord T>] [best T]) to T in
+  (export (function <generic list_min_items_acc T> ([items <union unit <ListNode T>>] [rule <Ord T>] [best T]) to T in
     (match items
       ([empty unit] best)
       ([node <ListNode T>]
@@ -517,16 +517,16 @@
         )
       )
     )
-  )
+  ))
 
-  (function <generic list_min_items T> ([items <union unit <ListNode T>>] [rule <Ord T>]) to T in
+  (export (function <generic list_min_items T> ([items <union unit <ListNode T>>] [rule <Ord T>]) to T in
     (match items
       ([empty unit] (iw_match_unreachable))
       ([node <ListNode T>] (<list_min_items_acc T> (cm_get node next) rule (cm_get node value)))
     )
-  )
+  ))
 
-  (class <generic List T>
+  (export (class <generic List T>
     (property [items <union unit <ListNode T>>])
     (property [tail <union unit <ListNode T>>])
     (property [seed T])
@@ -805,40 +805,40 @@
         unit
       }
     )
-  )
+  ))
 
-  (function <generic list_new T> ([seed T]) to <List T> in
+  (export (function <generic list_new T> ([seed T]) to <List T> in
     (class_new <List T> unit seed $0^i5)
-  )
+  ))
 
-  (function <generic list_len T> ([list <List T>]) to i5 in
+  (export (function <generic list_len T> ([list <List T>]) to i5 in
     (cm_get list length)
-  )
+  ))
 
-  (function <generic list_contains T> ([list <List T>] [rule <Eq T>] [value T]) to bool in
+  (export (function <generic list_contains T> ([list <List T>] [rule <Eq T>] [value T]) to bool in
     (gt ((cm_get list count) rule value) $0^i5)
-  )
+  ))
 
-  (function <generic list_fold T Acc> ([source <List T>] [init Acc] [step <to Acc from Acc T>]) to Acc in
+  (export (function <generic list_fold T Acc> ([source <List T>] [init Acc] [step <to Acc from Acc T>]) to Acc in
     (<list_fold_items T Acc> (cm_get source items) init step)
-  )
+  ))
 
-  (function <generic list_map T U> ([source <List T>] [seed U] [mapper <to U from T>]) to <List U> in
+  (export (function <generic list_map T U> ([source <List T>] [seed U] [mapper <to U from T>]) to <List U> in
     (class_new <List U>
       (<list_map_items T U> (cm_get source items) mapper)
       seed
       (cm_get source length)
     )
-  )
+  ))
 
-  (function <generic list_filter T> ([source <List T>] [predicate <to bool from T>]) to <List T> in
+  (export (function <generic list_filter T> ([source <List T>] [predicate <to bool from T>]) to <List T> in
     {
       (var [result <ListFilterResult T>] (<list_filter_items T> (cm_get source items) predicate))
       (class_new <List T> (cm_get result items) (cm_get source seed) (cm_get result length))
     }
-  )
+  ))
 
-  (function <generic list_concat T> ([left <List T>] [right <List T>]) to <List T> in
+  (export (function <generic list_concat T> ([left <List T>] [right <List T>]) to <List T> in
     (if (eq (cm_get left length) $0^i5)
       then
         (class_new <List T>
@@ -868,9 +868,9 @@
             )
         )
     )
-  )
+  ))
 
-  (function <generic list_repeat T> ([source <List T>] [times i5]) to <List T> in
+  (export (function <generic list_repeat T> ([source <List T>] [times i5]) to <List T> in
     (if (or (le times $0^i5) (eq (cm_get source length) $0^i5))
       then (<list_new T> (cm_get source seed))
       else
@@ -889,33 +889,33 @@
             )
         )
     )
-  )
+  ))
 
-  (function <generic list_pop T> ([list <List T>]) to T in
+  (export (function <generic list_pop T> ([list <List T>]) to T in
     ((cm_get list pop) (sub (cm_get list length) $1^i5))
-  )
+  ))
 
-  (function <generic list_sorted T> ([source <List T>] [rule <Ord T>]) to <List T> in
+  (export (function <generic list_sorted T> ([source <List T>] [rule <Ord T>]) to <List T> in
     (class_new <List T>
       (<list_sort_items T> (cm_get source items) (cm_get source seed) (cm_get source length) rule)
       (cm_get source seed)
       (cm_get source length)
     )
-  )
+  ))
 
-  (function <generic list_reversed T> ([source <List T>]) to <List T> in
+  (export (function <generic list_reversed T> ([source <List T>]) to <List T> in
     (class_new <List T>
       (<list_reverse_items T> (cm_get source items) unit)
       (cm_get source seed)
       (cm_get source length)
     )
-  )
+  ))
 
-  (function <generic list_max T> ([source <List T>] [rule <Ord T>]) to T in
+  (export (function <generic list_max T> ([source <List T>] [rule <Ord T>]) to T in
     (<list_max_items T> (cm_get source items) rule)
-  )
+  ))
 
-  (function <generic list_min T> ([source <List T>] [rule <Ord T>]) to T in
+  (export (function <generic list_min T> ([source <List T>] [rule <Ord T>]) to T in
     (<list_min_items T> (cm_get source items) rule)
-  )
+  ))
 }

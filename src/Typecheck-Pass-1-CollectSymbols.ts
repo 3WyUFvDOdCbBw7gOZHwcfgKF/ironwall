@@ -9,6 +9,7 @@ import {
     CurlyParenListNode,
     DfunNode,
     DvarNode,
+    ExportNode,
     FnNode,
     FunctionCallNode,
     GenericCallNode,
@@ -31,7 +32,8 @@ import {
     TextDatabaseReferenceNode,
     TypeToFromNode,
     TypeUnionNode,
-    TypeVarBindNode
+    TypeVarBindNode,
+    isExportableTopLevelAstNode
 } from "./AstNode";
 import {
     ClassInfo,
@@ -50,6 +52,7 @@ import { registerPackageSymbol } from "./Typecheck-Modules";
 
 interface DefinitionCollectionContext {
     readonly topLevel: boolean;
+    readonly exported: boolean;
     readonly packageName: string | null;
     readonly unitId: string | null;
     readonly filePath: string | null;
@@ -81,34 +84,50 @@ function topLevelContextFor(node: AstNode, fallback: DefinitionCollectionContext
     }
     return {
         topLevel: true,
+        exported: false,
         packageName: metadata.packageName,
-            unitId: metadata.unitId,
-            filePath: metadata.filePath
+        unitId: metadata.unitId,
+        filePath: metadata.filePath
     };
 }
 
-function registerSymbol(kind: "class" | "generic_class" | "function" | "generic_function" | "global", exportedName: string, canonicalName: string, context: DefinitionCollectionContext, genericArity?: number): void {
+function registerSymbol(kind: "class" | "generic_class" | "function" | "generic_function" | "global", exportedName: string, canonicalName: string, context: DefinitionCollectionContext, genericArity?: number, isExported = false): void {
     registerPackageSymbol({
         kind,
         exportedName,
         canonicalName,
         genericArity,
+        isExported,
         packageName: context.packageName,
         unitId: context.unitId,
         filePath: context.filePath
     });
 }
 
-function shouldExportTopLevelName(exportedName: string, context: DefinitionCollectionContext): boolean {
-    return !(context.packageName !== null && exportedName === "main");
+function isTopLevelSymbolExported(context: DefinitionCollectionContext): boolean {
+    return context.packageName === null || context.exported;
 }
 
-export function collectClassInfoPass(ast: AstNode, context: DefinitionCollectionContext = { topLevel: true, packageName: null, unitId: null, filePath: null }): void {
+function isTopLevelFunctionExported(exportedName: string, context: DefinitionCollectionContext): boolean {
+    return isTopLevelSymbolExported(context)
+        && !(context.packageName !== null && exportedName === "main");
+}
+
+export function collectClassInfoPass(ast: AstNode, context: DefinitionCollectionContext = { topLevel: true, exported: true, packageName: null, unitId: null, filePath: null }): void {
+    if (ast instanceof ExportNode) {
+        if (context.topLevel && isExportableTopLevelAstNode(ast.inner)) {
+            collectClassInfoPass(ast.inner, { ...context, exported: true });
+            return;
+        }
+        collectClassInfoPass(ast.inner, { ...context, topLevel: false });
+        return;
+    }
+
     if (ast instanceof ClassNode && context.topLevel) {
         const canonicalName = buildCanonicalName(ast.name.name, context.packageName);
         const info = new ClassInfo(canonicalName, ast.constructorNodeList, ast.methodNodeList, ast.propertyNodeList, context.packageName, context.unitId, ast.name.name, context.filePath);
         registerClassInfo(info);
-        registerSymbol("class", ast.name.name, canonicalName, context);
+        registerSymbol("class", ast.name.name, canonicalName, context, undefined, isTopLevelSymbolExported(context));
         return;
     }
     if (ast instanceof GenericClassNode && context.topLevel) {
@@ -127,23 +146,21 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
             context.filePath
         );
         registerGenericClassInfo(info);
-        registerSymbol("generic_class", ast.genericName.name.name, canonicalName, context, ast.genericName.genericTypeArgs.length);
+        registerSymbol("generic_class", ast.genericName.name.name, canonicalName, context, ast.genericName.genericTypeArgs.length, isTopLevelSymbolExported(context));
         return;
     }
     if (ast instanceof DfunNode && context.topLevel) {
         const canonicalName = buildFunctionCanonicalName(ast.name.name, context);
-        recordFunctionInfo(new FunctionInfo(canonicalName, ast.params, ast.returnType, false, context.packageName, context.unitId, ast.name.name, ast.body, context.filePath));
-        if (shouldExportTopLevelName(ast.name.name, context)) {
-            registerSymbol("function", ast.name.name, canonicalName, context);
-        }
+        const isExported = isTopLevelFunctionExported(ast.name.name, context);
+        recordFunctionInfo(new FunctionInfo(canonicalName, ast.params, ast.returnType, false, context.packageName, context.unitId, ast.name.name, ast.body, context.filePath, isExported));
+        registerSymbol("function", ast.name.name, canonicalName, context, undefined, isExported);
         return;
     }
     if (ast instanceof DeclaredDfunNode && context.topLevel) {
         const canonicalName = buildFunctionCanonicalName(ast.name.name, context);
-        recordFunctionInfo(new FunctionInfo(canonicalName, ast.params, ast.returnType, true, context.packageName, context.unitId, ast.name.name, null, context.filePath));
-        if (shouldExportTopLevelName(ast.name.name, context)) {
-            registerSymbol("function", ast.name.name, canonicalName, context);
-        }
+        const isExported = isTopLevelFunctionExported(ast.name.name, context);
+        recordFunctionInfo(new FunctionInfo(canonicalName, ast.params, ast.returnType, true, context.packageName, context.unitId, ast.name.name, null, context.filePath, isExported));
+        registerSymbol("function", ast.name.name, canonicalName, context, undefined, isExported);
         return;
     }
     if (ast instanceof GenericDfunNode && context.topLevel) {
@@ -162,9 +179,7 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
             context.filePath
         );
         registerGenericFunctionInfo(info);
-        if (shouldExportTopLevelName(ast.genericName.name.name, context)) {
-            registerSymbol("generic_function", ast.genericName.name.name, canonicalName, context, ast.genericName.genericTypeArgs.length);
-        }
+        registerSymbol("generic_function", ast.genericName.name.name, canonicalName, context, ast.genericName.genericTypeArgs.length, isTopLevelFunctionExported(ast.genericName.name.name, context));
         return;
     }
     if (ast instanceof DvarNode && context.topLevel) {
@@ -173,7 +188,7 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
         }
         const canonicalName = buildCanonicalName(ast.bind.var.name, context.packageName);
         registerGlobalVarInfo(new GlobalVarInfo(canonicalName, ast.bind, ast.value, context.packageName, context.unitId, ast.bind.var.name, context.filePath));
-        registerSymbol("global", ast.bind.var.name, canonicalName, context);
+        registerSymbol("global", ast.bind.var.name, canonicalName, context, undefined, isTopLevelSymbolExported(context));
         return;
     }
 

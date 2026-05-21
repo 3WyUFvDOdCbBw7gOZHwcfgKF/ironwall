@@ -5,7 +5,7 @@
   (import std~list)
   (import std~pair)
 
-  (class DictLookupResult
+  (export (class DictLookupResult
     (property [index i5])
     (property [found bool])
     (constructor ([index0 i5] [found0 bool]) in
@@ -14,33 +14,33 @@
         (cm_set self found found0)
       }
     )
-  )
+  ))
 
-  (function <generic dict_key_unwrap K> ([slot <union unit <Box K>>]) to K in
+  (export (function <generic dict_key_unwrap K> ([slot <union unit <Box K>>]) to K in
     (match
       slot
       ([empty unit] (iw_match_unreachable))
       ([value <Box K>] (<box_unwrap K> value))
     )
-  )
+  ))
 
-  (function <generic dict_value_unwrap V> ([slot <union unit <Box V>>]) to V in
+  (export (function <generic dict_value_unwrap V> ([slot <union unit <Box V>>]) to V in
     (match
       slot
       ([empty unit] (iw_match_unreachable))
       ([value <Box V>] (<box_unwrap V> value))
     )
-  )
+  ))
 
-  (function <generic dict_new_key_slots K> ([capacity i5]) to <array <union unit <Box K>>> in
+  (export (function <generic dict_new_key_slots K> ([capacity i5]) to <array <union unit <Box K>>> in
     (array_new <array <union unit <Box K>>> capacity unit)
-  )
+  ))
 
-  (function <generic dict_new_value_slots V> ([capacity i5]) to <array <union unit <Box V>>> in
+  (export (function <generic dict_new_value_slots V> ([capacity i5]) to <array <union unit <Box V>>> in
     (array_new <array <union unit <Box V>>> capacity unit)
-  )
+  ))
 
-  (class <generic Dict K V>
+  (export (class <generic Dict K V>
     (property [hash_rule <Hash K>])
     (property [eq_rule <Eq K>])
     (property [key_seed K])
@@ -241,9 +241,9 @@
         (cm_get self capacity)
       )
     )
-  )
+  ))
 
-  (function <generic dict_find_slot K> ([key_slots <array <union unit <Box K>>>] [hashes <array i5>] [states <array i5>] [capacity i5] [eq_rule <Eq K>] [key K] [key_hash i5]) to DictLookupResult in
+  (export (function <generic dict_find_slot K> ([key_slots <array <union unit <Box K>>>] [hashes <array i5>] [states <array i5>] [capacity i5] [eq_rule <Eq K>] [key K] [key_hash i5]) to DictLookupResult in
     {
       (var [slot i5] (mod key_hash capacity))
       (if (lt slot $0^i5)
@@ -319,9 +319,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function <generic dict_reset_storage K V> ([dict <Dict K V>] [capacity i5]) to unit in
+  (export (function <generic dict_reset_storage K V> ([dict <Dict K V>] [capacity i5]) to unit in
     {
       (cm_set dict key_slots (<dict_new_key_slots K> capacity))
       (cm_set dict value_slots (<dict_new_value_slots V> capacity))
@@ -333,9 +333,9 @@
       (cm_set dict order (<list_new K> (cm_get dict key_seed)))
       unit
     }
-  )
+  ))
 
-  (function <generic dict_store_hashed K V> ([dict <Dict K V>] [key K] [value V] [key_hash i5] [record_order bool]) to unit in
+  (export (function <generic dict_store_hashed K V> ([dict <Dict K V>] [key K] [value V] [key_hash i5] [record_order bool]) to unit in
     {
       (var [lookup DictLookupResult]
         (<dict_find_slot K>
@@ -390,9 +390,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function <generic dict_resize K V> ([dict <Dict K V>] [new_capacity i5]) to unit in
+  (export (function <generic dict_resize K V> ([dict <Dict K V>] [new_capacity i5]) to unit in
     {
       (var [old_order <List K>] (cm_get dict order))
       (var [old_key_slots <array <union unit <Box K>>>] (cm_get dict key_slots))
@@ -430,9 +430,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic dict_store K V> ([dict <Dict K V>] [key K] [value V]) to unit in
+  (export (function <generic dict_store K V> ([dict <Dict K V>] [key K] [value V]) to unit in
     {
       (var [capacity_now i5] (cm_get dict capacity))
       (if (ge (mul (cm_get dict used) $4^i5) (mul capacity_now $3^i5))
@@ -447,9 +447,9 @@
       (<dict_store_hashed K V> dict key value key_hash true)
       unit
     }
-  )
+  ))
 
-  (function <generic dict_get_existing_value K V> ([dict <Dict K V>] [key K]) to V in
+  (export (function <generic dict_get_existing_value K V> ([dict <Dict K V>] [key K]) to V in
     {
       (var [key_hash i5] (<hash_apply K> (cm_get dict hash_rule) key))
       (var [lookup DictLookupResult]
@@ -468,9 +468,9 @@
         else (iw_match_unreachable)
       )
     }
-  )
+  ))
 
-  (function <generic dict_remove_at_index K V> ([dict <Dict K V>] [index i5]) to V in
+  (export (function <generic dict_remove_at_index K V> ([dict <Dict K V>] [index i5]) to V in
     {
       (var [removed_key K] (<dict_key_unwrap K> (array_get (cm_get dict key_slots) index)))
       (var [result V] (<dict_value_unwrap V> (array_get (cm_get dict value_slots) index)))
@@ -543,9 +543,9 @@
       (cm_set dict size (sub (cm_get dict size) $1^i5))
       result
     }
-  )
+  ))
 
-  (function <generic dict_store_entries_from_arrays K V> ([target <Dict K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to unit in
+  (export (function <generic dict_store_entries_from_arrays K V> ([target <Dict K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to unit in
     {
       (var [index i5] $0^i5)
       (while (lt index capacity) in
@@ -563,9 +563,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic dict_build_keys_from_arrays K V> ([key_seed K] [key_slots <array <union unit <Box K>>>] [states <array i5>] [capacity i5]) to <List K> in
+  (export (function <generic dict_build_keys_from_arrays K V> ([key_seed K] [key_slots <array <union unit <Box K>>>] [states <array i5>] [capacity i5]) to <List K> in
     {
       (var [items <union unit <ListNode K>>] unit)
       (var [length i5] $0^i5)
@@ -586,9 +586,9 @@
       )
       (class_new <List K> items key_seed length)
     }
-  )
+  ))
 
-  (function <generic dict_build_values_from_arrays K V> ([value_seed V] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to <List V> in
+  (export (function <generic dict_build_values_from_arrays K V> ([value_seed V] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to <List V> in
     {
       (var [items <union unit <ListNode V>>] unit)
       (var [length i5] $0^i5)
@@ -609,9 +609,9 @@
       )
       (class_new <List V> items value_seed length)
     }
-  )
+  ))
 
-  (function <generic dict_build_items_from_arrays K V> ([pair_seed <Pair K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to <List <Pair K V>> in
+  (export (function <generic dict_build_items_from_arrays K V> ([pair_seed <Pair K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5]) to <List <Pair K V>> in
     {
       (var [items <union unit <ListNode <Pair K V>>>] unit)
       (var [length i5] $0^i5)
@@ -640,9 +640,9 @@
       )
       (class_new <List <Pair K V>> items pair_seed length)
     }
-  )
+  ))
 
-  (function <generic dict_fold_values_from_arrays_reverse K V Acc> ([value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [init Acc] [step <to Acc from Acc V>]) to Acc in
+  (export (function <generic dict_fold_values_from_arrays_reverse K V Acc> ([value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [init Acc] [step <to Acc from Acc V>]) to Acc in
     {
       (var [index i5] capacity)
       (var [acc Acc] init)
@@ -661,9 +661,9 @@
       )
       acc
     }
-  )
+  ))
 
-  (function <generic dict_store_mapped_entries_from_arrays K V U> ([target <Dict K U>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [mapper <to U from K V>]) to unit in
+  (export (function <generic dict_store_mapped_entries_from_arrays K V U> ([target <Dict K U>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [mapper <to U from K V>]) to unit in
     {
       (var [index i5] $0^i5)
       (while (lt index capacity) in
@@ -683,9 +683,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic dict_store_filtered_entries_from_arrays K V> ([target <Dict K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [predicate <to bool from K V>]) to unit in
+  (export (function <generic dict_store_filtered_entries_from_arrays K V> ([target <Dict K V>] [key_slots <array <union unit <Box K>>>] [value_slots <array <union unit <Box V>>>] [states <array i5>] [capacity i5] [predicate <to bool from K V>]) to unit in
     {
       (var [index i5] $0^i5)
       (while (lt index capacity) in
@@ -712,17 +712,17 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic dict_new K V> ([hash_rule <Hash K>] [eq_rule <Eq K>] [key_seed K] [value_seed V]) to <Dict K V> in
+  (export (function <generic dict_new K V> ([hash_rule <Hash K>] [eq_rule <Eq K>] [key_seed K] [value_seed V]) to <Dict K V> in
     (class_new <Dict K V> hash_rule eq_rule key_seed value_seed $8^i5)
-  )
+  ))
 
-  (function <generic dict_len K V> ([dict <Dict K V>]) to i5 in
+  (export (function <generic dict_len K V> ([dict <Dict K V>]) to i5 in
     (cm_get dict size)
-  )
+  ))
 
-  (function <generic dict_contains K V> ([dict <Dict K V>] [key K]) to bool in
+  (export (function <generic dict_contains K V> ([dict <Dict K V>] [key K]) to bool in
     {
       (var [key_hash i5] (<hash_apply K> (cm_get dict hash_rule) key))
       (cm_get
@@ -738,9 +738,9 @@
         found
       )
     }
-  )
+  ))
 
-  (function <generic dict_fold K V Acc> ([source <Dict K V>] [init Acc] [step <to Acc from Acc V>]) to Acc in
+  (export (function <generic dict_fold K V Acc> ([source <Dict K V>] [init Acc] [step <to Acc from Acc V>]) to Acc in
     (<dict_fold_values_from_arrays_reverse K V Acc>
       (cm_get source value_slots)
       (cm_get source states)
@@ -748,9 +748,9 @@
       init
       step
     )
-  )
+  ))
 
-  (function <generic dict_map_values K V U> ([source <Dict K V>] [value_seed U] [mapper <to U from K V>]) to <Dict K U> in
+  (export (function <generic dict_map_values K V U> ([source <Dict K V>] [value_seed U] [mapper <to U from K V>]) to <Dict K U> in
     {
       (var [result <Dict K U>]
         (class_new <Dict K U>
@@ -771,13 +771,13 @@
       )
       result
     }
-  )
+  ))
 
-  (function <generic dict_map K V U> ([source <Dict K V>] [value_seed U] [mapper <to U from K V>]) to <Dict K U> in
+  (export (function <generic dict_map K V U> ([source <Dict K V>] [value_seed U] [mapper <to U from K V>]) to <Dict K U> in
     (<dict_map_values K V U> source value_seed mapper)
-  )
+  ))
 
-  (function <generic dict_filter K V> ([source <Dict K V>] [predicate <to bool from K V>]) to <Dict K V> in
+  (export (function <generic dict_filter K V> ([source <Dict K V>] [predicate <to bool from K V>]) to <Dict K V> in
     {
       (var [result <Dict K V>]
         (class_new <Dict K V>
@@ -798,17 +798,17 @@
       )
       result
     }
-  )
+  ))
 
-  (function <generic dict_merge K V> ([left <Dict K V>] [right <Dict K V>]) to <Dict K V> in
+  (export (function <generic dict_merge K V> ([left <Dict K V>] [right <Dict K V>]) to <Dict K V> in
     {
       (var [result <Dict K V>] ((cm_get left copy)))
       ((cm_get result update) right)
       result
     }
-  )
+  ))
 
-  (function <generic dict_equals K V> ([left <Dict K V>] [right <Dict K V>] [value_rule <Eq V>]) to bool in
+  (export (function <generic dict_equals K V> ([left <Dict K V>] [right <Dict K V>] [value_rule <Eq V>]) to bool in
     (if (eq (<dict_len K V> left) (<dict_len K V> right))
       then
         {
@@ -857,5 +857,5 @@
         }
       else false
     )
-  )
+  ))
 }

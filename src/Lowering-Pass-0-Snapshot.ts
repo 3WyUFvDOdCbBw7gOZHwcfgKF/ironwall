@@ -7,6 +7,7 @@ import {
     DeclaredDfunNode,
     DfunNode,
     DvarNode,
+    ExportNode,
     GenericClassNode,
     GenericDfunNode,
     IdentifierNode,
@@ -78,7 +79,7 @@ function buildConstructorSymbol(className: string, overloadIndex: number): strin
 
 function flattenTopLevelNodes(ast: AstNode): AstNode[] {
     if (ast instanceof ProgramNode) {
-        return [...ast.topLevelExpressions];
+        return ast.topLevelExpressions.map((expression) => expression instanceof ExportNode ? expression.inner : expression);
     }
     if (ast instanceof SeqNode) {
         const flattened: AstNode[] = [];
@@ -86,6 +87,10 @@ function flattenTopLevelNodes(ast: AstNode): AstNode[] {
             flattened.push(...flattenTopLevelNodes(expression));
         }
         return flattened;
+    }
+
+    if (ast instanceof ExportNode) {
+        return [ast.inner];
     }
 
     return [ast];

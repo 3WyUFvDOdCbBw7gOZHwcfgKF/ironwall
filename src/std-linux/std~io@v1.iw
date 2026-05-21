@@ -1,31 +1,31 @@
 {program std~io@v1
 
-  (declare (function _672bd5cc71f3eada77562ed5c71e9b61_clang_iw_stdin_read_i5_832af964 () to i5))
-  (declare (function _51c372d67d4b1b20a8d900060ea35094_clang_iw_stdin_read_line_s3_45b3b036 () to s3))
+  (export (declare (function _672bd5cc71f3eada77562ed5c71e9b61_clang_iw_stdin_read_i5_832af964 () to i5)))
+  (export (declare (function _51c372d67d4b1b20a8d900060ea35094_clang_iw_stdin_read_line_s3_45b3b036 () to s3)))
 
-  (declare (function _c1893459e5f67fbbea7e826a80101f20_clang_iw_stdout_write_s3_6979be8b ([value s3]) to unit))
-  (declare (function _ed201be8e77472f37be7e5925914b005_clang_iw_stdout_write_s4_28fad3d8 ([value s4]) to unit))
-  (declare (function _020600fd188573702423cfa84a3f30f6_clang_iw_stdout_write_s5_e41e2116 ([value s5]) to unit))
-  (declare (function _89d127dcefd00d806f1aa2fff2245b54_clang_iw_stdout_write_c3_12585453 ([value c3]) to unit))
-  (declare (function _e1e2cad49f080be194a24cefb6bb122d_clang_iw_stdout_write_i5_ascii_e00db07a ([value i5]) to unit))
-  (declare (function _1d5d6652238df0457c23890c502c8131_clang_iw_stdout_println_s3_e0d4b5c0 ([value s3]) to unit))
-  (declare (function _2e14c8ef8d6458ac91f713b9d2d63c1b_clang_iw_stdout_println_s4_15f3b6fe ([value s4]) to unit))
-  (declare (function _f11537d06c74d5ec3611b32c6a378c1b_clang_iw_stdout_println_s5_17cc122f ([value s5]) to unit))
+  (export (declare (function _c1893459e5f67fbbea7e826a80101f20_clang_iw_stdout_write_s3_6979be8b ([value s3]) to unit)))
+  (export (declare (function _ed201be8e77472f37be7e5925914b005_clang_iw_stdout_write_s4_28fad3d8 ([value s4]) to unit)))
+  (export (declare (function _020600fd188573702423cfa84a3f30f6_clang_iw_stdout_write_s5_e41e2116 ([value s5]) to unit)))
+  (export (declare (function _89d127dcefd00d806f1aa2fff2245b54_clang_iw_stdout_write_c3_12585453 ([value c3]) to unit)))
+  (export (declare (function _e1e2cad49f080be194a24cefb6bb122d_clang_iw_stdout_write_i5_ascii_e00db07a ([value i5]) to unit)))
+  (export (declare (function _1d5d6652238df0457c23890c502c8131_clang_iw_stdout_println_s3_e0d4b5c0 ([value s3]) to unit)))
+  (export (declare (function _2e14c8ef8d6458ac91f713b9d2d63c1b_clang_iw_stdout_println_s4_15f3b6fe ([value s4]) to unit)))
+  (export (declare (function _f11537d06c74d5ec3611b32c6a378c1b_clang_iw_stdout_println_s5_17cc122f ([value s5]) to unit)))
 
-  (declare (function _96af50d3d8d17c3cc93b0ee07dec1fb5_clang_iw_stderr_write_s3_9a69e22d ([value s3]) to unit))
-  (declare (function _74de757ee5fa073ed29abe3b4b873cca_clang_iw_stderr_write_s4_dee576ea ([value s4]) to unit))
-  (declare (function _3db93b869eddaf559b7e94ae695c8785_clang_iw_stderr_write_s5_2fadca33 ([value s5]) to unit))
-  (declare (function _559f6b42b3f0e457972bbefec7c43b7b_clang_iw_stderr_println_s3_af675d12 ([value s3]) to unit))
-  (declare (function _778dbe50107dacb9b0d1c9edb03149e2_clang_iw_stderr_println_s4_3ad9f3e0 ([value s4]) to unit))
-  (declare (function _887a4967de8c106b70e810b0275e8954_clang_iw_stderr_println_s5_63a43f55 ([value s5]) to unit))
+  (export (declare (function _96af50d3d8d17c3cc93b0ee07dec1fb5_clang_iw_stderr_write_s3_9a69e22d ([value s3]) to unit)))
+  (export (declare (function _74de757ee5fa073ed29abe3b4b873cca_clang_iw_stderr_write_s4_dee576ea ([value s4]) to unit)))
+  (export (declare (function _3db93b869eddaf559b7e94ae695c8785_clang_iw_stderr_write_s5_2fadca33 ([value s5]) to unit)))
+  (export (declare (function _559f6b42b3f0e457972bbefec7c43b7b_clang_iw_stderr_println_s3_af675d12 ([value s3]) to unit)))
+  (export (declare (function _778dbe50107dacb9b0d1c9edb03149e2_clang_iw_stderr_println_s4_3ad9f3e0 ([value s4]) to unit)))
+  (export (declare (function _887a4967de8c106b70e810b0275e8954_clang_iw_stderr_println_s5_63a43f55 ([value s5]) to unit)))
 
-  (declare (function _f5fbb2e9b7efbca1460bb4e19d120bf2_clang_iw_stdout_flush_3a609e0f () to unit))
-  (declare (function _bb7b863d77c2262d8276159703d2f891_clang_iw_stderr_flush_31965b8d () to unit))
+  (export (declare (function _f5fbb2e9b7efbca1460bb4e19d120bf2_clang_iw_stdout_flush_3a609e0f () to unit)))
+  (export (declare (function _bb7b863d77c2262d8276159703d2f891_clang_iw_stderr_flush_31965b8d () to unit)))
 
-  (function stdin_read_i5 () to i5 in (_672bd5cc71f3eada77562ed5c71e9b61_clang_iw_stdin_read_i5_832af964))
-  (function stdin_read_line_s3 () to s3 in (_51c372d67d4b1b20a8d900060ea35094_clang_iw_stdin_read_line_s3_45b3b036))
+  (export (function stdin_read_i5 () to i5 in (_672bd5cc71f3eada77562ed5c71e9b61_clang_iw_stdin_read_i5_832af964)))
+  (export (function stdin_read_line_s3 () to s3 in (_51c372d67d4b1b20a8d900060ea35094_clang_iw_stdin_read_line_s3_45b3b036)))
 
-  (function stdin_read_nonempty_line_s3 () to s3 in
+  (export (function stdin_read_nonempty_line_s3 () to s3 in
     {
       (var [line s3] (stdin_read_line_s3))
       (if (eq (s3_length line) $0^i5)
@@ -33,31 +33,31 @@
         else line
       )
     }
-  )
+  ))
 
-  (function print ([value s3]) to unit in (_c1893459e5f67fbbea7e826a80101f20_clang_iw_stdout_write_s3_6979be8b value))
-  (function print ([value s4]) to unit in (_ed201be8e77472f37be7e5925914b005_clang_iw_stdout_write_s4_28fad3d8 value))
-  (function print ([value s5]) to unit in (_020600fd188573702423cfa84a3f30f6_clang_iw_stdout_write_s5_e41e2116 value))
+  (export (function print ([value s3]) to unit in (_c1893459e5f67fbbea7e826a80101f20_clang_iw_stdout_write_s3_6979be8b value)))
+  (export (function print ([value s4]) to unit in (_ed201be8e77472f37be7e5925914b005_clang_iw_stdout_write_s4_28fad3d8 value)))
+  (export (function print ([value s5]) to unit in (_020600fd188573702423cfa84a3f30f6_clang_iw_stdout_write_s5_e41e2116 value)))
 
-  (function stdout_write_c3 ([value c3]) to unit in (_89d127dcefd00d806f1aa2fff2245b54_clang_iw_stdout_write_c3_12585453 value))
-  (function stdout_write_i5_ascii ([value i5]) to unit in (_e1e2cad49f080be194a24cefb6bb122d_clang_iw_stdout_write_i5_ascii_e00db07a value))
+  (export (function stdout_write_c3 ([value c3]) to unit in (_89d127dcefd00d806f1aa2fff2245b54_clang_iw_stdout_write_c3_12585453 value)))
+  (export (function stdout_write_i5_ascii ([value i5]) to unit in (_e1e2cad49f080be194a24cefb6bb122d_clang_iw_stdout_write_i5_ascii_e00db07a value)))
 
-  (function println ([value s3]) to unit in (_1d5d6652238df0457c23890c502c8131_clang_iw_stdout_println_s3_e0d4b5c0 value))
-  (function println ([value s4]) to unit in (_2e14c8ef8d6458ac91f713b9d2d63c1b_clang_iw_stdout_println_s4_15f3b6fe value))
-  (function println ([value s5]) to unit in (_f11537d06c74d5ec3611b32c6a378c1b_clang_iw_stdout_println_s5_17cc122f value))
+  (export (function println ([value s3]) to unit in (_1d5d6652238df0457c23890c502c8131_clang_iw_stdout_println_s3_e0d4b5c0 value)))
+  (export (function println ([value s4]) to unit in (_2e14c8ef8d6458ac91f713b9d2d63c1b_clang_iw_stdout_println_s4_15f3b6fe value)))
+  (export (function println ([value s5]) to unit in (_f11537d06c74d5ec3611b32c6a378c1b_clang_iw_stdout_println_s5_17cc122f value)))
 
-  (function print_stderr ([value s3]) to unit in (_96af50d3d8d17c3cc93b0ee07dec1fb5_clang_iw_stderr_write_s3_9a69e22d value))
-  (function print_stderr ([value s4]) to unit in (_74de757ee5fa073ed29abe3b4b873cca_clang_iw_stderr_write_s4_dee576ea value))
-  (function print_stderr ([value s5]) to unit in (_3db93b869eddaf559b7e94ae695c8785_clang_iw_stderr_write_s5_2fadca33 value))
+  (export (function print_stderr ([value s3]) to unit in (_96af50d3d8d17c3cc93b0ee07dec1fb5_clang_iw_stderr_write_s3_9a69e22d value)))
+  (export (function print_stderr ([value s4]) to unit in (_74de757ee5fa073ed29abe3b4b873cca_clang_iw_stderr_write_s4_dee576ea value)))
+  (export (function print_stderr ([value s5]) to unit in (_3db93b869eddaf559b7e94ae695c8785_clang_iw_stderr_write_s5_2fadca33 value)))
 
-  (function println_stderr ([value s3]) to unit in (_559f6b42b3f0e457972bbefec7c43b7b_clang_iw_stderr_println_s3_af675d12 value))
-  (function println_stderr ([value s4]) to unit in (_778dbe50107dacb9b0d1c9edb03149e2_clang_iw_stderr_println_s4_3ad9f3e0 value))
-  (function println_stderr ([value s5]) to unit in (_887a4967de8c106b70e810b0275e8954_clang_iw_stderr_println_s5_63a43f55 value))
+  (export (function println_stderr ([value s3]) to unit in (_559f6b42b3f0e457972bbefec7c43b7b_clang_iw_stderr_println_s3_af675d12 value)))
+  (export (function println_stderr ([value s4]) to unit in (_778dbe50107dacb9b0d1c9edb03149e2_clang_iw_stderr_println_s4_3ad9f3e0 value)))
+  (export (function println_stderr ([value s5]) to unit in (_887a4967de8c106b70e810b0275e8954_clang_iw_stderr_println_s5_63a43f55 value)))
 
-  (function flush () to unit in (_f5fbb2e9b7efbca1460bb4e19d120bf2_clang_iw_stdout_flush_3a609e0f))
-  (function flusherr () to unit in (_bb7b863d77c2262d8276159703d2f891_clang_iw_stderr_flush_31965b8d))
+  (export (function flush () to unit in (_f5fbb2e9b7efbca1460bb4e19d120bf2_clang_iw_stdout_flush_3a609e0f)))
+  (export (function flusherr () to unit in (_bb7b863d77c2262d8276159703d2f891_clang_iw_stderr_flush_31965b8d)))
 
-  (function find_first_space_index ([line s3]) to i5 in
+  (export (function find_first_space_index ([line s3]) to i5 in
     {
       (var [index i5] $0^i5)
       (var [line_length i5] (s3_length line))
@@ -88,9 +88,9 @@
       )
       index
     }
-  )
+  ))
 
-  (function parse_i5_range ([line s3] [start i5] [end i5]) to i5 in
+  (export (function parse_i5_range ([line s3] [start i5] [end i5]) to i5 in
     {
       (var [index i5] start)
       (var [negative bool] false)
@@ -112,28 +112,28 @@
       )
       (if negative then (sub $0^i5 value) else value)
     }
-  )
+  ))
 
-  (function pair_line_left_i5 ([line s3]) to i5 in
+  (export (function pair_line_left_i5 ([line s3]) to i5 in
     (parse_i5_range line $0^i5 (find_first_space_index line))
-  )
+  ))
 
-  (function pair_line_right_i5 ([line s3]) to i5 in
+  (export (function pair_line_right_i5 ([line s3]) to i5 in
     {
       (var [space_index i5] (find_first_space_index line))
       (parse_i5_range line (add space_index $1^i5) (s3_length line))
     }
-  )
+  ))
 
-  (function pair_line_separator ([line s3]) to c3 in
+  (export (function pair_line_separator ([line s3]) to c3 in
     (s3_get line (find_first_space_index line))
-  )
+  ))
 
-  (function print_i5_with_sep ([value i5] [separator c3]) to unit in
+  (export (function print_i5_with_sep ([value i5] [separator c3]) to unit in
     {
       (stdout_write_i5_ascii value)
       (stdout_write_c3 separator)
       unit
     }
-  )
+  ))
 }

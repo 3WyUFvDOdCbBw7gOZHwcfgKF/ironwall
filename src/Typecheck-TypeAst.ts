@@ -1,6 +1,6 @@
 import { AstNode, ClassMethodNode, ClassPropertyNode, GenericCallNode, IdentifierNode, TypeToFromNode, TypeUnionNode, TypeVarBindNode } from "./AstNode";
 import { getCompilationUnitMetadata } from "./ModuleMetadata";
-import { getGenericClassInfo, getVisibleClassInfo, getVisibleGenericClassInfo, getVisibleGenericFunctionInfo } from "./Typecheck-Definitions";
+import { getClassInfo, getGenericClassInfo, getGenericFunctionInfo, getVisibleClassInfo, getVisibleGenericClassInfo, getVisibleGenericFunctionInfo } from "./Typecheck-Definitions";
 import {
     ClassTypeValue,
     FunctionTypeValue,
@@ -43,6 +43,12 @@ export function astToTypeValue(astNode: AstNode, typeEnv?: GenericTypeEnv): Type
         if (typeEnv?.has(astNode.name)) {
             return typeEnv.get(astNode.name)!;
         }
+        if (astNode.name.includes("@")) {
+            const canonicalClassInfo = getClassInfo(astNode.name);
+            if (canonicalClassInfo) {
+                return new ClassTypeValue(canonicalClassInfo.name);
+            }
+        }
         const classInfo = getVisibleClassInfo(astNode, astNode.name);
         if (classInfo) {
             return new ClassTypeValue(classInfo.name);
@@ -70,6 +76,16 @@ export function astToTypeValue(astNode: AstNode, typeEnv?: GenericTypeEnv): Type
         }
         const name = astNode.callee.name;
         const typeArguments = astNode.typeArgs.map((argumentNode) => astToTypeValue(argumentNode, typeEnv));
+        if (name.includes("@")) {
+            const canonicalGenericClassInfo = getGenericClassInfo(name, typeArguments.length);
+            if (canonicalGenericClassInfo) {
+                return new GenericClassInstanceTypeValue(canonicalGenericClassInfo.genericName, typeArguments);
+            }
+            const canonicalGenericFunctionInfo = getGenericFunctionInfo(name, typeArguments.length);
+            if (canonicalGenericFunctionInfo) {
+                return new GenericFunctionInstanceTypeValue(canonicalGenericFunctionInfo.genericName, typeArguments);
+            }
+        }
         const genericClassInfo = resolveVisibleGenericClassInfoWithCurrentPackageFallback(astNode, name, typeArguments.length);
         if (genericClassInfo || builtinGenericTypeNames.has(name)) {
             return new GenericClassInstanceTypeValue(genericClassInfo?.genericName ?? name, typeArguments);

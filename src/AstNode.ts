@@ -20,6 +20,7 @@ export enum AstNodeType {
   TypeUnionNode,
   ProgramNode,
   ImportNode,
+  ExportNode,
   DvarNode,
   DfunNode, //Named function node
   DeclaredDfunNode,
@@ -261,6 +262,15 @@ export class ImportNode {
   }
 }
 
+export class ExportNode {
+  readonly kind: AstNodeType = AstNodeType.ExportNode;
+
+  inner: AstNode;
+  constructor(inner: AstNode) {
+    this.inner = inner;
+  }
+}
+
 // 新增 DvarNode 类型
 export class DvarNode {
   readonly kind: AstNodeType = AstNodeType.DvarNode;
@@ -468,6 +478,7 @@ export type AstNode =
   | CondNode
   | ProgramNode
   | ImportNode
+  | ExportNode
   | DvarNode
   | DfunNode
   | DeclaredDfunNode
@@ -487,4 +498,25 @@ export type AstNode =
   | FunctionCallNode
   | GenericCallNode
   | MatchNode; // 新增
+
+export type ExportableTopLevelAstNode =
+  | ClassNode
+  | GenericClassNode
+  | DfunNode
+  | DeclaredDfunNode
+  | GenericDfunNode
+  | DvarNode;
+
+export function isExportableTopLevelAstNode(node: AstNode): node is ExportableTopLevelAstNode {
+  return node instanceof ClassNode
+    || node instanceof GenericClassNode
+    || node instanceof DfunNode
+    || node instanceof DeclaredDfunNode
+    || node instanceof GenericDfunNode
+    || node instanceof DvarNode;
+}
+
+export function unwrapExportNode(node: AstNode): AstNode {
+  return node instanceof ExportNode ? node.inner : node;
+}
 

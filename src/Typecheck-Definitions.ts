@@ -111,6 +111,17 @@ function resolveVisibleCanonicalNames(referenceNode: AstNode, name: string, kind
     return getVisiblePackageSymbolCanonicalNames(referenceNode, name, kinds);
 }
 
+function getCurrentPackageCanonicalName(referenceNode: AstNode, name: string): string | undefined {
+    const metadata = getCompilationUnitMetadata(referenceNode);
+    if (metadata === undefined) {
+        return undefined;
+    }
+    if (name.includes("@")) {
+        return name.startsWith(`${metadata.packageName}@`) ? name : undefined;
+    }
+    return `${metadata.packageName}@${name}`;
+}
+
 export class ClassInfo {
     public readonly name: string;
     public readonly exportedName: string;
@@ -170,6 +181,7 @@ export class GenericClassInfo {
 export class FunctionInfo {
     public readonly name: string;
     public readonly exportedName: string;
+    public readonly isExported: boolean;
     public readonly packageName: string | null;
     public readonly unitId: string | null;
     public readonly filePath: string | null;
@@ -180,9 +192,10 @@ export class FunctionInfo {
     public paramVars: string[];
     public paramTypeValues: TypeValue[];
 
-    constructor(name: string, paramTypes: TypeVarBindNode[], returnType: AstNode, isDeclared = false, packageName: string | null = null, unitId: string | null = null, exportedName?: string, body: AstNode | null = null, filePath: string | null = null) {
+    constructor(name: string, paramTypes: TypeVarBindNode[], returnType: AstNode, isDeclared = false, packageName: string | null = null, unitId: string | null = null, exportedName?: string, body: AstNode | null = null, filePath: string | null = null, isExported = true) {
         this.name = name;
         this.exportedName = exportedName ?? name;
+        this.isExported = isExported;
         this.packageName = packageName;
         this.unitId = unitId;
         this.filePath = filePath;
@@ -352,13 +365,21 @@ function lookupVisibleGenericInfos<T extends NamedDefinitionInfo>(
             .map((canonicalName) => table.get(canonicalName))
             .filter((info): info is T => info !== undefined);
     }
-    if (name.includes("@")) {
-        return [];
-    }
 
     const metadata = getCompilationUnitMetadata(referenceNode);
-    if (metadata !== undefined) {
-        const currentPackageCanonicalName = `${metadata.packageName}@${name}`;
+    if (name.includes("@") && metadata === undefined) {
+        const canonicalOverloads = overloadTable.get(name);
+        if (canonicalOverloads !== undefined) {
+            if (arity !== undefined) {
+                const info = canonicalOverloads.get(arity);
+                return info === undefined ? [] : [info];
+            }
+            return Array.from(canonicalOverloads.values());
+        }
+    }
+
+    const currentPackageCanonicalName = getCurrentPackageCanonicalName(referenceNode, name);
+    if (currentPackageCanonicalName !== undefined) {
         const currentPackageOverloads = overloadTable.get(currentPackageCanonicalName);
         if (currentPackageOverloads !== undefined) {
             if (arity !== undefined) {
@@ -367,6 +388,10 @@ function lookupVisibleGenericInfos<T extends NamedDefinitionInfo>(
             }
             return Array.from(currentPackageOverloads.values());
         }
+    }
+
+    if (name.includes("@")) {
+        return [];
     }
 
     const canonical = overloadTable.get(name);
@@ -447,6 +472,23 @@ export function getVisibleClassInfo(referenceNode: AstNode, name: string): Class
     if (visibleCanonicalNames.length > 0) {
         return classTable.get(visibleCanonicalNames[0]);
     }
+
+    const metadata = getCompilationUnitMetadata(referenceNode);
+    if (name.includes("@") && metadata === undefined) {
+        const info = classTable.get(name);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+
+    const currentPackageCanonicalName = getCurrentPackageCanonicalName(referenceNode, name);
+    if (currentPackageCanonicalName !== undefined) {
+        const info = classTable.get(currentPackageCanonicalName);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+
     if (name.includes("@")) {
         return undefined;
     }
@@ -508,8 +550,28 @@ export function getFunctionOverloads(name: string): FunctionInfo[] {
 export function getVisibleFunctionOverloads(referenceNode: AstNode, name: string): FunctionInfo[] {
     const visibleCanonicalNames = resolveVisibleCanonicalNames(referenceNode, name, ["function"]);
     if (visibleCanonicalNames.length > 0) {
-        return functionOverloadTable.get(visibleCanonicalNames[0]) ?? [];
+        const overloads = functionOverloadTable.get(visibleCanonicalNames[0]) ?? [];
+        const metadata = getCompilationUnitMetadata(referenceNode);
+        const samePackage = metadata !== undefined && overloads.some((info) => info.packageName === metadata.packageName);
+        return samePackage ? overloads : overloads.filter((info) => info.isExported);
     }
+
+    const metadata = getCompilationUnitMetadata(referenceNode);
+    if (name.includes("@") && metadata === undefined) {
+        const overloads = functionOverloadTable.get(name);
+        if (overloads !== undefined) {
+            return overloads;
+        }
+    }
+
+    const currentPackageCanonicalName = getCurrentPackageCanonicalName(referenceNode, name);
+    if (currentPackageCanonicalName !== undefined) {
+        const overloads = functionOverloadTable.get(currentPackageCanonicalName);
+        if (overloads !== undefined) {
+            return overloads;
+        }
+    }
+
     if (name.includes("@")) {
         return [];
     }
@@ -572,6 +634,23 @@ export function getVisibleGlobalVarInfo(referenceNode: AstNode, name: string): G
     if (visibleCanonicalNames.length > 0) {
         return globalVarTable.get(visibleCanonicalNames[0]);
     }
+
+    const metadata = getCompilationUnitMetadata(referenceNode);
+    if (name.includes("@") && metadata === undefined) {
+        const info = globalVarTable.get(name);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+
+    const currentPackageCanonicalName = getCurrentPackageCanonicalName(referenceNode, name);
+    if (currentPackageCanonicalName !== undefined) {
+        const info = globalVarTable.get(currentPackageCanonicalName);
+        if (info !== undefined) {
+            return info;
+        }
+    }
+
     if (name.includes("@")) {
         return undefined;
     }

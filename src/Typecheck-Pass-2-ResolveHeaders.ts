@@ -184,7 +184,8 @@ export function getResolvedFunctionOverloads(name: string): ResolvedFunctionOver
 export function getVisibleResolvedFunctionOverloads(referenceNode: AstNode, name: string): ResolvedFunctionOverload[] {
     const visibleSourceOverloads = getVisibleFunctionOverloads(referenceNode, name);
     if (visibleSourceOverloads.length > 0) {
-        return resolvedFunctionOverloads.get(visibleSourceOverloads[0].name) ?? [];
+        const visibleSources = new Set<FunctionInfo>(visibleSourceOverloads);
+        return (resolvedFunctionOverloads.get(visibleSourceOverloads[0].name) ?? []).filter((overload) => visibleSources.has(overload.source));
     }
     if (name.includes("@")) {
         return [];

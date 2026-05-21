@@ -1,0 +1,11 @@
+{program test~language~rules~export~app@main
+  (import test~language~rules~export~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [counter VisibleCounter] (class_new VisibleCounter $5^i5))
+      (var [direct_box <VisibleBox i5>] (class_new <VisibleBox i5> $8^i5))
+      (var [packed_box <VisibleBox i5>] (<visible_pack i5> $7^i5))
+      (add visible_seed (add (visible_fn $2^i5) (add counter.value (add direct_box.value packed_box.value))))
+    }
+  )
+}

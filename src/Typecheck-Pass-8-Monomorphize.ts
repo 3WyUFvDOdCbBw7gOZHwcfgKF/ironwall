@@ -8,6 +8,7 @@ import {
     DeclaredDfunNode,
     DfunNode,
     DvarNode,
+    ExportNode,
     FnNode,
     FunctionCallNode,
     GenericCallNode,
@@ -28,9 +29,16 @@ import {
     TypeToFromNode,
     TypeUnionNode,
     TypeVarBindNode,
-    WhileNode
+    WhileNode,
+    unwrapExportNode
 } from "./AstNode";
 import { annotateCanonicalTagsForCodeRoots, getAstCanonicalTag } from "./AstCanonicalTag";
+import {
+    annotateAstWithCompilationUnitMetadata,
+    copyCompilationUnitMetadata,
+    parseCompilationUnitId,
+    type CompilationUnitMetadata
+} from "./ModuleMetadata";
 import { getGenericClassInfo, getGenericFunctionInfo, getVisibleGenericClassInfo, getVisibleGenericFunctionInfo } from "./Typecheck-Definitions";
 import { getResolvedGenericClassInfo, getResolvedGenericFunctionInfo } from "./Typecheck-Pass-2-ResolveHeaders";
 import { genericClassInstanceTable, genericFunctionInstanceTable } from "./Typecheck-Pass-4-CollectInstantiations";
@@ -134,6 +142,20 @@ function instanceSuffix(instanceHash: string): string {
     return suffix !== undefined && suffix.length > 0 ? suffix : hashText(instanceHash);
 }
 
+function buildCompilationUnitMetadataFromSourceInfo(source: { unitId: string | null; packageName: string | null; filePath: string | null }): CompilationUnitMetadata | undefined {
+    if (source.unitId === null || source.packageName === null) {
+        return undefined;
+    }
+    const parsedMetadata = parseCompilationUnitId(source.unitId);
+    if (parsedMetadata === null) {
+        return undefined;
+    }
+    return {
+        ...parsedMetadata,
+        filePath: source.filePath
+    };
+}
+
 function cloneTypeVarBindNode(node: TypeVarBindNode): TypeVarBindNode {
     return new TypeVarBindNode(new IdentifierNode(node.var.name), cloneAstNode(node.typeExp));
 }
@@ -164,6 +186,9 @@ function cloneAstNode(node: AstNode): AstNode {
     }
     if (node instanceof NumberLiteralNode) {
         return new NumberLiteralNode(node.typeName, node.value, node.raw);
+    }
+    if (node instanceof ExportNode) {
+        return new ExportNode(cloneAstNode(node.inner));
     }
     if (node instanceof GenericNameNode) {
         return new GenericNameNode(
@@ -392,6 +417,9 @@ function substituteValueAstTemplate(node: AstNode, substitutions: ReadonlyMap<st
     if (node instanceof IdentifierNode || node instanceof TextDatabaseReferenceNode || node instanceof NumberLiteralNode) {
         return cloneAstNode(node);
     }
+    if (node instanceof ExportNode) {
+        return new ExportNode(substituteValueAstTemplate(node.inner, substitutions));
+    }
     if (node instanceof GenericNameNode) {
         return cloneAstNode(node);
     }
@@ -510,24 +538,31 @@ function collectInitialConcreteCodeRoots(programAst: AstNode): AstNode[] {
     if (programAst instanceof ProgramNode) {
         const codeRoots: AstNode[] = [];
         for (const expression of programAst.topLevelExpressions) {
-            if (expression instanceof ImportNode || expression instanceof GenericClassNode || expression instanceof GenericDfunNode) {
+            const codeRoot = unwrapExportNode(expression);
+            if (codeRoot instanceof ImportNode || codeRoot instanceof GenericClassNode || codeRoot instanceof GenericDfunNode) {
                 continue;
             }
-            codeRoots.push(cloneAstNode(expression));
+            const clonedRoot = cloneAstNode(codeRoot);
+            copyCompilationUnitMetadata(codeRoot, clonedRoot);
+            codeRoots.push(clonedRoot);
         }
         return codeRoots;
     }
-    if (programAst instanceof ImportNode || programAst instanceof GenericClassNode || programAst instanceof GenericDfunNode) {
+    const codeRoot = unwrapExportNode(programAst);
+    if (codeRoot instanceof ImportNode || codeRoot instanceof GenericClassNode || codeRoot instanceof GenericDfunNode) {
         return [];
     }
-    return [cloneAstNode(programAst)];
+    const clonedRoot = cloneAstNode(codeRoot);
+    copyCompilationUnitMetadata(codeRoot, clonedRoot);
+    return [clonedRoot];
 }
 
 function collectKnownConcreteClassNames(codeRoots: readonly AstNode[]): Set<string> {
     const classNames = new Set<string>();
     for (const codeRoot of codeRoots) {
-        if (codeRoot instanceof ClassNode) {
-            classNames.add(codeRoot.name.name);
+        const classNode = unwrapExportNode(codeRoot);
+        if (classNode instanceof ClassNode) {
+            classNames.add(classNode.name.name);
         }
     }
     return classNames;
@@ -812,6 +847,10 @@ function collectGenericOccurrencesFromTypeAst(node: AstNode, sink: GenericOccurr
 }
 
 function collectGenericOccurrencesFromValueAst(node: AstNode, sink: GenericOccurrence[]): void {
+    if (node instanceof ExportNode) {
+        collectGenericOccurrencesFromValueAst(node.inner, sink);
+        return;
+    }
     if (node instanceof IdentifierNode || node instanceof NumberLiteralNode || node instanceof TextDatabaseReferenceNode || node instanceof ImportNode) {
         return;
     }
@@ -1160,6 +1199,9 @@ function rewriteGenericCallWithMappings(node: GenericCallNode, classNameMap: Rea
 }
 
 function rewriteValueAstWithMappings(node: AstNode, classNameMap: ReadonlyMap<string, string>, functionNameMap: ReadonlyMap<string, string>): AstNode {
+    if (node instanceof ExportNode) {
+        return new ExportNode(rewriteValueAstWithMappings(node.inner, classNameMap, functionNameMap));
+    }
     if (node instanceof IdentifierNode || node instanceof TextDatabaseReferenceNode || node instanceof NumberLiteralNode || node instanceof ImportNode) {
         return cloneAstNode(node);
     }
@@ -1319,9 +1361,21 @@ function rewriteAllCodeRoots(
     extraFunctionNameMap.forEach((concreteName, instanceHash) => functionNameMap.set(instanceHash, concreteName));
 
     return {
-        rewrittenBaseCodeRoots: baseCodeRoots.map((codeRoot) => rewriteValueAstWithMappings(codeRoot, classNameMap, functionNameMap)),
-        rewrittenClassSeeds: orderedClassSeeds.map((seed) => rewriteValueAstWithMappings(seed.classNode, classNameMap, functionNameMap)).filter((node): node is ClassNode => node instanceof ClassNode),
-        rewrittenFunctionSeeds: orderedFunctionSeeds.map((seed) => rewriteValueAstWithMappings(seed.functionNode, classNameMap, functionNameMap)).filter((node): node is DfunNode => node instanceof DfunNode)
+        rewrittenBaseCodeRoots: baseCodeRoots.map((codeRoot) => {
+            const rewrittenRoot = rewriteValueAstWithMappings(codeRoot, classNameMap, functionNameMap);
+            copyCompilationUnitMetadata(codeRoot, rewrittenRoot);
+            return rewrittenRoot;
+        }),
+        rewrittenClassSeeds: orderedClassSeeds.map((seed) => {
+            const rewrittenSeed = rewriteValueAstWithMappings(seed.classNode, classNameMap, functionNameMap);
+            copyCompilationUnitMetadata(seed.classNode, rewrittenSeed);
+            return rewrittenSeed;
+        }).filter((node): node is ClassNode => node instanceof ClassNode),
+        rewrittenFunctionSeeds: orderedFunctionSeeds.map((seed) => {
+            const rewrittenSeed = rewriteValueAstWithMappings(seed.functionNode, classNameMap, functionNameMap);
+            copyCompilationUnitMetadata(seed.functionNode, rewrittenSeed);
+            return rewrittenSeed;
+        }).filter((node): node is DfunNode => node instanceof DfunNode)
     };
 }
 
@@ -1332,14 +1386,19 @@ function materializeGenericClassSeed(instance: GenericClassInstanceTypeValue): G
     }
     const substitutions = buildSubstitutionMap(resolvedGenericClass.typeParams, instance.typeArgs);
     const concreteName = getMonomorphizedClassName(instance);
+    const classNode = new ClassNode(
+        new IdentifierNode(concreteName),
+        resolvedGenericClass.source.constructors.map((ctor) => substituteClassConstructorTemplate(ctor, substitutions)),
+        resolvedGenericClass.source.methods.map((method) => substituteClassMethodTemplate(method, substitutions)),
+        resolvedGenericClass.source.properties.map((property) => substituteClassPropertyTemplate(property, substitutions))
+    );
+    const metadata = buildCompilationUnitMetadataFromSourceInfo(resolvedGenericClass.source);
+    if (metadata !== undefined) {
+        annotateAstWithCompilationUnitMetadata(classNode, metadata);
+    }
     return new GeneratedClassSeed(
         instance,
-        new ClassNode(
-            new IdentifierNode(concreteName),
-            resolvedGenericClass.source.constructors.map((ctor) => substituteClassConstructorTemplate(ctor, substitutions)),
-            resolvedGenericClass.source.methods.map((method) => substituteClassMethodTemplate(method, substitutions)),
-            resolvedGenericClass.source.properties.map((property) => substituteClassPropertyTemplate(property, substitutions))
-        )
+        classNode
     );
 }
 
@@ -1349,14 +1408,19 @@ function materializeGenericFunctionSeed(instance: GenericFunctionInstanceTypeVal
         throw new Error(`unknown generic function during monomorphization: ${instance.genericName}`);
     }
     const substitutions = buildSubstitutionMap(resolvedGenericFunction.typeParams, instance.typeArgs);
+    const functionNode = new DfunNode(
+        new IdentifierNode(getMonomorphizedFunctionName(instance)),
+        resolvedGenericFunction.source.paramTypes.map((param) => substituteBindNodeTemplate(param, substitutions)),
+        substituteTypeAstTemplate(resolvedGenericFunction.source.returnType, substitutions),
+        substituteValueAstTemplate(resolvedGenericFunction.source.body, substitutions)
+    );
+    const metadata = buildCompilationUnitMetadataFromSourceInfo(resolvedGenericFunction.source);
+    if (metadata !== undefined) {
+        annotateAstWithCompilationUnitMetadata(functionNode, metadata);
+    }
     return new GeneratedFunctionSeed(
         instance,
-        new DfunNode(
-            new IdentifierNode(getMonomorphizedFunctionName(instance)),
-            resolvedGenericFunction.source.paramTypes.map((param) => substituteBindNodeTemplate(param, substitutions)),
-            substituteTypeAstTemplate(resolvedGenericFunction.source.returnType, substitutions),
-            substituteValueAstTemplate(resolvedGenericFunction.source.body, substitutions)
-        )
+        functionNode
     );
 }
 
@@ -1500,6 +1564,9 @@ export function getMonomorphizedProgramNodes(): AstNode[] {
 }
 
 export function formatMonomorphizedAst(node: AstNode): string {
+    if (node instanceof ExportNode) {
+        return `(export ${formatMonomorphizedAst(node.inner)})`;
+    }
     if (node instanceof IdentifierNode) {
         return node.name;
     }

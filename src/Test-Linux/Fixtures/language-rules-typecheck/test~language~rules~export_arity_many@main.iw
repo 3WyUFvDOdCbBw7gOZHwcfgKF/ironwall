@@ -1,0 +1,3 @@
+{program test~language~rules~export~arity_many@main
+  (export (var [value i5] $1^i5) (var [other i5] $2^i5))
+}

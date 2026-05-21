@@ -8,6 +8,7 @@ import {
 	DeclaredDfunNode,
 	DfunNode,
 	DvarNode,
+	ExportNode,
 	FnNode,
 	FunctionCallNode,
 	GenericCallNode,
@@ -90,6 +91,8 @@ function rewriteAstNode(node: AstNode, rewriteCall: (node: FunctionCallNode) => 
 				node.topLevelExpressions.map((expression: AstNode) => rewriteAstNode(expression, rewriteCall)),
 				node.unitId
 			);
+		} else if (node instanceof ExportNode) {
+			rewrittenNode = new ExportNode(rewriteAstNode(node.inner, rewriteCall));
 		} else if (node instanceof DvarNode) {
 			rewrittenNode = new DvarNode(
 				rewriteAstNode(node.bind, rewriteCall),

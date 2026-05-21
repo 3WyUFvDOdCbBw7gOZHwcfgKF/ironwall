@@ -1,5 +1,5 @@
 {program std~option@v1
-  (class <generic Option T>
+  (export (class <generic Option T>
     (property [payload <union unit T>])
     (constructor ([payload0 <union unit T>]) in
       (cm_set self payload payload0)
@@ -25,25 +25,25 @@
         ([value T] value)
       )
     )
-  )
+  ))
 
-  (function <generic option_some T> ([value T]) to <Option T> in
+  (export (function <generic option_some T> ([value T]) to <Option T> in
     (class_new <Option T> value)
-  )
+  ))
 
-  (function <generic option_none T> () to <Option T> in
+  (export (function <generic option_none T> () to <Option T> in
     (class_new <Option T> unit)
-  )
+  ))
 
-  (function <generic option_is_some T> ([option <Option T>]) to bool in
+  (export (function <generic option_is_some T> ([option <Option T>]) to bool in
     ((cm_get option is_some))
-  )
+  ))
 
-  (function <generic option_is_none T> ([option <Option T>]) to bool in
+  (export (function <generic option_is_none T> ([option <Option T>]) to bool in
     ((cm_get option is_none))
-  )
+  ))
 
-  (function <generic option_unwrap T> ([option <Option T>]) to T in
+  (export (function <generic option_unwrap T> ([option <Option T>]) to T in
     ((cm_get option unwrap))
-  )
+  ))
 }

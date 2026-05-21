@@ -1,0 +1,15 @@
+{program test~language~rules~export~lib@defs
+  (var [hidden_seed i5] $9^i5)
+  (function hidden_add_one ([value i5]) to i5 in (add value $1^i5))
+  (export (var [visible_seed i5] $10^i5))
+  (export (function visible_fn ([value i5]) to i5 in (add hidden_seed (hidden_add_one value))))
+  (export (class VisibleCounter
+    (property [value i5])
+    (constructor ([initial i5]) in (cm_set self value (hidden_add_one initial)))
+  ))
+  (export (class <generic VisibleBox T>
+    (property [value T])
+    (constructor ([value0 T]) in (cm_set self value value0))
+  ))
+  (export (function <generic visible_pack T> ([value T]) to <VisibleBox T> in (class_new <VisibleBox T> value)))
+}

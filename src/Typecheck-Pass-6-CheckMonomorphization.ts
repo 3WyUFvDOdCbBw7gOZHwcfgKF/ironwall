@@ -9,6 +9,7 @@ import {
     CondNode,
     DfunNode,
     DvarNode,
+    ExportNode,
     FnNode,
     FunctionCallNode,
     GenericCallNode,
@@ -110,6 +111,10 @@ function collectDependencyEdgesFromAst(
     seen: Set<string>
 ): void {
     if (node instanceof IdentifierNode || node instanceof TextDatabaseReferenceNode || node instanceof NumberLiteralNode || node instanceof GenericNameNode) {
+        return;
+    }
+    if (node instanceof ExportNode) {
+        collectDependencyEdgesFromAst(node.inner, typeEnv, edges, seen);
         return;
     }
     if (node instanceof GenericCallNode) {

@@ -13,6 +13,7 @@ import {
     DeclaredDfunNode,
     DfunNode,
     DvarNode,
+    ExportNode,
     FnNode,
     FunctionCallNode,
     GenericCallNode,
@@ -295,6 +296,12 @@ function serializeAstNode(node: AstNode): JsonObject {
             packagePath: serializeAstNode(node.packagePath)
         };
     }
+    if (node instanceof ExportNode) {
+        return {
+            kind: "ExportNode",
+            inner: serializeAstNode(node.inner)
+        };
+    }
     if (node instanceof DvarNode) {
         return {
             kind: "DvarNode",
@@ -490,6 +497,9 @@ function deserializeAstNode(value: JsonValue, context: string): AstNode {
     }
     if (kind === "ImportNode") {
         return new ImportNode(readIdentifierNodeField(object, "packagePath", context));
+    }
+    if (kind === "ExportNode") {
+        return new ExportNode(readAstNodeField(object, "inner", context));
     }
     if (kind === "DvarNode") {
         return new DvarNode(readAstNodeField(object, "bind", context), readAstNodeField(object, "value", context));

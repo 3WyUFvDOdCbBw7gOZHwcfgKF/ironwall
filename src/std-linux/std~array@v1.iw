@@ -3,7 +3,7 @@
   (import std~box)
   (import std~ord)
 
-  (function checked_add_nonnegative_i5 ([left i5] [right i5]) to i5 in
+  (export (function checked_add_nonnegative_i5 ([left i5] [right i5]) to i5 in
     {
       (var [sum i5] (add left right))
       (if (or (lt sum left) (lt sum right))
@@ -11,13 +11,13 @@
         else sum
       )
     }
-  )
+  ))
 
-  (function min_i5 ([left i5] [right i5]) to i5 in
+  (export (function min_i5 ([left i5] [right i5]) to i5 in
     (if (lt left right) then left else right)
-  )
+  ))
 
-  (function <generic array_copy_items T> ([source_raw <array T>] [source_start i5] [target_raw <array T>] [target_start i5] [length i5]) to unit in
+  (export (function <generic array_copy_items T> ([source_raw <array T>] [source_start i5] [target_raw <array T>] [target_start i5] [length i5]) to unit in
     {
       (var [index i5] $0^i5)
       (while (lt index length) in
@@ -28,9 +28,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic array_merge_sort_runs T> ([target_raw <array T>] [scratch_raw <array T>] [left_start i5] [mid i5] [right_end i5] [rule <Ord T>]) to unit in
+  (export (function <generic array_merge_sort_runs T> ([target_raw <array T>] [scratch_raw <array T>] [left_start i5] [mid i5] [right_end i5] [rule <Ord T>]) to unit in
     {
       (var [left_index i5] left_start)
       (var [right_index i5] mid)
@@ -81,9 +81,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic array_merge_sort_raw T> ([target_raw <array T>] [length i5] [seed T] [rule <Ord T>]) to unit in
+  (export (function <generic array_merge_sort_raw T> ([target_raw <array T>] [length i5] [seed T] [rule <Ord T>]) to unit in
     (if (le length $1^i5)
       then unit
       else
@@ -117,9 +117,9 @@
           unit
         }
     )
-  )
+  ))
 
-  (function <generic array_builder_ensure_capacity T> ([builder <ArrayBuilder T>] [required_capacity i5]) to unit in
+  (export (function <generic array_builder_ensure_capacity T> ([builder <ArrayBuilder T>] [required_capacity i5]) to unit in
     {
       (var [target_raw <array T>] (cm_get builder raw))
       (var [current_capacity i5] (array_length target_raw))
@@ -143,9 +143,9 @@
         else unit
       )
     }
-  )
+  ))
 
-  (class <generic Array T>
+  (export (class <generic Array T>
     (property [raw <array T>])
     (property [seed T])
     (constructor ([raw0 <array T>] [seed0 T]) in
@@ -267,9 +267,9 @@
         unit
       }
     )
-  )
+  ))
 
-  (class <generic ArrayBuilder T>
+  (export (class <generic ArrayBuilder T>
     (property [raw <array T>])
     (property [seed T])
     (property [length i5])
@@ -304,9 +304,9 @@
         )
       }
     )
-  )
+  ))
 
-  (function <generic array_new_fill T> ([length i5] [initial_value T]) to <Array T> in
+  (export (function <generic array_new_fill T> ([length i5] [initial_value T]) to <Array T> in
     {
       (var [result_raw <array T>] (array_new <array T> length initial_value))
       (var [index i5] $0^i5)
@@ -318,29 +318,29 @@
       )
       (class_new <Array T> result_raw initial_value)
     }
-  )
+  ))
 
-  (function <generic array_wrap T> ([raw <array T>] [seed T]) to <Array T> in
+  (export (function <generic array_wrap T> ([raw <array T>] [seed T]) to <Array T> in
     (class_new <Array T> raw seed)
-  )
+  ))
 
-  (function <generic array_builder_new T> ([seed T]) to <ArrayBuilder T> in
+  (export (function <generic array_builder_new T> ([seed T]) to <ArrayBuilder T> in
     (class_new <ArrayBuilder T> seed)
-  )
+  ))
 
-  (function <generic Array_len T> ([array <Array T>]) to i5 in
+  (export (function <generic Array_len T> ([array <Array T>]) to i5 in
     (array_length (cm_get array raw))
-  )
+  ))
 
-  (function <generic ArrayBuilder_len T> ([builder <ArrayBuilder T>]) to i5 in
+  (export (function <generic ArrayBuilder_len T> ([builder <ArrayBuilder T>]) to i5 in
     (cm_get builder length)
-  )
+  ))
 
-  (function <generic Array_contains T> ([array <Array T>] [rule <Eq T>] [value T]) to bool in
+  (export (function <generic Array_contains T> ([array <Array T>] [rule <Eq T>] [value T]) to bool in
     (gt ((cm_get array count) rule value) $0^i5)
-  )
+  ))
 
-  (function <generic Array_fold T Acc> ([source <Array T>] [init Acc] [step <to Acc from Acc T>]) to Acc in
+  (export (function <generic Array_fold T Acc> ([source <Array T>] [init Acc] [step <to Acc from Acc T>]) to Acc in
     {
       (var [source_raw <array T>] (cm_get source raw))
       (var [length i5] (array_length source_raw))
@@ -354,9 +354,9 @@
       )
       (<box_unwrap Acc> acc)
     }
-  )
+  ))
 
-  (function <generic Array_map T U> ([source <Array T>] [seed U] [mapper <to U from T>]) to <Array U> in
+  (export (function <generic Array_map T U> ([source <Array T>] [seed U] [mapper <to U from T>]) to <Array U> in
     {
       (var [source_raw <array T>] (cm_get source raw))
       (var [length i5] (array_length source_raw))
@@ -370,9 +370,9 @@
       )
       (class_new <Array U> result_raw seed)
     }
-  )
+  ))
 
-  (function <generic Array_filter T> ([source <Array T>] [predicate <to bool from T>]) to <Array T> in
+  (export (function <generic Array_filter T> ([source <Array T>] [predicate <to bool from T>]) to <Array T> in
     {
       (var [source_raw <array T>] (cm_get source raw))
       (var [length i5] (array_length source_raw))
@@ -412,9 +412,9 @@
       )
       (class_new <Array T> result_raw seed_value)
     }
-  )
+  ))
 
-  (function <generic Array_filter_into T> ([target <ArrayBuilder T>] [source <Array T>] [predicate <to bool from T>]) to unit in
+  (export (function <generic Array_filter_into T> ([target <ArrayBuilder T>] [source <Array T>] [predicate <to bool from T>]) to unit in
     {
       (var [source_raw <array T>] (cm_get source raw))
       (var [length i5] (array_length source_raw))
@@ -435,9 +435,9 @@
       )
       unit
     }
-  )
+  ))
 
-  (function <generic Array_concat_into T> ([target <ArrayBuilder T>] [source <Array T>]) to unit in
+  (export (function <generic Array_concat_into T> ([target <ArrayBuilder T>] [source <Array T>]) to unit in
     {
       (var [length_now i5] (cm_get target length))
       (var [source_raw <array T>] (cm_get source raw))
@@ -448,9 +448,9 @@
       (cm_set target length result_length)
       unit
     }
-  )
+  ))
 
-  (function <generic Array_concat T> ([left <Array T>] [right <Array T>]) to <Array T> in
+  (export (function <generic Array_concat T> ([left <Array T>] [right <Array T>]) to <Array T> in
     {
       (var [left_raw <array T>] (cm_get left raw))
       (var [right_raw <array T>] (cm_get right raw))
@@ -472,17 +472,17 @@
           )
       )
     }
-  )
+  ))
 
-  (function <generic Array_sorted T> ([source <Array T>] [rule <Ord T>]) to <Array T> in
+  (export (function <generic Array_sorted T> ([source <Array T>] [rule <Ord T>]) to <Array T> in
     {
       (var [result <Array T>] ((cm_get source copy)))
       ((cm_get result sort) rule)
       result
     }
-  )
+  ))
 
-  (function <generic Array_reversed T> ([source <Array T>]) to <Array T> in
+  (export (function <generic Array_reversed T> ([source <Array T>]) to <Array T> in
     {
       (var [source_raw <array T>] (cm_get source raw))
       (var [length i5] (array_length source_raw))
@@ -497,9 +497,9 @@
       )
       (class_new <Array T> result_raw seed_value)
     }
-  )
+  ))
 
-  (function <generic Array_max T> ([array <Array T>] [rule <Ord T>]) to T in
+  (export (function <generic Array_max T> ([array <Array T>] [rule <Ord T>]) to T in
     {
       (var [target_raw <array T>] (cm_get array raw))
       (var [length i5] (array_length target_raw))
@@ -526,9 +526,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function <generic Array_min T> ([array <Array T>] [rule <Ord T>]) to T in
+  (export (function <generic Array_min T> ([array <Array T>] [rule <Ord T>]) to T in
     {
       (var [target_raw <array T>] (cm_get array raw))
       (var [length i5] (array_length target_raw))
@@ -555,5 +555,5 @@
           }
       )
     }
-  )
+  ))
 }

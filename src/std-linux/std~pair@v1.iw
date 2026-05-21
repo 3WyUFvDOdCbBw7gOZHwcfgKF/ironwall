@@ -1,5 +1,5 @@
 {program std~pair@v1
-  (class <generic Pair K V>
+  (export (class <generic Pair K V>
     (property [first K])
     (property [second V])
     (constructor ([first0 K] [second0 V]) in
@@ -8,13 +8,13 @@
         (cm_set self second second0)
       }
     )
-  )
+  ))
 
-  (function <generic pair_first K V> ([pair <Pair K V>]) to K in
+  (export (function <generic pair_first K V> ([pair <Pair K V>]) to K in
     (cm_get pair first)
-  )
+  ))
 
-  (function <generic pair_second K V> ([pair <Pair K V>]) to V in
+  (export (function <generic pair_second K V> ([pair <Pair K V>]) to V in
     (cm_get pair second)
-  )
+  ))
 }

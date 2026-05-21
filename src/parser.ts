@@ -21,6 +21,7 @@ import {
     TypeUnionNode,
     ProgramNode,
     ImportNode,
+    ExportNode,
     DvarNode,
     SeqNode,
     DfunNode,
@@ -177,6 +178,10 @@ export function prettyPrintAst(node: AstNode, indent = ""): string {
       const importNode = node as ImportNode;
       return `${indent}ImportNode\n${indent}  package: ${prettyPrintAst(importNode.packagePath, indent + "    ")}`;
     }
+    case AstNodeType.ExportNode: {
+      const exportNode = node as ExportNode;
+      return `${indent}ExportNode\n${indent}  inner: ${prettyPrintAst(exportNode.inner, indent + "    ")}`;
+    }
     case AstNodeType.SetNode: {
       const set = node as SetNode;
       return `${indent}SetNode\n${indent}  identifier: ${prettyPrintAst(set.identifier, indent + "    ")}\n${indent}  value: ${prettyPrintAst(set.value, indent + "    ")}`;
@@ -317,6 +322,8 @@ export function astToString(node: AstNode): string {
       const importNode = node as ImportNode;
       return `(import ${astToString(importNode.packagePath)})`;
     }
+    case AstNodeType.ExportNode:
+      return `(export ${astToString((node as ExportNode).inner)})`;
     case AstNodeType.SetNode: {
       const set = node as SetNode;
       return `(var_set ${astToString(set.identifier)} ${astToString(set.value)})`;

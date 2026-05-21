@@ -1,0 +1,6 @@
+{program test~language~rules~export~hidden~app@main
+  (import test~language~rules~export~hidden~lib)
+  (function main ([args <array s3>]) to i5 in
+    (hidden_add_one $3^i5)
+  )
+}

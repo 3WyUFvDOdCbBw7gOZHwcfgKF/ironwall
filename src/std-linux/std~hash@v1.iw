@@ -1,5 +1,5 @@
 {program std~hash@v1
-  (class <generic Hash T>
+  (export (class <generic Hash T>
     (property [hasher <to i5 from T>])
     (constructor ([hasher0 <to i5 from T>]) in
       (cm_set self hasher hasher0)
@@ -7,9 +7,9 @@
     (method hash ([value T]) to i5 in
       ((cm_get self hasher) value)
     )
-  )
+  ))
 
-  (function <generic hash_apply T> ([rule <Hash T>] [value T]) to i5 in
+  (export (function <generic hash_apply T> ([rule <Hash T>] [value T]) to i5 in
     ((cm_get rule hash) value)
-  )
+  ))
 }

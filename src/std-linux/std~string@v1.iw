@@ -1,7 +1,7 @@
 {program std~string@v1
   (import std~array)
 
-  (function checked_add_nonnegative_i5 ([left i5] [right i5]) to i5 in
+  (export (function checked_add_nonnegative_i5 ([left i5] [right i5]) to i5 in
     {
       (var [sum i5] (add left right))
       (if (or (lt sum left) (lt sum right))
@@ -9,9 +9,9 @@
         else sum
       )
     }
-  )
+  ))
 
-  (function checked_mul_nonnegative_i5 ([left i5] [right i5]) to i5 in
+  (export (function checked_mul_nonnegative_i5 ([left i5] [right i5]) to i5 in
     (if (or (eq left $0^i5) (eq right $0^i5))
       then $0^i5
       else
@@ -23,16 +23,16 @@
           )
         }
     )
-  )
+  ))
 
-  (function check_string_result_length ([length i5]) to i5 in
+  (export (function check_string_result_length ([length i5]) to i5 in
     (if (gt length $268435456^i5)
       then (iw_match_unreachable)
       else length
     )
-  )
+  ))
 
-  (function s3_copy_into ([source s3] [target s3] [target_start i5]) to i5 in
+  (export (function s3_copy_into ([source s3] [target s3] [target_start i5]) to i5 in
     {
       (var [length i5] (s3_length source))
       (var [index i5] $0^i5)
@@ -44,9 +44,9 @@
       )
       (add target_start length)
     }
-  )
+  ))
 
-  (function s4_copy_into ([source s4] [target s4] [target_start i5]) to i5 in
+  (export (function s4_copy_into ([source s4] [target s4] [target_start i5]) to i5 in
     {
       (var [length i5] (s4_length source))
       (var [index i5] $0^i5)
@@ -58,9 +58,9 @@
       )
       (add target_start length)
     }
-  )
+  ))
 
-  (function s5_copy_into ([source s5] [target s5] [target_start i5]) to i5 in
+  (export (function s5_copy_into ([source s5] [target s5] [target_start i5]) to i5 in
     {
       (var [length i5] (s5_length source))
       (var [index i5] $0^i5)
@@ -72,9 +72,9 @@
       )
       (add target_start length)
     }
-  )
+  ))
 
-  (function s3_matches_at ([haystack s3] [needle s3] [start i5]) to bool in
+  (export (function s3_matches_at ([haystack s3] [needle s3] [start i5]) to bool in
     {
       (var [haystack_len i5] (s3_length haystack))
       (var [needle_len i5] (s3_length needle))
@@ -94,9 +94,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s4_matches_at ([haystack s4] [needle s4] [start i5]) to bool in
+  (export (function s4_matches_at ([haystack s4] [needle s4] [start i5]) to bool in
     {
       (var [haystack_len i5] (s4_length haystack))
       (var [needle_len i5] (s4_length needle))
@@ -116,9 +116,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s5_matches_at ([haystack s5] [needle s5] [start i5]) to bool in
+  (export (function s5_matches_at ([haystack s5] [needle s5] [start i5]) to bool in
     {
       (var [haystack_len i5] (s5_length haystack))
       (var [needle_len i5] (s5_length needle))
@@ -138,9 +138,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s3_find_raw ([haystack s3] [needle s3]) to i5 in
+  (export (function s3_find_raw ([haystack s3] [needle s3]) to i5 in
     {
       (var [haystack_len i5] (s3_length haystack))
       (var [needle_len i5] (s3_length needle))
@@ -163,9 +163,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s4_find_raw ([haystack s4] [needle s4]) to i5 in
+  (export (function s4_find_raw ([haystack s4] [needle s4]) to i5 in
     {
       (var [haystack_len i5] (s4_length haystack))
       (var [needle_len i5] (s4_length needle))
@@ -188,9 +188,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s5_find_raw ([haystack s5] [needle s5]) to i5 in
+  (export (function s5_find_raw ([haystack s5] [needle s5]) to i5 in
     {
       (var [haystack_len i5] (s5_length haystack))
       (var [needle_len i5] (s5_length needle))
@@ -213,9 +213,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s3_count_raw ([haystack s3] [needle s3]) to i5 in
+  (export (function s3_count_raw ([haystack s3] [needle s3]) to i5 in
     {
       (var [haystack_len i5] (s3_length haystack))
       (var [needle_len i5] (s3_length needle))
@@ -242,9 +242,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s4_count_raw ([haystack s4] [needle s4]) to i5 in
+  (export (function s4_count_raw ([haystack s4] [needle s4]) to i5 in
     {
       (var [haystack_len i5] (s4_length haystack))
       (var [needle_len i5] (s4_length needle))
@@ -271,9 +271,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s5_count_raw ([haystack s5] [needle s5]) to i5 in
+  (export (function s5_count_raw ([haystack s5] [needle s5]) to i5 in
     {
       (var [haystack_len i5] (s5_length haystack))
       (var [needle_len i5] (s5_length needle))
@@ -300,30 +300,30 @@
           }
       )
     }
-  )
+  ))
 
-  (function s3_startswith_raw ([value s3] [prefix s3]) to bool in
+  (export (function s3_startswith_raw ([value s3] [prefix s3]) to bool in
     (if (gt (s3_length prefix) (s3_length value))
       then false
       else (s3_matches_at value prefix $0^i5)
     )
-  )
+  ))
 
-  (function s4_startswith_raw ([value s4] [prefix s4]) to bool in
+  (export (function s4_startswith_raw ([value s4] [prefix s4]) to bool in
     (if (gt (s4_length prefix) (s4_length value))
       then false
       else (s4_matches_at value prefix $0^i5)
     )
-  )
+  ))
 
-  (function s5_startswith_raw ([value s5] [prefix s5]) to bool in
+  (export (function s5_startswith_raw ([value s5] [prefix s5]) to bool in
     (if (gt (s5_length prefix) (s5_length value))
       then false
       else (s5_matches_at value prefix $0^i5)
     )
-  )
+  ))
 
-  (function s3_endswith_raw ([value s3] [suffix s3]) to bool in
+  (export (function s3_endswith_raw ([value s3] [suffix s3]) to bool in
     {
       (var [value_len i5] (s3_length value))
       (var [suffix_len i5] (s3_length suffix))
@@ -332,9 +332,9 @@
         else (s3_matches_at value suffix (sub value_len suffix_len))
       )
     }
-  )
+  ))
 
-  (function s4_endswith_raw ([value s4] [suffix s4]) to bool in
+  (export (function s4_endswith_raw ([value s4] [suffix s4]) to bool in
     {
       (var [value_len i5] (s4_length value))
       (var [suffix_len i5] (s4_length suffix))
@@ -343,9 +343,9 @@
         else (s4_matches_at value suffix (sub value_len suffix_len))
       )
     }
-  )
+  ))
 
-  (function s5_endswith_raw ([value s5] [suffix s5]) to bool in
+  (export (function s5_endswith_raw ([value s5] [suffix s5]) to bool in
     {
       (var [value_len i5] (s5_length value))
       (var [suffix_len i5] (s5_length suffix))
@@ -354,30 +354,30 @@
         else (s5_matches_at value suffix (sub value_len suffix_len))
       )
     }
-  )
+  ))
 
-  (function s3_empty_like ([value s3]) to s3 in
+  (export (function s3_empty_like ([value s3]) to s3 in
     (if (eq (s3_length value) $0^i5)
       then value
       else (s3_new $0^i5 (s3_get value $0^i5))
     )
-  )
+  ))
 
-  (function s4_empty_like ([value s4]) to s4 in
+  (export (function s4_empty_like ([value s4]) to s4 in
     (if (eq (s4_length value) $0^i5)
       then value
       else (s4_new $0^i5 (s4_get value $0^i5))
     )
-  )
+  ))
 
-  (function s5_empty_like ([value s5]) to s5 in
+  (export (function s5_empty_like ([value s5]) to s5 in
     (if (eq (s5_length value) $0^i5)
       then value
       else (s5_new $0^i5 (s5_get value $0^i5))
     )
-  )
+  ))
 
-  (function clamp_string_index ([length i5] [index i5]) to i5 in
+  (export (function clamp_string_index ([length i5] [index i5]) to i5 in
     (if (lt index $0^i5)
       then
         (if (lt index (sub $0^i5 length))
@@ -390,25 +390,25 @@
           else index
         )
     )
-  )
+  ))
 
-  (function is_ascii_trim_space_code ([code i5]) to bool in
+  (export (function is_ascii_trim_space_code ([code i5]) to bool in
     (or (eq code $32^i5) (and (ge code $9^i5) (le code $13^i5)))
-  )
+  ))
 
-  (function is_trim_space ([value c3]) to bool in
+  (export (function is_trim_space ([value c3]) to bool in
     (is_ascii_trim_space_code (val_to_i5 value))
-  )
+  ))
 
-  (function is_trim_space ([value c4]) to bool in
+  (export (function is_trim_space ([value c4]) to bool in
     (is_ascii_trim_space_code (val_to_i5 value))
-  )
+  ))
 
-  (function is_trim_space ([value c5]) to bool in
+  (export (function is_trim_space ([value c5]) to bool in
     (is_ascii_trim_space_code (val_to_i5 value))
-  )
+  ))
 
-  (function s3_slice_span_raw ([source s3] [start i5] [end_exclusive i5]) to s3 in
+  (export (function s3_slice_span_raw ([source s3] [start i5] [end_exclusive i5]) to s3 in
     {
       (var [source_len i5] (s3_length source))
       (var [slice_len i5] (sub end_exclusive start))
@@ -432,9 +432,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function s4_slice_span_raw ([source s4] [start i5] [end_exclusive i5]) to s4 in
+  (export (function s4_slice_span_raw ([source s4] [start i5] [end_exclusive i5]) to s4 in
     {
       (var [source_len i5] (s4_length source))
       (var [slice_len i5] (sub end_exclusive start))
@@ -458,9 +458,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function s5_slice_span_raw ([source s5] [start i5] [end_exclusive i5]) to s5 in
+  (export (function s5_slice_span_raw ([source s5] [start i5] [end_exclusive i5]) to s5 in
     {
       (var [source_len i5] (s5_length source))
       (var [slice_len i5] (sub end_exclusive start))
@@ -484,9 +484,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function s3_slice_raw ([source s3] [start i5] [end_exclusive i5]) to s3 in
+  (export (function s3_slice_raw ([source s3] [start i5] [end_exclusive i5]) to s3 in
     {
       (var [source_len i5] (s3_length source))
       (var [slice_start i5] (clamp_string_index source_len start))
@@ -496,9 +496,9 @@
         else (s3_slice_span_raw source slice_start slice_end)
       )
     }
-  )
+  ))
 
-  (function s4_slice_raw ([source s4] [start i5] [end_exclusive i5]) to s4 in
+  (export (function s4_slice_raw ([source s4] [start i5] [end_exclusive i5]) to s4 in
     {
       (var [source_len i5] (s4_length source))
       (var [slice_start i5] (clamp_string_index source_len start))
@@ -508,9 +508,9 @@
         else (s4_slice_span_raw source slice_start slice_end)
       )
     }
-  )
+  ))
 
-  (function s5_slice_raw ([source s5] [start i5] [end_exclusive i5]) to s5 in
+  (export (function s5_slice_raw ([source s5] [start i5] [end_exclusive i5]) to s5 in
     {
       (var [source_len i5] (s5_length source))
       (var [slice_start i5] (clamp_string_index source_len start))
@@ -520,9 +520,9 @@
         else (s5_slice_span_raw source slice_start slice_end)
       )
     }
-  )
+  ))
 
-  (function s3_trim_raw ([value s3]) to s3 in
+  (export (function s3_trim_raw ([value s3]) to s3 in
     {
       (var [length i5] (s3_length value))
       (var [left i5] $0^i5)
@@ -542,9 +542,9 @@
         else (s3_slice_span_raw value left right)
       )
     }
-  )
+  ))
 
-  (function s4_trim_raw ([value s4]) to s4 in
+  (export (function s4_trim_raw ([value s4]) to s4 in
     {
       (var [length i5] (s4_length value))
       (var [left i5] $0^i5)
@@ -564,9 +564,9 @@
         else (s4_slice_span_raw value left right)
       )
     }
-  )
+  ))
 
-  (function s5_trim_raw ([value s5]) to s5 in
+  (export (function s5_trim_raw ([value s5]) to s5 in
     {
       (var [length i5] (s5_length value))
       (var [left i5] $0^i5)
@@ -586,9 +586,9 @@
         else (s5_slice_span_raw value left right)
       )
     }
-  )
+  ))
 
-  (function s3_split_raw ([source s3] [delimiter s3]) to <Array s3> in
+  (export (function s3_split_raw ([source s3] [delimiter s3]) to <Array s3> in
     {
       (var [source_len i5] (s3_length source))
       (var [delimiter_len i5] (s3_length delimiter))
@@ -632,9 +632,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s4_split_raw ([source s4] [delimiter s4]) to <Array s4> in
+  (export (function s4_split_raw ([source s4] [delimiter s4]) to <Array s4> in
     {
       (var [source_len i5] (s4_length source))
       (var [delimiter_len i5] (s4_length delimiter))
@@ -678,9 +678,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s5_split_raw ([source s5] [delimiter s5]) to <Array s5> in
+  (export (function s5_split_raw ([source s5] [delimiter s5]) to <Array s5> in
     {
       (var [source_len i5] (s5_length source))
       (var [delimiter_len i5] (s5_length delimiter))
@@ -724,9 +724,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s3_concat_raw ([left s3] [right s3]) to s3 in
+  (export (function s3_concat_raw ([left s3] [right s3]) to s3 in
     {
       (var [left_len i5] (s3_length left))
       (var [right_len i5] (s3_length right))
@@ -757,9 +757,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function s4_concat_raw ([left s4] [right s4]) to s4 in
+  (export (function s4_concat_raw ([left s4] [right s4]) to s4 in
     {
       (var [left_len i5] (s4_length left))
       (var [right_len i5] (s4_length right))
@@ -790,9 +790,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function s5_concat_raw ([left s5] [right s5]) to s5 in
+  (export (function s5_concat_raw ([left s5] [right s5]) to s5 in
     {
       (var [left_len i5] (s5_length left))
       (var [right_len i5] (s5_length right))
@@ -823,9 +823,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function s3_repeat_raw ([value s3] [count i5]) to s3 in
+  (export (function s3_repeat_raw ([value s3] [count i5]) to s3 in
     {
       (var [length i5] (s3_length value))
       (if (or (le count $0^i5) (eq length $0^i5))
@@ -859,9 +859,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s4_repeat_raw ([value s4] [count i5]) to s4 in
+  (export (function s4_repeat_raw ([value s4] [count i5]) to s4 in
     {
       (var [length i5] (s4_length value))
       (if (or (le count $0^i5) (eq length $0^i5))
@@ -895,9 +895,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s5_repeat_raw ([value s5] [count i5]) to s5 in
+  (export (function s5_repeat_raw ([value s5] [count i5]) to s5 in
     {
       (var [length i5] (s5_length value))
       (if (or (le count $0^i5) (eq length $0^i5))
@@ -931,9 +931,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s3_reversed_raw ([value s3]) to s3 in
+  (export (function s3_reversed_raw ([value s3]) to s3 in
     {
       (var [length i5] (s3_length value))
       (if (eq length $0^i5)
@@ -952,9 +952,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s4_reversed_raw ([value s4]) to s4 in
+  (export (function s4_reversed_raw ([value s4]) to s4 in
     {
       (var [length i5] (s4_length value))
       (if (eq length $0^i5)
@@ -973,9 +973,9 @@
           }
       )
     }
-  )
+  ))
 
-  (function s5_reversed_raw ([value s5]) to s5 in
+  (export (function s5_reversed_raw ([value s5]) to s5 in
     {
       (var [length i5] (s5_length value))
       (if (eq length $0^i5)
@@ -994,9 +994,9 @@
           }
       )
     }
-  )
+  ))
 
-  (class StringBuilderS3
+  (export (class StringBuilderS3
     (property [chunks <array s3>])
     (property [seed s3])
     (property [chunk_count i5])
@@ -1049,9 +1049,9 @@
         )
       }
     )
-  )
+  ))
 
-  (class StringBuilderS4
+  (export (class StringBuilderS4
     (property [chunks <array s4>])
     (property [seed s4])
     (property [chunk_count i5])
@@ -1104,9 +1104,9 @@
         )
       }
     )
-  )
+  ))
 
-  (class StringBuilderS5
+  (export (class StringBuilderS5
     (property [chunks <array s5>])
     (property [seed s5])
     (property [chunk_count i5])
@@ -1159,9 +1159,9 @@
         )
       }
     )
-  )
+  ))
 
-  (function string_builder_s3_ensure_capacity ([builder StringBuilderS3] [required i5]) to unit in
+  (export (function string_builder_s3_ensure_capacity ([builder StringBuilderS3] [required i5]) to unit in
     {
       (var [chunks <array s3>] (cm_get builder chunks))
       (var [capacity i5] (array_length chunks))
@@ -1191,9 +1191,9 @@
         else unit
       )
     }
-  )
+  ))
 
-  (function string_builder_s4_ensure_capacity ([builder StringBuilderS4] [required i5]) to unit in
+  (export (function string_builder_s4_ensure_capacity ([builder StringBuilderS4] [required i5]) to unit in
     {
       (var [chunks <array s4>] (cm_get builder chunks))
       (var [capacity i5] (array_length chunks))
@@ -1223,9 +1223,9 @@
         else unit
       )
     }
-  )
+  ))
 
-  (function string_builder_s5_ensure_capacity ([builder StringBuilderS5] [required i5]) to unit in
+  (export (function string_builder_s5_ensure_capacity ([builder StringBuilderS5] [required i5]) to unit in
     {
       (var [chunks <array s5>] (cm_get builder chunks))
       (var [capacity i5] (array_length chunks))
@@ -1255,9 +1255,9 @@
         else unit
       )
     }
-  )
+  ))
 
-  (class StringS3
+  (export (class StringS3
     (property [raw s3])
     (constructor () in
       {
@@ -1281,9 +1281,9 @@
     (method endswith ([suffix StringS3]) to bool in
       (s3_endswith_raw (cm_get self raw) (cm_get suffix raw))
     )
-  )
+  ))
 
-  (class StringS4
+  (export (class StringS4
     (property [raw s4])
     (constructor () in
       {
@@ -1307,9 +1307,9 @@
     (method endswith ([suffix StringS4]) to bool in
       (s4_endswith_raw (cm_get self raw) (cm_get suffix raw))
     )
-  )
+  ))
 
-  (class StringS5
+  (export (class StringS5
     (property [raw s5])
     (constructor () in
       {
@@ -1333,117 +1333,117 @@
     (method endswith ([suffix StringS5]) to bool in
       (s5_endswith_raw (cm_get self raw) (cm_get suffix raw))
     )
-  )
+  ))
 
-  (function string_len ([value StringS3]) to i5 in
+  (export (function string_len ([value StringS3]) to i5 in
     (s3_length (cm_get value raw))
-  )
+  ))
 
-  (function string_builder_new ([seed StringS3]) to StringBuilderS3 in
+  (export (function string_builder_new ([seed StringS3]) to StringBuilderS3 in
     (class_new StringBuilderS3 (cm_get seed raw))
-  )
+  ))
 
-  (function string_builder_new ([seed StringS4]) to StringBuilderS4 in
+  (export (function string_builder_new ([seed StringS4]) to StringBuilderS4 in
     (class_new StringBuilderS4 (cm_get seed raw))
-  )
+  ))
 
-  (function string_builder_new ([seed StringS5]) to StringBuilderS5 in
+  (export (function string_builder_new ([seed StringS5]) to StringBuilderS5 in
     (class_new StringBuilderS5 (cm_get seed raw))
-  )
+  ))
 
-  (function string_builder_len ([builder StringBuilderS3]) to i5 in
+  (export (function string_builder_len ([builder StringBuilderS3]) to i5 in
     (cm_get builder total_length)
-  )
+  ))
 
-  (function string_builder_len ([builder StringBuilderS4]) to i5 in
+  (export (function string_builder_len ([builder StringBuilderS4]) to i5 in
     (cm_get builder total_length)
-  )
+  ))
 
-  (function string_builder_len ([builder StringBuilderS5]) to i5 in
+  (export (function string_builder_len ([builder StringBuilderS5]) to i5 in
     (cm_get builder total_length)
-  )
+  ))
 
-  (function string_len ([value StringS4]) to i5 in
+  (export (function string_len ([value StringS4]) to i5 in
     (s4_length (cm_get value raw))
-  )
+  ))
 
-  (function string_len ([value StringS5]) to i5 in
+  (export (function string_len ([value StringS5]) to i5 in
     (s5_length (cm_get value raw))
-  )
+  ))
 
-  (function string_contains ([value StringS3] [needle StringS3]) to bool in
+  (export (function string_contains ([value StringS3] [needle StringS3]) to bool in
     (ge (s3_find_raw (cm_get value raw) (cm_get needle raw)) $0^i5)
-  )
+  ))
 
-  (function string_contains ([value StringS4] [needle StringS4]) to bool in
+  (export (function string_contains ([value StringS4] [needle StringS4]) to bool in
     (ge (s4_find_raw (cm_get value raw) (cm_get needle raw)) $0^i5)
-  )
+  ))
 
-  (function string_contains ([value StringS5] [needle StringS5]) to bool in
+  (export (function string_contains ([value StringS5] [needle StringS5]) to bool in
     (ge (s5_find_raw (cm_get value raw) (cm_get needle raw)) $0^i5)
-  )
+  ))
 
-  (function string_concat ([left StringS3] [right StringS3]) to StringS3 in
+  (export (function string_concat ([left StringS3] [right StringS3]) to StringS3 in
     (class_new StringS3 (s3_concat_raw (cm_get left raw) (cm_get right raw)))
-  )
+  ))
 
-  (function string_concat ([left StringS4] [right StringS4]) to StringS4 in
+  (export (function string_concat ([left StringS4] [right StringS4]) to StringS4 in
     (class_new StringS4 (s4_concat_raw (cm_get left raw) (cm_get right raw)))
-  )
+  ))
 
-  (function string_concat ([left StringS5] [right StringS5]) to StringS5 in
+  (export (function string_concat ([left StringS5] [right StringS5]) to StringS5 in
     (class_new StringS5 (s5_concat_raw (cm_get left raw) (cm_get right raw)))
-  )
+  ))
 
-  (function string_repeat ([value StringS3] [count i5]) to StringS3 in
+  (export (function string_repeat ([value StringS3] [count i5]) to StringS3 in
     (class_new StringS3 (s3_repeat_raw (cm_get value raw) count))
-  )
+  ))
 
-  (function string_repeat ([value StringS4] [count i5]) to StringS4 in
+  (export (function string_repeat ([value StringS4] [count i5]) to StringS4 in
     (class_new StringS4 (s4_repeat_raw (cm_get value raw) count))
-  )
+  ))
 
-  (function string_repeat ([value StringS5] [count i5]) to StringS5 in
+  (export (function string_repeat ([value StringS5] [count i5]) to StringS5 in
     (class_new StringS5 (s5_repeat_raw (cm_get value raw) count))
-  )
+  ))
 
-  (function string_reversed ([value StringS3]) to StringS3 in
+  (export (function string_reversed ([value StringS3]) to StringS3 in
     (class_new StringS3 (s3_reversed_raw (cm_get value raw)))
-  )
+  ))
 
-  (function string_reversed ([value StringS4]) to StringS4 in
+  (export (function string_reversed ([value StringS4]) to StringS4 in
     (class_new StringS4 (s4_reversed_raw (cm_get value raw)))
-  )
+  ))
 
-  (function string_reversed ([value StringS5]) to StringS5 in
+  (export (function string_reversed ([value StringS5]) to StringS5 in
     (class_new StringS5 (s5_reversed_raw (cm_get value raw)))
-  )
+  ))
 
-  (function string_slice ([value StringS3] [start i5] [end_exclusive i5]) to StringS3 in
+  (export (function string_slice ([value StringS3] [start i5] [end_exclusive i5]) to StringS3 in
     (class_new StringS3 (s3_slice_raw (cm_get value raw) start end_exclusive))
-  )
+  ))
 
-  (function string_slice ([value StringS4] [start i5] [end_exclusive i5]) to StringS4 in
+  (export (function string_slice ([value StringS4] [start i5] [end_exclusive i5]) to StringS4 in
     (class_new StringS4 (s4_slice_raw (cm_get value raw) start end_exclusive))
-  )
+  ))
 
-  (function string_slice ([value StringS5] [start i5] [end_exclusive i5]) to StringS5 in
+  (export (function string_slice ([value StringS5] [start i5] [end_exclusive i5]) to StringS5 in
     (class_new StringS5 (s5_slice_raw (cm_get value raw) start end_exclusive))
-  )
+  ))
 
-  (function string_trim ([value StringS3]) to StringS3 in
+  (export (function string_trim ([value StringS3]) to StringS3 in
     (class_new StringS3 (s3_trim_raw (cm_get value raw)))
-  )
+  ))
 
-  (function string_trim ([value StringS4]) to StringS4 in
+  (export (function string_trim ([value StringS4]) to StringS4 in
     (class_new StringS4 (s4_trim_raw (cm_get value raw)))
-  )
+  ))
 
-  (function string_trim ([value StringS5]) to StringS5 in
+  (export (function string_trim ([value StringS5]) to StringS5 in
     (class_new StringS5 (s5_trim_raw (cm_get value raw)))
-  )
+  ))
 
-  (function string_split ([value StringS3] [delimiter StringS3]) to <Array StringS3> in
+  (export (function string_split ([value StringS3] [delimiter StringS3]) to <Array StringS3> in
     {
       (var [source s3] (cm_get value raw))
       (var [delimiter_raw s3] (cm_get delimiter raw))
@@ -1489,9 +1489,9 @@
       )
       (<array_wrap StringS3> result_raw seed)
     }
-  )
+  ))
 
-  (function string_split ([value StringS4] [delimiter StringS4]) to <Array StringS4> in
+  (export (function string_split ([value StringS4] [delimiter StringS4]) to <Array StringS4> in
     {
       (var [source s4] (cm_get value raw))
       (var [delimiter_raw s4] (cm_get delimiter raw))
@@ -1537,9 +1537,9 @@
       )
       (<array_wrap StringS4> result_raw seed)
     }
-  )
+  ))
 
-  (function string_split ([value StringS5] [delimiter StringS5]) to <Array StringS5> in
+  (export (function string_split ([value StringS5] [delimiter StringS5]) to <Array StringS5> in
     {
       (var [source s5] (cm_get value raw))
       (var [delimiter_raw s5] (cm_get delimiter raw))
@@ -1585,9 +1585,9 @@
       )
       (<array_wrap StringS5> result_raw seed)
     }
-  )
+  ))
 
-  (function string_join ([separator StringS3] [items <Array StringS3>]) to StringS3 in
+  (export (function string_join ([separator StringS3] [items <Array StringS3>]) to StringS3 in
     {
       (var [item_count i5] (<Array_len StringS3> items))
       (var [separator_raw s3] (cm_get separator raw))
@@ -1653,9 +1653,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function string_join ([separator StringS4] [items <Array StringS4>]) to StringS4 in
+  (export (function string_join ([separator StringS4] [items <Array StringS4>]) to StringS4 in
     {
       (var [item_count i5] (<Array_len StringS4> items))
       (var [separator_raw s4] (cm_get separator raw))
@@ -1721,9 +1721,9 @@
           )
       )
     }
-  )
+  ))
 
-  (function string_join ([separator StringS5] [items <Array StringS5>]) to StringS5 in
+  (export (function string_join ([separator StringS5] [items <Array StringS5>]) to StringS5 in
     {
       (var [item_count i5] (<Array_len StringS5> items))
       (var [separator_raw s5] (cm_get separator raw))
@@ -1789,5 +1789,5 @@
           )
       )
     }
-  )
+  ))
 }

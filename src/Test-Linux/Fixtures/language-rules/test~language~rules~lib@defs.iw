@@ -1,13 +1,13 @@
 {program test~language~rules~lib@defs
-  (function <generic collapse_union T> ([value <union T bool>]) to <union bool T> in
+  (export (function <generic collapse_union T> ([value <union T bool>]) to <union bool T> in
     value
-  )
-  (function score_union ([value <union bool i5>]) to i5 in
+  ))
+  (export (function score_union ([value <union bool i5>]) to i5 in
     (match value ([flag bool] (if flag then $90^i5 else $80^i5)) ([payload i5] payload))
-  )
-  (function wrap_inner_bool ([flag bool]) to <union bool f5> in flag)
-  (function wrap_inner_f5 ([value f5]) to <union bool f5> in value)
-  (function nested_union_score ([value <union i5 <union bool f5>>]) to i5 in
+  ))
+  (export (function wrap_inner_bool ([flag bool]) to <union bool f5> in flag))
+  (export (function wrap_inner_f5 ([value f5]) to <union bool f5> in value))
+  (export (function nested_union_score ([value <union i5 <union bool f5>>]) to i5 in
     (match value
       ([payload i5] payload)
       ([inner <union bool f5>]
@@ -17,14 +17,14 @@
         )
       )
     )
-  )
-  (function score ([value i5]) to i5 in value)
-  (function score ([flag bool]) to i5 in (if flag then $40^i5 else $30^i5))
-  (class <generic Bucket T>
+  ))
+  (export (function score ([value i5]) to i5 in value))
+  (export (function score ([flag bool]) to i5 in (if flag then $40^i5 else $30^i5)))
+  (export (class <generic Bucket T>
     (property [value T])
     (constructor ([value0 T]) in (cm_set self value value0))
-  )
-  (class <generic Bucket Left Right>
+  ))
+  (export (class <generic Bucket Left Right>
     (property [left Left])
     (property [right Right])
     (constructor ([left0 Left] [right0 Right]) in
@@ -33,26 +33,26 @@
         (cm_set self right right0)
       }
     )
-  )
-  (function <generic pack T> ([value T]) to <Bucket T> in (class_new <Bucket T> value))
-  (function <generic pack Left Right> ([left Left] [right Right]) to <Bucket Left Right> in
+  ))
+  (export (function <generic pack T> ([value T]) to <Bucket T> in (class_new <Bucket T> value)))
+  (export (function <generic pack Left Right> ([left Left] [right Right]) to <Bucket Left Right> in
     (class_new <Bucket Left Right> left right)
-  )
-  (function measure ([box <Bucket i5>]) to i5 in box.value)
-  (function measure ([box <Bucket i5 bool>]) to i5 in
+  ))
+  (export (function measure ([box <Bucket i5>]) to i5 in box.value))
+  (export (function measure ([box <Bucket i5 bool>]) to i5 in
     (if box.right then (add box.left $50^i5) else (sub box.left $50^i5))
-  )
-  (class MultiCtor
+  ))
+  (export (class MultiCtor
     (property [value i5])
     (constructor () in (cm_set self value $11^i5))
     (constructor ([initial i5]) in (cm_set self value initial))
     (constructor ([flag bool]) in
       (if flag then (cm_set self value $22^i5) else (cm_set self value $33^i5))
     )
-  )
+  ))
   (function constructor_seed ([value i5]) to i5 in (add value $1^i5))
   (function constructor_adjust ([value i5]) to i5 in (sub value $1^i5))
-  (class ConstructorAnalysisOk
+  (export (class ConstructorAnalysisOk
     (property [left i5])
     (property [right i5])
     (method read_left () to i5 in (cm_get self left))
@@ -67,5 +67,5 @@
         ((cm_get self read_both))
       }
     )
-  )
+  ))
 }

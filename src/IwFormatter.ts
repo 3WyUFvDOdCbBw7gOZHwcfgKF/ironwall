@@ -9,6 +9,7 @@ import {
     DeclaredDfunNode,
     DvarNode,
     DfunNode,
+    ExportNode,
     FnNode,
     FunctionCallNode,
     GenericCallNode,
@@ -79,6 +80,9 @@ function prepareNodeForFormatting(node: AstNode): AstNode {
     }
     if (node instanceof ImportNode) {
         return new ImportNode(prepareIdentifierNode(node.packagePath));
+    }
+    if (node instanceof ExportNode) {
+        return new ExportNode(prepareNodeForFormatting(node.inner));
     }
     if (node instanceof DvarNode) {
         return new DvarNode(prepareNodeForFormatting(node.bind), prepareNodeForFormatting(node.value));
@@ -336,6 +340,8 @@ function formatNode(node: AstNode, depth: number): string {
             return formatFunctionCallNode(node as FunctionCallNode, depth);
         case AstNodeType.ImportNode:
             return formatImportNode(node as ImportNode);
+        case AstNodeType.ExportNode:
+            return formatExportNode(node as ExportNode, depth);
         default:
             return inline;
     }
@@ -471,6 +477,14 @@ function formatFunctionCallNode(node: FunctionCallNode, depth: number): string {
 
 function formatImportNode(node: ImportNode): string {
     return `(import ${astToString(node.packagePath)})`;
+}
+
+function formatExportNode(node: ExportNode, depth: number): string {
+    return [
+        "(export",
+        indentBlock(formatNode(node.inner, depth + 1), 1),
+        ")"
+    ].join("\n");
 }
 
 function formatCallableLike(head: string, body: AstNode, depth: number): string {

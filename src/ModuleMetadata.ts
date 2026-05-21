@@ -107,7 +107,7 @@ function annotateNode(node: AstNode, metadata: CompilationUnitMetadata): void {
         }
     }
 
-    for (const key of ["unitId", "packagePath", "bind", "value", "body", "bodyExpr", "condExpr", "trueBranchExpr", "falseBranchExpr", "returnType", "callee", "unionExpr", "identifier", "var", "typeExp", "name", "methodName", "genericName"]) {
+    for (const key of ["unitId", "packagePath", "bind", "value", "body", "bodyExpr", "condExpr", "trueBranchExpr", "falseBranchExpr", "returnType", "callee", "unionExpr", "identifier", "var", "typeExp", "name", "methodName", "genericName", "inner"]) {
         const child = (node as unknown as Record<string, unknown>)[key];
         if (child && typeof child === "object" && "kind" in (child as Record<string, unknown>)) {
             annotateNode(child as AstNode, metadata);
@@ -132,6 +132,10 @@ export function annotateCompilationUnitExpressions(program: ProgramNode, metadat
     for (const expression of program.topLevelExpressions) {
         annotateNode(expression, metadata);
     }
+}
+
+export function annotateAstWithCompilationUnitMetadata(node: AstNode, metadata: CompilationUnitMetadata): void {
+    annotateNode(node, metadata);
 }
 
 export function ensureProgramCompilationUnitMetadata(program: ProgramNode): void {
@@ -159,4 +163,11 @@ export function ensureProgramCompilationUnitMetadata(program: ProgramNode): void
 
 export function getCompilationUnitMetadata(node: AstNode): CompilationUnitMetadata | undefined {
     return nodeUnitMetadata.get(node);
+}
+
+export function copyCompilationUnitMetadata(source: AstNode, target: AstNode): void {
+    const metadata = getCompilationUnitMetadata(source);
+    if (metadata !== undefined) {
+        annotateNode(target, metadata);
+    }
 }

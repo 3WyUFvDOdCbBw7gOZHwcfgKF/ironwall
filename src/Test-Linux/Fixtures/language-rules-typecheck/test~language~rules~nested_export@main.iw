@@ -1,0 +1,5 @@
+{program test~language~rules~nested_export@main
+  (function main ([args <array s3>]) to i5 in
+    (export (function inner () to i5 in $0^i5))
+  )
+}

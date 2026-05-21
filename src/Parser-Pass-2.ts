@@ -10,6 +10,7 @@ import {
   FnNode,
   LetNode,
   DvarNode,
+  ExportNode,
   IfNode,
   WhileNode,
   SeqNode,
@@ -221,6 +222,8 @@ function parseRoundParenList(node: RoundParenListNode): AstNode {
       return parseMatchExpression(node);
     case "import":
       return parseImportExpression(node);
+    case "export":
+      return parseExportExpression(node);
     default:
       // 对于其他圆括号结构，递归处理所有元素
       const processedElements: AstNode[] = node.elements.map(element => parsePass4(element));
@@ -246,6 +249,14 @@ function parseImportExpression(node: RoundParenListNode): ImportNode {
   }
 
   return new ImportNode(packageNode);
+}
+
+function parseExportExpression(node: RoundParenListNode): ExportNode {
+  if (node.elements.length !== 2) {
+    throw new Error("export expects exactly one argument");
+  }
+
+  return new ExportNode(parsePass4(node.elements[1]));
 }
 
 /**

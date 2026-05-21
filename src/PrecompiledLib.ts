@@ -1140,6 +1140,7 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 kind: "class",
                 exportedName: signature.exportedName,
                 canonicalName: signature.canonicalName,
+                isExported: true,
                 packageName: signature.packageName,
                 unitId: signature.unitId,
                 filePath: library.archivePath
@@ -1162,6 +1163,7 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 kind: "function",
                 exportedName: signature.exportedName,
                 canonicalName: signature.canonicalName,
+                isExported: true,
                 packageName: signature.packageName,
                 unitId: signature.unitId,
                 filePath: library.archivePath
@@ -1185,6 +1187,7 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 kind: "global",
                 exportedName: signature.exportedName,
                 canonicalName: signature.canonicalName,
+                isExported: true,
                 packageName: signature.packageName,
                 unitId: signature.unitId,
                 filePath: library.archivePath
@@ -1209,6 +1212,7 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 exportedName: signature.exportedName,
                 canonicalName: signature.canonicalName,
                 genericArity: signature.typeParams.length,
+                isExported: true,
                 packageName: signature.packageName,
                 unitId: signature.unitId,
                 filePath: library.archivePath
@@ -1234,6 +1238,7 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 exportedName: signature.exportedName,
                 canonicalName: signature.canonicalName,
                 genericArity: signature.typeParams.length,
+                isExported: true,
                 packageName: signature.packageName,
                 unitId: signature.unitId,
                 filePath: library.archivePath
