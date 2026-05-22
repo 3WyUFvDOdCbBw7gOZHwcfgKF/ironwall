@@ -1,0 +1,6 @@
+{program test~public~visibility~public_wrap_public@main
+  (class DoublePublic
+    (public (public (property [value i5])))
+    (constructor () in (cm_set self value $1^i5))
+  )
+}

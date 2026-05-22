@@ -5,11 +5,11 @@
 ## 1. 總體原則
 
 - base lib 的源單元不是特殊語法單元，也不是靜態檢查或生成階段的注入片段。
-- base lib 必須完整遵守 package 系統規格：規範文件名、規範 `program` header、普通 `import`、普通 export。
+- base lib 必須完整遵守 package 系統規格：規範文件名、規範 `program` header、普通 `import`、顯式 `(export ...)` 與 class 成員 `public`。
 
 ## 2. 載入模型
 
-- 標準庫源單元與使用者源單元一樣，統一經過同一套 unit id 驗證、package 匯出與靜態檢查流程。
+- 標準庫源單元與使用者源單元一樣，統一經過同一套 unit id 驗證、顯式 package 匯出、class 成員可見性與靜態檢查流程。
 - 不允許因為 unit 來自 base lib 就跳過 package 規則、保留名字規則或 overload 規則。
 
 ## 3. 包劃分
@@ -421,10 +421,10 @@
 ## 9. builtin 邊界
 
 - `std~...` packages 是普通 package，不是 builtin 名字集合的一部分。
-- 它們可以包裝 `declare` 的 runtime helper，也可以包裝語言 primitive，但包裝後暴露出的 top-level 名字仍然是普通 package export。
+- 它們可以包裝 `declare` 的 runtime helper，也可以包裝語言 primitive，但包裝後暴露出的 top-level 名字仍然必須以 `(export ...)` 進入普通 package export 集。
 - 這些名字只有在本 package 或 imported package 可見時才可用。
 
 ## 10. 相容性要求
 
-- 新的標準庫演進應優先透過新增 `std~...` package 或在現有 `std~...` package 中新增普通 export 完成。
+- 新的標準庫演進應優先透過新增 `std~...` package 或在現有 `std~...` package 中新增顯式 `(export ...)` 完成。
 - 不應引入 synthetic `std` 注入、base lib AST 注入、或對 base lib 的特殊靜態檢查 / 生成分支。

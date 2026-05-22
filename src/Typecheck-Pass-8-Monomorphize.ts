@@ -22,6 +22,7 @@ import {
     ListNode,
     MatchNode,
     NumberLiteralNode,
+    PublicNode,
     ProgramNode,
     SeqNode,
     SetNode,
@@ -75,6 +76,8 @@ export interface MonomorphizedClassInfo {
     readonly classNode: ClassNode;
     readonly propertyTypes: ReadonlyMap<string, TypeValue>;
     readonly methodTypes: ReadonlyMap<string, FunctionTypeValue>;
+    readonly propertyVisibility: ReadonlyMap<string, boolean>;
+    readonly methodVisibility: ReadonlyMap<string, boolean>;
     readonly constructorParamTypes: readonly (readonly TypeValue[])[];
 }
 
@@ -177,6 +180,10 @@ function cloneClassConstructorNode(node: ClassConstructorNode): ClassConstructor
     return new ClassConstructorNode(node.params.map((param) => cloneTypeVarBindNode(param)), cloneAstNode(node.body));
 }
 
+function clonePublicNode(node: PublicNode): PublicNode {
+    return new PublicNode(cloneAstNode(node.inner));
+}
+
 function cloneAstNode(node: AstNode): AstNode {
     if (node instanceof IdentifierNode) {
         return new IdentifierNode(node.name);
@@ -254,6 +261,9 @@ function cloneAstNode(node: AstNode): AstNode {
     if (node instanceof SetNode) {
         return new SetNode(new IdentifierNode(node.identifier.name), cloneAstNode(node.value));
     }
+    if (node instanceof PublicNode) {
+        return clonePublicNode(node);
+    }
     if (node instanceof TypeVarBindNode) {
         return cloneTypeVarBindNode(node);
     }
@@ -277,7 +287,8 @@ function cloneAstNode(node: AstNode): AstNode {
             new IdentifierNode(node.name.name),
             node.constructorNodeList.map((ctor) => cloneClassConstructorNode(ctor)),
             node.methodNodeList.map((method) => cloneClassMethodNode(method)),
-            node.propertyNodeList.map((property) => cloneClassPropertyNode(property))
+            node.propertyNodeList.map((property) => cloneClassPropertyNode(property)),
+            node.memberNodeList.map((member) => cloneAstNode(member) as ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode)
         );
     }
     if (node instanceof FunctionCallNode) {
@@ -381,6 +392,10 @@ function substituteClassConstructorTemplate(node: ClassConstructorNode, substitu
     );
 }
 
+function substitutePublicNodeTemplate(node: PublicNode, substitutions: ReadonlyMap<string, TypeValue>): PublicNode {
+    return new PublicNode(substituteValueAstTemplate(node.inner, substitutions));
+}
+
 function substituteFunctionCallTemplate(node: FunctionCallNode, substitutions: ReadonlyMap<string, TypeValue>): FunctionCallNode {
     const rewrittenCallee = substituteValueAstTemplate(node.callee, substitutions);
     if (node.callee instanceof IdentifierNode && node.callee.name === "class_new" && node.args.length > 0) {
@@ -419,6 +434,9 @@ function substituteValueAstTemplate(node: AstNode, substitutions: ReadonlyMap<st
     }
     if (node instanceof ExportNode) {
         return new ExportNode(substituteValueAstTemplate(node.inner, substitutions));
+    }
+    if (node instanceof PublicNode) {
+        return substitutePublicNodeTemplate(node, substitutions);
     }
     if (node instanceof GenericNameNode) {
         return cloneAstNode(node);
@@ -516,7 +534,8 @@ function substituteValueAstTemplate(node: AstNode, substitutions: ReadonlyMap<st
             new IdentifierNode(node.name.name),
             node.constructorNodeList.map((ctor) => substituteClassConstructorTemplate(ctor, substitutions)),
             node.methodNodeList.map((method) => substituteClassMethodTemplate(method, substitutions)),
-            node.propertyNodeList.map((property) => substituteClassPropertyTemplate(property, substitutions))
+            node.propertyNodeList.map((property) => substituteClassPropertyTemplate(property, substitutions)),
+            node.memberNodeList.map((member) => substituteValueAstTemplate(member, substitutions) as ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode)
         );
     }
     if (node instanceof FunctionCallNode) {
@@ -1283,6 +1302,9 @@ function rewriteValueAstWithMappings(node: AstNode, classNameMap: ReadonlyMap<st
     if (node instanceof SetNode) {
         return new SetNode(new IdentifierNode(node.identifier.name), rewriteValueAstWithMappings(node.value, classNameMap, functionNameMap));
     }
+    if (node instanceof PublicNode) {
+        return new PublicNode(rewriteValueAstWithMappings(node.inner, classNameMap, functionNameMap));
+    }
     if (node instanceof TypeVarBindNode || node instanceof TypeToFromNode || node instanceof TypeUnionNode) {
         return rewriteTypeAstWithMappings(node, classNameMap, functionNameMap);
     }
@@ -1300,7 +1322,8 @@ function rewriteValueAstWithMappings(node: AstNode, classNameMap: ReadonlyMap<st
             new IdentifierNode(node.name.name),
             node.constructorNodeList.map((ctor) => rewriteClassConstructorWithMappings(ctor, classNameMap, functionNameMap)),
             node.methodNodeList.map((method) => rewriteClassMethodWithMappings(method, classNameMap, functionNameMap)),
-            node.propertyNodeList.map((property) => rewriteClassPropertyWithMappings(property, classNameMap, functionNameMap))
+            node.propertyNodeList.map((property) => rewriteClassPropertyWithMappings(property, classNameMap, functionNameMap)),
+            node.memberNodeList.map((member) => rewriteValueAstWithMappings(member, classNameMap, functionNameMap) as ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode)
         );
     }
     if (node instanceof FunctionCallNode) {
@@ -1386,11 +1409,20 @@ function materializeGenericClassSeed(instance: GenericClassInstanceTypeValue): G
     }
     const substitutions = buildSubstitutionMap(resolvedGenericClass.typeParams, instance.typeArgs);
     const concreteName = getMonomorphizedClassName(instance);
+    const propertyNodeList = resolvedGenericClass.source.properties.map((property) => substituteClassPropertyTemplate(property, substitutions));
+    const methodNodeList = resolvedGenericClass.source.methods.map((method) => substituteClassMethodTemplate(method, substitutions));
+    const constructorNodeList = resolvedGenericClass.source.constructors.map((ctor) => substituteClassConstructorTemplate(ctor, substitutions));
+    const memberNodeList = [
+        ...propertyNodeList.map((property) => resolvedGenericClass.source.isPropertyPublic(property.bind.var.name) ? new PublicNode(property) : property),
+        ...methodNodeList.map((method) => resolvedGenericClass.source.isMethodPublic(method.methodName.name) ? new PublicNode(method) : method),
+        ...constructorNodeList
+    ];
     const classNode = new ClassNode(
         new IdentifierNode(concreteName),
-        resolvedGenericClass.source.constructors.map((ctor) => substituteClassConstructorTemplate(ctor, substitutions)),
-        resolvedGenericClass.source.methods.map((method) => substituteClassMethodTemplate(method, substitutions)),
-        resolvedGenericClass.source.properties.map((property) => substituteClassPropertyTemplate(property, substitutions))
+        constructorNodeList,
+        methodNodeList,
+        propertyNodeList,
+        memberNodeList
     );
     const metadata = buildCompilationUnitMetadataFromSourceInfo(resolvedGenericClass.source);
     if (metadata !== undefined) {
@@ -1425,6 +1457,7 @@ function materializeGenericFunctionSeed(instance: GenericFunctionInstanceTypeVal
 }
 
 function buildFinalClassInfo(seed: GeneratedClassSeed): MonomorphizedClassInfo {
+    const sourceInfo = getGenericClassInfo(seed.instance.genericName, seed.instance.typeArgs.length);
     const propertyTypes = new Map<string, TypeValue>();
     for (const property of seed.classNode.propertyNodeList) {
         propertyTypes.set(property.bind.var.name, astToTypeValue(property.bind.typeExp));
@@ -1439,6 +1472,12 @@ function buildFinalClassInfo(seed: GeneratedClassSeed): MonomorphizedClassInfo {
             )
         );
     }
+    const propertyVisibility = new Map<string, boolean>(
+        seed.classNode.propertyNodeList.map((property) => [property.bind.var.name, sourceInfo?.isPropertyPublic(property.bind.var.name) === true])
+    );
+    const methodVisibility = new Map<string, boolean>(
+        seed.classNode.methodNodeList.map((method) => [method.methodName.name, sourceInfo?.isMethodPublic(method.methodName.name) === true])
+    );
     const constructorParamTypes = seed.classNode.constructorNodeList.map((ctor) => ctor.params.map((param) => astToTypeValue(param.typeExp)));
     return {
         concreteName: seed.classNode.name.name,
@@ -1448,6 +1487,8 @@ function buildFinalClassInfo(seed: GeneratedClassSeed): MonomorphizedClassInfo {
         classNode: seed.classNode,
         propertyTypes,
         methodTypes,
+        propertyVisibility,
+        methodVisibility,
         constructorParamTypes
     };
 }

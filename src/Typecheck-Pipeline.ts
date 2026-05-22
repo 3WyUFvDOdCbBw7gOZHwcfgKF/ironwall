@@ -24,6 +24,7 @@ import {
     DfunNode,
     DeclaredDfunNode,
     ExportNode,
+    PublicNode,
     SeqNode,
     SetNode,
     TypeVarBindNode,
@@ -109,6 +110,54 @@ export class TypeCheckError extends IronwallDiagnosticError {
 
 let currentStringDatabase: StringDatabase | null = null;
 const variadicComparisonBuiltinNames: ReadonlySet<string> = new Set(["le", "lt", "ge", "gt", "eq"]);
+const memberVisibilityAccessContextStack: TypeValue[] = [];
+
+export function withMemberVisibilityAccessContext<T>(selfType: TypeValue, callback: () => T): T {
+    memberVisibilityAccessContextStack.push(selfType);
+    try {
+        return callback();
+    } finally {
+        memberVisibilityAccessContextStack.pop();
+    }
+}
+
+function canAccessPrivateMember(objectType: TypeValue): boolean {
+    const currentSelfType = memberVisibilityAccessContextStack[memberVisibilityAccessContextStack.length - 1];
+    if (currentSelfType === undefined) {
+        return false;
+    }
+    if (objectType instanceof ClassTypeValue) {
+        return currentSelfType instanceof ClassTypeValue && currentSelfType.className === objectType.className;
+    }
+    if (objectType instanceof GenericClassInstanceTypeValue) {
+        return currentSelfType instanceof GenericClassInstanceTypeValue
+            && currentSelfType.genericName === objectType.genericName
+            && currentSelfType.typeArgs.length === objectType.typeArgs.length
+            && currentSelfType.typeArgs.every((typeArg, index) => typeEqual(typeArg, objectType.typeArgs[index]));
+    }
+    return false;
+}
+
+function formatMemberOwner(type: ClassTypeValue | GenericClassInstanceTypeValue): string {
+    if (type instanceof ClassTypeValue) {
+        return `class ${type.className}`;
+    }
+    return `generic class ${type.genericName}`;
+}
+
+function ensureReadableMemberVisibility(memberName: string, objectType: ClassTypeValue | GenericClassInstanceTypeValue, isPublic: boolean): void {
+    if (isPublic || canAccessPrivateMember(objectType)) {
+        return;
+    }
+    throw new TypeCheckError(`Member ${memberName} is private in ${formatMemberOwner(objectType)}`);
+}
+
+function ensureWritablePropertyVisibility(memberName: string, objectType: ClassTypeValue | GenericClassInstanceTypeValue, isPublic: boolean): void {
+    if (isPublic || canAccessPrivateMember(objectType)) {
+        return;
+    }
+    throw new TypeCheckError(`Property ${memberName} is private in ${formatMemberOwner(objectType)}`);
+}
 
 function resolveStringDatabase(ast: AstNode): StringDatabase | null {
     if (ast instanceof ProgramNode) {
@@ -1016,7 +1065,7 @@ function rewriteTypedVariadicComparisonsAfterTypecheck(ast: AstNode, varEnv: Var
 }
 
 function rewriteTypedVariadicComparisonsInClassDefinition(node: ClassNode, varEnv: VarEnv, funcEnv: FunctionEnv, typeEnv: GenericTypeEnv): void {
-    const resolvedClassInfo = getVisibleClassInfo(node.name, node.name.name);
+    const resolvedClassInfo = resolveVisibleClassInfoWithCurrentPackageFallback(node.name, node.name.name);
     const nodeMetadata = getCompilationUnitMetadata(node);
     const selfClassName = resolvedClassInfo?.name
         ?? (nodeMetadata !== undefined && !node.name.name.includes("@") ? `${nodeMetadata.packageName}@${node.name.name}` : node.name.name);
@@ -1145,6 +1194,10 @@ export function typecheck(ast: AstNode, varEnv: VarEnv, funcEnv: FunctionEnv, ty
                 throw new TypeCheckError("internal error: expected ExportNode");
             }
             return typecheck(ast.inner, varEnv, funcEnv, typeEnv);
+        }
+
+        case AstNodeType.PublicNode: {
+            throw new TypeCheckError("public declarations must appear inside class bodies");
         }
 
         case AstNodeType.DvarNode: {
@@ -1799,12 +1852,14 @@ function typecheckGetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         if (classInfo) {
             for (const prop of classInfo.properties) {
                 if (prop.bind.var.name === memberName) {
+                    ensureReadableMemberVisibility(memberName, objectType, classInfo.isPropertyPublic(memberName));
                     return astToTypeValue(prop.bind.typeExp, typeEnv);
                 }
             }
 
             for (const method of classInfo.methods) {
                 if (method.methodName.name === memberName) {
+                    ensureReadableMemberVisibility(memberName, objectType, classInfo.isMethodPublic(memberName));
                     const paramTypes = method.params.map((param: TypeVarBindNode) => astToTypeValue(param.typeExp, typeEnv));
                     const returnType = astToTypeValue(method.returnType, typeEnv);
                     return new FunctionTypeValue(paramTypes, returnType);
@@ -1818,11 +1873,13 @@ function typecheckGetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         if (monomorphizedClassInfo) {
             const propertyType = monomorphizedClassInfo.propertyTypes.get(memberName);
             if (propertyType) {
+                ensureReadableMemberVisibility(memberName, objectType, monomorphizedClassInfo.propertyVisibility.get(memberName) === true);
                 return propertyType;
             }
 
             const methodType = monomorphizedClassInfo.methodTypes.get(memberName);
             if (methodType) {
+                ensureReadableMemberVisibility(memberName, objectType, monomorphizedClassInfo.methodVisibility.get(memberName) === true);
                 return methodType;
             }
 
@@ -1847,6 +1904,7 @@ function typecheckGetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         // 查找属性
         for (const prop of genericClassInfo.properties) {
             if (prop.bind.var.name === memberName) {
+                ensureReadableMemberVisibility(memberName, objectType, genericClassInfo.isPropertyPublic(memberName));
                 return astToTypeValue(prop.bind.typeExp, substitutionEnv);
             }
         }
@@ -1854,6 +1912,7 @@ function typecheckGetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         // 查找方法
         for (const method of genericClassInfo.methods) {
             if (method.methodName.name === memberName) {
+                ensureReadableMemberVisibility(memberName, objectType, genericClassInfo.isMethodPublic(memberName));
                 const paramTypes = method.params.map((param: TypeVarBindNode) => astToTypeValue(param.typeExp, substitutionEnv));
                 const returnType = astToTypeValue(method.returnType, substitutionEnv);
                 return new FunctionTypeValue(paramTypes, returnType);
@@ -1888,6 +1947,7 @@ function typecheckSetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         if (classInfo) {
             for (const prop of classInfo.properties) {
                 if (prop.bind.var.name === memberName) {
+                    ensureWritablePropertyVisibility(memberName, objectType, classInfo.isPropertyPublic(memberName));
                     const expectedType = astToTypeValue(prop.bind.typeExp, typeEnv);
                     typecheckAgainstExpectedType(args[2], expectedType, varEnv, funcEnv, typeEnv);
                     return new PrimitiveTypeValue("unit");
@@ -1901,6 +1961,7 @@ function typecheckSetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         if (monomorphizedClassInfo) {
             const expectedType = monomorphizedClassInfo.propertyTypes.get(memberName);
             if (expectedType) {
+                ensureWritablePropertyVisibility(memberName, objectType, monomorphizedClassInfo.propertyVisibility.get(memberName) === true);
                 typecheckAgainstExpectedType(args[2], expectedType, varEnv, funcEnv, typeEnv);
                 return new PrimitiveTypeValue("unit");
             }
@@ -1926,6 +1987,7 @@ function typecheckSetClassMember(args: AstNode[], varEnv: VarEnv, funcEnv: Funct
         // 查找属性
         for (const prop of genericClassInfo.properties) {
             if (prop.bind.var.name === memberName) {
+                ensureWritablePropertyVisibility(memberName, objectType, genericClassInfo.isPropertyPublic(memberName));
                 const expectedType = astToTypeValue(prop.bind.typeExp, substitutionEnv);
                 typecheckAgainstExpectedType(args[2], expectedType, varEnv, funcEnv, typeEnv);
                 return new PrimitiveTypeValue("unit");
@@ -2721,7 +2783,7 @@ function ensureConstructorInitializesProperties(propertyNames: string[], methods
 }
 
 function typecheckClassDefinition(node: ClassNode, varEnv: VarEnv, funcEnv: FunctionEnv, typeEnv: GenericTypeEnv): void {
-    const resolvedClassInfo = getVisibleClassInfo(node.name, node.name.name);
+    const resolvedClassInfo = resolveVisibleClassInfoWithCurrentPackageFallback(node.name, node.name.name);
     const nodeMetadata = getCompilationUnitMetadata(node);
     const selfClassName = resolvedClassInfo?.name
         ?? (nodeMetadata !== undefined && !node.name.name.includes("@") ? `${nodeMetadata.packageName}@${node.name.name}` : node.name.name);
@@ -2734,7 +2796,9 @@ function typecheckClassDefinition(node: ClassNode, varEnv: VarEnv, funcEnv: Func
             methodVarEnv.setImmutable(param.var.name, requireTypeAnnotation(param, typeEnv));
         }
         const returnType = astToTypeValue(method.returnType, typeEnv);
-        typecheckAgainstExpectedType(method.body, returnType, methodVarEnv, funcEnv, typeEnv);
+        withMemberVisibilityAccessContext(selfType, () => {
+            typecheckAgainstExpectedType(method.body, returnType, methodVarEnv, funcEnv, typeEnv);
+        });
     }
 
     for (const ctor of node.constructorNodeList) {
@@ -2743,7 +2807,9 @@ function typecheckClassDefinition(node: ClassNode, varEnv: VarEnv, funcEnv: Func
         for (const param of ctor.params) {
             ctorVarEnv.setImmutable(param.var.name, requireTypeAnnotation(param, typeEnv));
         }
-        typecheck(ctor.body, ctorVarEnv, funcEnv, typeEnv);
+        withMemberVisibilityAccessContext(selfType, () => {
+            typecheck(ctor.body, ctorVarEnv, funcEnv, typeEnv);
+        });
         ensureConstructorInitializesProperties(node.propertyNodeList.map((property) => property.bind.var.name), node.methodNodeList, ctor.body, `class ${node.name.name}`);
     }
 }
@@ -2769,7 +2835,9 @@ function typecheckGenericClassDefinition(node: GenericClassNode, varEnv: VarEnv,
             methodVarEnv.setImmutable(param.var.name, requireTypeAnnotation(param, genericTypeEnv));
         }
         const returnType = astToTypeValue(method.returnType, genericTypeEnv);
-        typecheckAgainstExpectedType(method.body, returnType, methodVarEnv, funcEnv, genericTypeEnv);
+        withMemberVisibilityAccessContext(selfType, () => {
+            typecheckAgainstExpectedType(method.body, returnType, methodVarEnv, funcEnv, genericTypeEnv);
+        });
     }
 
     for (const ctor of node.constructorNodeList) {
@@ -2778,7 +2846,9 @@ function typecheckGenericClassDefinition(node: GenericClassNode, varEnv: VarEnv,
         for (const param of ctor.params) {
             ctorVarEnv.setImmutable(param.var.name, requireTypeAnnotation(param, genericTypeEnv));
         }
-        typecheck(ctor.body, ctorVarEnv, funcEnv, genericTypeEnv);
+        withMemberVisibilityAccessContext(selfType, () => {
+            typecheck(ctor.body, ctorVarEnv, funcEnv, genericTypeEnv);
+        });
         ensureConstructorInitializesProperties(node.propertyNodeList.map((property) => property.bind.var.name), node.methodNodeList, ctor.body, `generic class ${node.genericName.name.name}`);
     }
 }
@@ -2887,6 +2957,24 @@ function resolveVisibleGenericClassInfoWithCurrentPackageFallback(referenceNode:
     return getGenericClassInfo(`${metadata.packageName}@${name}`, arity);
 }
 
+function resolveVisibleClassInfoWithCurrentPackageFallback(referenceNode: AstNode, name: string): ReturnType<typeof getVisibleClassInfo> {
+    const visibleInfo = getVisibleClassInfo(referenceNode, name);
+    if (visibleInfo !== undefined) {
+        return visibleInfo;
+    }
+
+    const metadata = getCompilationUnitMetadata(referenceNode);
+    if (metadata === undefined) {
+        return getClassInfo(name);
+    }
+
+    if (name.includes("@")) {
+        return getClassInfo(name);
+    }
+
+    return getClassInfo(`${metadata.packageName}@${name}`);
+}
+
 function isMainArgsType(type: TypeValue): boolean {
     return type instanceof GenericClassInstanceTypeValue
         && type.genericName === "array"
@@ -2952,6 +3040,10 @@ function validateModuleTopLevelStructure(program: ProgramNode): void {
 
             const topLevelNode = unwrapExportNode(expr);
 
+            if (expr instanceof PublicNode || topLevelNode instanceof PublicNode) {
+                throw new TypeCheckError("public declarations must appear inside class bodies");
+            }
+
             if (expr instanceof ExportNode) {
                 validateTopLevelExportNode(expr);
             } else if (!isAllowedModuleTopLevelNode(expr)) {
@@ -2977,6 +3069,9 @@ function validateNestedDefinitions(ast: AstNode): void {
     withActiveTypecheckNode(ast, (): void => {
         if (isDefinitionNode(ast)) {
             return;
+        }
+        if (ast instanceof PublicNode) {
+            throw new TypeCheckError("public declarations must appear inside class bodies");
         }
         if (ast instanceof ExportNode) {
             throw new TypeCheckError("export declarations must appear at top level");
@@ -3079,6 +3174,26 @@ function validateNestedDefinitions(ast: AstNode): void {
     });
 }
 
+function validateClassBodyMember(member: ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode): void {
+    if (member instanceof PublicNode) {
+        withActiveTypecheckNode(member, (): void => {
+            if (member.inner instanceof PublicNode) {
+                throw new TypeCheckError("public cannot wrap public");
+            }
+            if (member.inner instanceof ClassConstructorNode) {
+                throw new TypeCheckError("constructors are always public and cannot be wrapped in public");
+            }
+            if (!(member.inner instanceof ClassPropertyNode) && !(member.inner instanceof ClassMethodNode)) {
+                throw new TypeCheckError("public may only wrap class properties and methods");
+            }
+        });
+        validateNestedDefinitions(member.inner);
+        return;
+    }
+
+    validateNestedDefinitions(member);
+}
+
 function validateTopLevelNodeContents(ast: AstNode): void {
     if (ast instanceof DfunNode) {
         ast.params.forEach(validateNestedDefinitions);
@@ -3098,15 +3213,11 @@ function validateTopLevelNodeContents(ast: AstNode): void {
         return;
     }
     if (ast instanceof ClassNode) {
-        ast.propertyNodeList.forEach(validateNestedDefinitions);
-        ast.methodNodeList.forEach(validateNestedDefinitions);
-        ast.constructorNodeList.forEach(validateNestedDefinitions);
+        ast.memberNodeList.forEach(validateClassBodyMember);
         return;
     }
     if (ast instanceof GenericClassNode) {
-        ast.propertyNodeList.forEach(validateNestedDefinitions);
-        ast.methodNodeList.forEach(validateNestedDefinitions);
-        ast.constructorNodeList.forEach(validateNestedDefinitions);
+        ast.memberNodeList.forEach(validateClassBodyMember);
         return;
     }
     validateNestedDefinitions(ast);

@@ -1,0 +1,6 @@
+{program test~precompiled~visibility~private~app@main
+  (import test~precompiled~visibility~lib)
+  (function main ([args <array s3>]) to i5 in
+    (cm_get (class_new PublicVault $5^i5) hidden)
+  )
+}

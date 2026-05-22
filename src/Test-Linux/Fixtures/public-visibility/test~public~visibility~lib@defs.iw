@@ -1,0 +1,26 @@
+{program test~public~visibility~lib@defs
+  (export (class VisibleCounter
+    (property [hidden i5])
+    (public (property [shown i5]))
+    (constructor ([seed i5]) in
+      {
+        (cm_set self hidden seed)
+        (cm_set self shown (add seed $1^i5))
+      }
+    )
+    (method secret_bonus () to i5 in (add (cm_get self hidden) $10^i5))
+    (public (method read_total () to i5 in (add (cm_get self shown) ((cm_get self secret_bonus)))))
+  ))
+  (export (class <generic VisibleBox T>
+    (property [hidden T])
+    (public (property [value T]))
+    (constructor ([value0 T]) in
+      {
+        (cm_set self hidden value0)
+        (cm_set self value value0)
+      }
+    )
+    (method echo_hidden () to T in (cm_get self hidden))
+    (public (method reveal () to T in ((cm_get self echo_hidden))))
+  ))
+}

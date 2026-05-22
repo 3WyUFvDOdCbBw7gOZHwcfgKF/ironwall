@@ -22,6 +22,7 @@ import {
     ProgramNode,
     ImportNode,
     ExportNode,
+    PublicNode,
     DvarNode,
     SeqNode,
     DfunNode,
@@ -324,13 +325,15 @@ export function astToString(node: AstNode): string {
     }
     case AstNodeType.ExportNode:
       return `(export ${astToString((node as ExportNode).inner)})`;
+    case AstNodeType.PublicNode:
+      return `(public ${astToString((node as PublicNode).inner)})`;
     case AstNodeType.SetNode: {
       const set = node as SetNode;
       return `(var_set ${astToString(set.identifier)} ${astToString(set.value)})`;
     }
     case AstNodeType.ClassNode: {
       const cls = node as any;
-      return `(class ${astToString(cls.name)}${cls.propertyNodeList.map((p: any) => ` ${astToString(p)}`).join("")}${cls.methodNodeList.map((m: any) => ` ${astToString(m)}`).join("")}${cls.constructorNodeList.map((c: any) => ` ${astToString(c)}`).join("")})`;
+      return `(class ${astToString(cls.name)}${cls.memberNodeList.map((member: any) => ` ${astToString(member)}`).join("")})`;
     }
     case AstNodeType.ClassPropertyNode: {
       const prop = node as any;
@@ -350,7 +353,7 @@ export function astToString(node: AstNode): string {
     }
     case AstNodeType.GenericClassNode: {
       const g = node as any;
-      return `(class ${astToString(g.genericName)}${g.propertyNodeList.map((p: any) => ` ${astToString(p)}`).join("")}${g.methodNodeList.map((m: any) => ` ${astToString(m)}`).join("")}${g.constructorNodeList.map((c: any) => ` ${astToString(c)}`).join("")})`;
+      return `(class ${astToString(g.genericName)}${g.memberNodeList.map((member: any) => ` ${astToString(member)}`).join("")})`;
     }
     case AstNodeType.GenericDfunNode: {
       const g = node as any;

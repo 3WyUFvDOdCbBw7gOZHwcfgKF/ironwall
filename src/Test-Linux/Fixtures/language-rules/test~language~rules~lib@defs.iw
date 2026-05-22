@@ -21,12 +21,12 @@
   (export (function score ([value i5]) to i5 in value))
   (export (function score ([flag bool]) to i5 in (if flag then $40^i5 else $30^i5)))
   (export (class <generic Bucket T>
-    (property [value T])
+    (public (property [value T]))
     (constructor ([value0 T]) in (cm_set self value value0))
   ))
   (export (class <generic Bucket Left Right>
-    (property [left Left])
-    (property [right Right])
+    (public (property [left Left]))
+    (public (property [right Right]))
     (constructor ([left0 Left] [right0 Right]) in
       {
         (cm_set self left left0)
@@ -43,7 +43,7 @@
     (if box.right then (add box.left $50^i5) else (sub box.left $50^i5))
   ))
   (export (class MultiCtor
-    (property [value i5])
+    (public (property [value i5]))
     (constructor () in (cm_set self value $11^i5))
     (constructor ([initial i5]) in (cm_set self value initial))
     (constructor ([flag bool]) in

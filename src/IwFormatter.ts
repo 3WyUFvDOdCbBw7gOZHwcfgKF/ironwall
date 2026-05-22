@@ -22,6 +22,7 @@ import {
     LetNode,
     MatchNode,
     NumberLiteralNode,
+    PublicNode,
     ProgramNode,
     SeqNode,
     SetNode,
@@ -84,6 +85,9 @@ function prepareNodeForFormatting(node: AstNode): AstNode {
     if (node instanceof ExportNode) {
         return new ExportNode(prepareNodeForFormatting(node.inner));
     }
+    if (node instanceof PublicNode) {
+        return new PublicNode(prepareNodeForFormatting(node.inner));
+    }
     if (node instanceof DvarNode) {
         return new DvarNode(prepareNodeForFormatting(node.bind), prepareNodeForFormatting(node.value));
     }
@@ -144,11 +148,13 @@ function prepareNodeForFormatting(node: AstNode): AstNode {
         })));
     }
     if (node instanceof ClassNode) {
+        const preparedMemberNodeList = node.memberNodeList.map((member) => prepareClassBodyMemberNode(member));
         return new ClassNode(
             prepareIdentifierNode(node.name),
             node.constructorNodeList.map((ctor) => prepareClassConstructorNode(ctor)),
             node.methodNodeList.map((method) => prepareClassMethodNode(method)),
-            node.propertyNodeList.map((property) => prepareClassPropertyNode(property))
+            node.propertyNodeList.map((property) => prepareClassPropertyNode(property)),
+            preparedMemberNodeList
         );
     }
     if (node instanceof ClassPropertyNode) {
@@ -175,11 +181,13 @@ function prepareNodeForFormatting(node: AstNode): AstNode {
         );
     }
     if (node instanceof GenericClassNode) {
+        const preparedMemberNodeList = node.memberNodeList.map((member) => prepareClassBodyMemberNode(member));
         return new GenericClassNode(
             prepareGenericNameNode(node.genericName),
             node.constructorNodeList.map((ctor) => prepareClassConstructorNode(ctor)),
             node.methodNodeList.map((method) => prepareClassMethodNode(method)),
-            node.propertyNodeList.map((property) => prepareClassPropertyNode(property))
+            node.propertyNodeList.map((property) => prepareClassPropertyNode(property)),
+            preparedMemberNodeList
         );
     }
     if (node instanceof GenericDfunNode) {
@@ -251,6 +259,17 @@ function prepareClassConstructorNode(node: ClassConstructorNode): ClassConstruct
     const preparedNode = prepareNodeForFormatting(node);
     if (!(preparedNode instanceof ClassConstructorNode)) {
         throw new Error("Formatter member-chain preparation expected ClassConstructorNode");
+    }
+    return preparedNode;
+}
+
+function prepareClassBodyMemberNode(node: ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode): ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode {
+    const preparedNode = prepareNodeForFormatting(node);
+    if (!(preparedNode instanceof ClassPropertyNode)
+        && !(preparedNode instanceof ClassMethodNode)
+        && !(preparedNode instanceof ClassConstructorNode)
+        && !(preparedNode instanceof PublicNode)) {
+        throw new Error("Formatter member-chain preparation expected class body member node");
     }
     return preparedNode;
 }
@@ -328,6 +347,8 @@ function formatNode(node: AstNode, depth: number): string {
             return formatClassNode(node as ClassNode, depth);
         case AstNodeType.GenericClassNode:
             return formatGenericClassNode(node as GenericClassNode, depth);
+        case AstNodeType.PublicNode:
+            return formatPublicNode(node as PublicNode, depth);
         case AstNodeType.ClassMethodNode:
             return formatClassMethodNode(node as ClassMethodNode, depth);
         case AstNodeType.ClassConstructorNode:
@@ -436,19 +457,19 @@ function formatDeclaredDfunNode(node: DeclaredDfunNode, _depth: number): string 
 }
 
 function formatClassNode(node: ClassNode, depth: number): string {
-    return formatClassLike(astToString(node.name), [
-        ...node.propertyNodeList.map((property) => formatNode(property, depth + 1)),
-        ...node.methodNodeList.map((method) => formatNode(method, depth + 1)),
-        ...node.constructorNodeList.map((ctor) => formatNode(ctor, depth + 1))
-    ]);
+    return formatClassLike(astToString(node.name), node.memberNodeList.map((member) => formatNode(member, depth + 1)));
 }
 
 function formatGenericClassNode(node: GenericClassNode, depth: number): string {
-    return formatClassLike(astToString(node.genericName), [
-        ...node.propertyNodeList.map((property) => formatNode(property, depth + 1)),
-        ...node.methodNodeList.map((method) => formatNode(method, depth + 1)),
-        ...node.constructorNodeList.map((ctor) => formatNode(ctor, depth + 1))
-    ]);
+    return formatClassLike(astToString(node.genericName), node.memberNodeList.map((member) => formatNode(member, depth + 1)));
+}
+
+function formatPublicNode(node: PublicNode, depth: number): string {
+    return [
+        "(public",
+        indentBlock(formatNode(node.inner, depth + 1), 1),
+        ")"
+    ].join("\n");
 }
 
 function formatClassMethodNode(node: ClassMethodNode, depth: number): string {

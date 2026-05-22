@@ -127,6 +127,8 @@ export interface SerializedClassSignature {
     readonly exportedName: string;
     readonly packageName: string | null;
     readonly unitId: string | null;
+    readonly publicProperties: readonly string[];
+    readonly publicMethods: readonly string[];
     readonly properties: readonly SerializedBinding[];
     readonly methods: readonly SerializedMethodSignature[];
     readonly constructors: readonly SerializedConstructorSignature[];
@@ -159,6 +161,8 @@ export interface SerializedGenericClassSignature {
     readonly packageName: string | null;
     readonly unitId: string | null;
     readonly typeParams: readonly string[];
+    readonly publicProperties: readonly string[];
+    readonly publicMethods: readonly string[];
     readonly properties: readonly SerializedBinding[];
     readonly methods: readonly SerializedMethodSignature[];
     readonly constructors: readonly SerializedConstructorSignature[];
@@ -283,6 +287,8 @@ export interface InstalledPrecompiledConcreteClassDefinition {
     readonly aliases: readonly string[];
     readonly propertyTypes: ReadonlyMap<string, TypeValue>;
     readonly methodTypes: ReadonlyMap<string, FunctionTypeValue>;
+    readonly propertyVisibility: ReadonlyMap<string, boolean>;
+    readonly methodVisibility: ReadonlyMap<string, boolean>;
     readonly constructorParamTypes: readonly (readonly TypeValue[])[];
 }
 
@@ -570,6 +576,8 @@ function buildInstalledConcreteClassDefinitions(
                 aliases: buildAliasList([signature.canonicalName, signature.exportedName]),
                 propertyTypes,
                 methodTypes,
+                propertyVisibility: buildVisibilityMap(signature.properties.map((property) => property.name), [...signature.publicProperties]),
+                methodVisibility: buildVisibilityMap(signature.methods.map((method) => method.name), [...signature.publicMethods]),
                 constructorParamTypes
             });
         }
@@ -604,6 +612,8 @@ function buildInstalledConcreteClassDefinitions(
                 aliases: buildAliasList([record.concreteName]),
                 propertyTypes,
                 methodTypes,
+                propertyVisibility: buildVisibilityMap(genericSignature.properties.map((property) => property.name), [...genericSignature.publicProperties]),
+                methodVisibility: buildVisibilityMap(genericSignature.methods.map((method) => method.name), [...genericSignature.publicMethods]),
                 constructorParamTypes
             });
         }
@@ -724,12 +734,19 @@ function serializeConstructorSignature(ctor: ClassConstructorNode, typeParams: r
     };
 }
 
+function buildVisibilityMap(names: readonly string[], publicNames: readonly string[]): Map<string, boolean> {
+    const publicNameSet = new Set(publicNames);
+    return new Map(names.map((name) => [name, publicNameSet.has(name)]));
+}
+
 function serializeClassSignature(info: ClassInfo): SerializedClassSignature {
     return {
         canonicalName: info.name,
         exportedName: info.exportedName,
         packageName: info.packageName,
         unitId: info.unitId,
+        publicProperties: info.properties.filter((property) => info.isPropertyPublic(property.bind.var.name)).map((property) => property.bind.var.name),
+        publicMethods: info.methods.filter((method) => info.isMethodPublic(method.methodName.name)).map((method) => method.methodName.name),
         properties: info.properties.map((property) => serializeBindingFromTypeAst(property.bind)),
         methods: info.methods.map((method) => serializeMethodSignature(method)),
         constructors: info.constructors.map((ctor) => serializeConstructorSignature(ctor))
@@ -782,6 +799,8 @@ function serializeGenericClassSignature(info: GenericClassInfo): SerializedGener
         packageName: info.packageName,
         unitId: info.unitId,
         typeParams: [...info.typeParams],
+        publicProperties: info.properties.filter((property) => info.isPropertyPublic(property.bind.var.name)).map((property) => property.bind.var.name),
+        publicMethods: info.methods.filter((method) => info.isMethodPublic(method.methodName.name)).map((method) => method.methodName.name),
         properties: info.properties.map((property) => serializeBindingFromTypeAst(property.bind, info.typeParams)),
         methods: info.methods.map((method) => serializeMethodSignature(method, info.typeParams)),
         constructors: info.constructors.map((ctor) => serializeConstructorSignature(ctor, info.typeParams))
@@ -1134,7 +1153,9 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 signature.packageName,
                 signature.unitId,
                 signature.exportedName,
-                library.archivePath
+                library.archivePath,
+                signature.publicProperties,
+                signature.publicMethods
             ));
             registerPackageSymbol({
                 kind: "class",
@@ -1205,7 +1226,9 @@ export function installPrecompiledLibraryTypecheckState(libraries: readonly Load
                 signature.packageName,
                 signature.unitId,
                 signature.exportedName,
-                library.archivePath
+                library.archivePath,
+                signature.publicProperties,
+                signature.publicMethods
             ));
             registerPackageSymbol({
                 kind: "generic_class",

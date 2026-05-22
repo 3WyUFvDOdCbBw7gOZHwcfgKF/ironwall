@@ -24,6 +24,7 @@ import {
     ListNode,
     MatchNode,
     NumberLiteralNode,
+    PublicNode,
     ProgramNode,
     RoundParenListNode,
     SeqNode,
@@ -33,6 +34,7 @@ import {
     TypeToFromNode,
     TypeUnionNode,
     TypeVarBindNode,
+    getClassBodyMembers,
     isExportableTopLevelAstNode
 } from "./AstNode";
 import {
@@ -113,6 +115,26 @@ function isTopLevelFunctionExported(exportedName: string, context: DefinitionCol
         && !(context.packageName !== null && exportedName === "main");
 }
 
+function collectPublicMemberNames(members: readonly ReturnType<typeof getClassBodyMembers>[number][]): { publicPropertyNames: Set<string>; publicMethodNames: Set<string> } {
+    const publicPropertyNames = new Set<string>();
+    const publicMethodNames = new Set<string>();
+
+    for (const member of members) {
+        if (!(member instanceof PublicNode)) {
+            continue;
+        }
+        if (member.inner instanceof ClassPropertyNode) {
+            publicPropertyNames.add(member.inner.bind.var.name);
+            continue;
+        }
+        if (member.inner instanceof ClassMethodNode) {
+            publicMethodNames.add(member.inner.methodName.name);
+        }
+    }
+
+    return { publicPropertyNames, publicMethodNames };
+}
+
 export function collectClassInfoPass(ast: AstNode, context: DefinitionCollectionContext = { topLevel: true, exported: true, packageName: null, unitId: null, filePath: null }): void {
     if (ast instanceof ExportNode) {
         if (context.topLevel && isExportableTopLevelAstNode(ast.inner)) {
@@ -125,7 +147,19 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
 
     if (ast instanceof ClassNode && context.topLevel) {
         const canonicalName = buildCanonicalName(ast.name.name, context.packageName);
-        const info = new ClassInfo(canonicalName, ast.constructorNodeList, ast.methodNodeList, ast.propertyNodeList, context.packageName, context.unitId, ast.name.name, context.filePath);
+        const visibility = collectPublicMemberNames(getClassBodyMembers(ast));
+        const info = new ClassInfo(
+            canonicalName,
+            ast.constructorNodeList,
+            ast.methodNodeList,
+            ast.propertyNodeList,
+            context.packageName,
+            context.unitId,
+            ast.name.name,
+            context.filePath,
+            visibility.publicPropertyNames,
+            visibility.publicMethodNames
+        );
         registerClassInfo(info);
         registerSymbol("class", ast.name.name, canonicalName, context, undefined, isTopLevelSymbolExported(context));
         return;
@@ -133,6 +167,7 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
     if (ast instanceof GenericClassNode && context.topLevel) {
         const baseCanonicalName = buildCanonicalName(ast.genericName.name.name, context.packageName);
         const canonicalName = buildGenericOverloadCanonicalName(baseCanonicalName, ast.genericName.genericTypeArgs.length);
+        const visibility = collectPublicMemberNames(getClassBodyMembers(ast));
         const info = new GenericClassInfo(
             canonicalName,
             baseCanonicalName,
@@ -143,7 +178,9 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
             context.packageName,
             context.unitId,
             ast.genericName.name.name,
-            context.filePath
+            context.filePath,
+            visibility.publicPropertyNames,
+            visibility.publicMethodNames
         );
         registerGenericClassInfo(info);
         registerSymbol("generic_class", ast.genericName.name.name, canonicalName, context, ast.genericName.genericTypeArgs.length, isTopLevelSymbolExported(context));
@@ -283,6 +320,10 @@ export function collectClassInfoPass(ast: AstNode, context: DefinitionCollection
             collectClassInfoPass(branch.bind, { ...context, topLevel: false });
             collectClassInfoPass(branch.body, { ...context, topLevel: false });
         });
+        return;
+    }
+    if (ast instanceof PublicNode) {
+        collectClassInfoPass(ast.inner, { ...context, topLevel: false });
         return;
     }
     if (ast instanceof ImportNode) {

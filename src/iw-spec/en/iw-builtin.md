@@ -108,4 +108,4 @@ In the specification:
 This means:
 
 - User packages must not export names such as `add`, `array_new`, `s3_new`, `z5_real`, or `self`
-- Names such as `print`, `sin`, `val_to_f7`, and `bin_to_f7` exported by `std~...` are only ordinary exports reserved within their corresponding packages; they are not language builtins
+- Names such as `print`, `sin`, `val_to_f7`, and `bin_to_f7` exposed by `std~...` through `(export ...)` are only ordinary names reserved within their corresponding packages; they are not language builtins

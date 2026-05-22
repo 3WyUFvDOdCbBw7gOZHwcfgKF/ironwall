@@ -1,0 +1,6 @@
+{program test~precompiled~visibility~generic~private~app@main
+  (import test~precompiled~visibility~lib)
+  (function main ([args <array s3>]) to i5 in
+    (cm_get (class_new <PublicBox i5> $7^i5) hidden)
+  )
+}

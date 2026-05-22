@@ -19,6 +19,7 @@ import {
     LetNode,
     MatchNode,
     NumberLiteralNode,
+    PublicNode,
     ProgramNode,
     SeqNode,
     SetNode,
@@ -61,6 +62,8 @@ class ConcreteClassInfo {
     public readonly propertyNodes: readonly ClassPropertyNode[];
     public readonly methodNodes: readonly ClassMethodNode[];
     public readonly constructorNodes: readonly ClassConstructorNode[];
+    public readonly propertyVisibility: ReadonlyMap<string, boolean>;
+    public readonly methodVisibility: ReadonlyMap<string, boolean>;
     public readonly constructorParamTypes: readonly (readonly TypeValue[])[];
 
     constructor(
@@ -71,6 +74,8 @@ class ConcreteClassInfo {
         propertyNodes: readonly ClassPropertyNode[],
         methodNodes: readonly ClassMethodNode[],
         constructorNodes: readonly ClassConstructorNode[],
+        propertyVisibility: ReadonlyMap<string, boolean>,
+        methodVisibility: ReadonlyMap<string, boolean>,
         constructorParamTypes: readonly (readonly TypeValue[])[]
     ) {
         this.name = name;
@@ -80,8 +85,65 @@ class ConcreteClassInfo {
         this.propertyNodes = propertyNodes;
         this.methodNodes = methodNodes;
         this.constructorNodes = constructorNodes;
+        this.propertyVisibility = propertyVisibility;
+        this.methodVisibility = methodVisibility;
         this.constructorParamTypes = constructorParamTypes;
     }
+
+    isPropertyPublic(name: string): boolean {
+        return this.propertyVisibility.get(name) === true || hasLegacyStdConcreteVisibility(this.name);
+    }
+
+    isMethodPublic(name: string): boolean {
+        return this.methodVisibility.get(name) === true || hasLegacyStdConcreteVisibility(this.name);
+    }
+}
+
+const concreteMemberAccessContextStack: string[] = [];
+
+function withConcreteMemberAccessContext<T>(className: string, callback: () => T): T {
+    concreteMemberAccessContextStack.push(className);
+    try {
+        return callback();
+    } finally {
+        concreteMemberAccessContextStack.pop();
+    }
+}
+
+function canAccessConcretePrivateMember(className: string): boolean {
+    return concreteMemberAccessContextStack[concreteMemberAccessContextStack.length - 1] === className;
+}
+
+function hasLegacyStdConcreteVisibility(className: string): boolean {
+    return className.includes("std~");
+}
+
+function buildVisibilityMap(names: readonly string[], publicNames: Iterable<string>): Map<string, boolean> {
+    const publicNameSet = new Set(publicNames);
+    return new Map(names.map((name) => [name, publicNameSet.has(name)]));
+}
+
+function collectPublicClassMemberNames(node: ClassNode): { publicProperties: Set<string>; publicMethods: Set<string> } {
+    const publicProperties = new Set<string>();
+    const publicMethods = new Set<string>();
+    if (hasLegacyStdConcreteVisibility(node.name.name)) {
+        node.propertyNodeList.forEach((property) => publicProperties.add(property.bind.var.name));
+        node.methodNodeList.forEach((method) => publicMethods.add(method.methodName.name));
+        return { publicProperties, publicMethods };
+    }
+    for (const member of node.memberNodeList) {
+        if (!(member instanceof PublicNode)) {
+            continue;
+        }
+        if (member.inner instanceof ClassPropertyNode) {
+            publicProperties.add(member.inner.bind.var.name);
+            continue;
+        }
+        if (member.inner instanceof ClassMethodNode) {
+            publicMethods.add(member.inner.methodName.name);
+        }
+    }
+    return { publicProperties, publicMethods };
 }
 
 class ConcreteFunctionInfo {
@@ -232,6 +294,7 @@ class ConcreteProgramContext {
     }
 
     private registerClassInfo(node: ClassNode): void {
+        const visibility = collectPublicClassMemberNames(node);
         const propertyTypes = new Map<string, TypeValue>();
         for (const property of node.propertyNodeList) {
             propertyTypes.set(property.bind.var.name, this.typeAstToTypeValue(property.bind.typeExp));
@@ -264,6 +327,8 @@ class ConcreteProgramContext {
                 node.propertyNodeList,
                 node.methodNodeList,
                 node.constructorNodeList,
+                buildVisibilityMap(node.propertyNodeList.map((property) => property.bind.var.name), visibility.publicProperties),
+                buildVisibilityMap(node.methodNodeList.map((method) => method.methodName.name), visibility.publicMethods),
                 constructorParamTypes
             )
         );
@@ -284,6 +349,8 @@ class ConcreteProgramContext {
                 [],
                 [],
                 [],
+                info.propertyVisibility,
+                info.methodVisibility,
                 info.constructorParamTypes
             )
         );
@@ -944,10 +1011,16 @@ function typecheckGetClassMember(context: ConcreteProgramContext, args: readonly
     }
     const propertyType = classInfo.properties.get(args[1].name);
     if (propertyType !== undefined) {
+        if (!classInfo.isPropertyPublic(args[1].name) && !canAccessConcretePrivateMember(objectType.className)) {
+            throw new ConcreteTypeCheckError(`Member ${args[1].name} is private in class ${objectType.className}`);
+        }
         return propertyType;
     }
     const methodType = classInfo.methods.get(args[1].name);
     if (methodType !== undefined) {
+        if (!classInfo.isMethodPublic(args[1].name) && !canAccessConcretePrivateMember(objectType.className)) {
+            throw new ConcreteTypeCheckError(`Member ${args[1].name} is private in class ${objectType.className}`);
+        }
         return methodType;
     }
     throw new ConcreteTypeCheckError(`Member ${args[1].name} not found in class ${objectType.className}`);
@@ -968,6 +1041,9 @@ function typecheckSetClassMember(context: ConcreteProgramContext, args: readonly
     const propertyType = classInfo.properties.get(args[1].name);
     if (propertyType === undefined) {
         throw new ConcreteTypeCheckError(`Property ${args[1].name} not found in class ${objectType.className}`);
+    }
+    if (!classInfo.isPropertyPublic(args[1].name) && !canAccessConcretePrivateMember(objectType.className)) {
+        throw new ConcreteTypeCheckError(`Property ${args[1].name} is private in class ${objectType.className}`);
     }
     typecheckAgainstExpectedType(context, args[2], propertyType, varEnv);
     return new PrimitiveTypeValue("unit");
@@ -1043,7 +1119,9 @@ function typecheckClassDefinition(context: ConcreteProgramContext, node: ClassNo
         for (const param of method.params) {
             methodVarEnv.setImmutable(param.var.name, context.typeAstToTypeValue(param.typeExp));
         }
-        typecheckAgainstExpectedType(context, method.body, context.typeAstToTypeValue(method.returnType), methodVarEnv);
+        withConcreteMemberAccessContext(node.name.name, () => {
+            typecheckAgainstExpectedType(context, method.body, context.typeAstToTypeValue(method.returnType), methodVarEnv);
+        });
     }
     for (const ctor of node.constructorNodeList) {
         const ctorVarEnv = varEnv.extend();
@@ -1051,7 +1129,9 @@ function typecheckClassDefinition(context: ConcreteProgramContext, node: ClassNo
         for (const param of ctor.params) {
             ctorVarEnv.setImmutable(param.var.name, context.typeAstToTypeValue(param.typeExp));
         }
-        typecheckConcreteAst(context, ctor.body, ctorVarEnv);
+        withConcreteMemberAccessContext(node.name.name, () => {
+            typecheckConcreteAst(context, ctor.body, ctorVarEnv);
+        });
     }
 }
 

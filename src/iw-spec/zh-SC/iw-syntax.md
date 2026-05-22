@@ -22,6 +22,8 @@
 
 - `program`
 - `import`
+- `export`
+- `public`
 - `var`
 - `var_set`
 - `fn`
@@ -195,7 +197,7 @@
 
 ```ironwall
 (class <generic Box T>
-  (property [value T])
+  (public (property [value T]))
   (constructor ([v T]) in (cm_set self value v))
 )
 ```
@@ -229,9 +231,9 @@
 
 ```ironwall
 (class Point
-  (property [x i5])
-  (property [y i5])
-  (method sum () to i5 in (add (cm_get self x) (cm_get self y)))
+  (public (property [x i5]))
+  (public (property [y i5]))
+  (public (method sum () to i5 in (add (cm_get self x) (cm_get self y))))
   (constructor ([x0 i5] [y0 i5]) in
     {
       (cm_set self x x0)
@@ -246,6 +248,10 @@
 - `(property [name Type])`
 - `(method name ([p T] ...) to Ret in body)`
 - `(constructor ([p T] ...) in body)`
+- `(public (property [name Type]))`
+- `(public (method name ([p T] ...) to Ret in body))`
+
+`public` 只能出现在普通 class 或 generic class 的 class body 内，且只能包住单一 property 或 method。未包 `public` 的 property / method 默认为 private；constructor 默认 public，不能写成 `(public (constructor ...))`。
 
 ## 13. 呼叫与物件操作
 
@@ -346,7 +352,7 @@ $payload^type
 (array_length xs)
 ```
 
-## 16. import
+## 16. import 与 export
 
 ```ironwall
 (import a~b~c)
@@ -354,3 +360,22 @@ $payload^type
 
 - `import` 只能出现在 top-level。
 - `import` 的目标是 package path，而非文件路径。
+
+```ironwall
+(export (function score ([x i5]) to i5 in x))
+
+(export (class Counter
+  (public (property [value i5]))
+  (constructor ([seed i5]) in (cm_set self value seed))
+))
+
+(export (class <generic Box T>
+  (public (property [value T]))
+  (constructor ([value T]) in (cm_set self value value))
+))
+```
+
+- `export` 只能出现在 top-level。
+- `(export exp)` 必须且只能有一个参数。
+- `export` 只能包住 top-level `class`、泛型 `class`、`function`、`declare`、泛型 `function` 或 top-level `var`。
+- `export` 不改变被包裹定义的型别与求值语义，只控制跨 package 可见性。

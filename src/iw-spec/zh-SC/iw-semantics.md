@@ -98,6 +98,9 @@
 - method 名称在类内必须唯一。
 - property 与 method 不可同名。
 - 不支持继承。
+- 未标记 `public` 的 property / method 默认为 private。
+- `(public ...)` 只可标记 property / method；constructor 默认 public。
+- 普通 class 与 generic class 遵守相同的成员可见性规则。
 
 ### 7.2 constructor 约束
 
@@ -109,6 +112,14 @@
 
 - `self` 只在 method 与 constructor 内自动绑定。
 - `self` 是 immutable 绑定，但其栏位可透过 `cm_set` 被初始化或修改。
+
+### 7.4 成员可见性
+
+- class 外部透过 `cm_get`、member-chain sugar 或方法值取得，只能读取 public property / method。
+- class 外部透过 `cm_set` 只能写入 public property。
+- class 的 method / constructor 内部可透过 `self` 读写同一 class 的 private property，并可读取同一 class 的 private method。
+- generic class 实例化后仍保留来源 generic class 的 property / method 可见性。
+- 对 private 成员的外部访问必须作为静态错误拒绝。
 
 ## 8. 阵列
 

@@ -1,0 +1,5 @@
+{program test~public~visibility~public_wrap_constructor@main
+  (class WrappedCtor
+    (public (constructor () in unit))
+  )
+}

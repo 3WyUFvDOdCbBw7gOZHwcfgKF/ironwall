@@ -5,11 +5,11 @@ This document defines how Ironwall's builtin standard library is loaded, how its
 ## 1. Overall Principles
 
 - Base-lib source units are not special syntax units, and they are not injected fragments in the static-check or code-generation stages
-- The base lib must fully obey the package-system specification: canonical file names, canonical `program` headers, ordinary `import`, ordinary export
+- The base lib must fully obey the package-system specification: canonical file names, canonical `program` headers, ordinary `import`, explicit `(export ...)`, and class-member `public`
 
 ## 2. Loading Model
 
-- Standard-library source units and user source units go through the same unit-id validation, package export, and static-check pipeline
+- Standard-library source units and user source units go through the same unit-id validation, explicit package export, class-member visibility, and static-check pipeline
 - It is not allowed to skip package rules, reserved-name rules, or overload rules merely because a unit comes from the base lib
 
 ## 3. Package Split
@@ -66,16 +66,11 @@ There is no requirement that a single aggregate package `std` exist. If a user w
 `std~array` provides the first nominal wrapper layer around builtin `<array T>`:
 
 - `<Array T>`
-- `<ArrayBuilder T>`
 - `<array_new_fill T>`
-- `<array_builder_new T>`
 - `<array_wrap T>`
 - `<Array_len T>`
-- `<ArrayBuilder_len T>`
 - `<Array_contains T>`
-- `<Array_filter_into T>`
 - `<Array_concat T>`
-- `<Array_concat_into T>`
 - `<Array_sorted T>`
 - `<Array_reversed T>`
 - `<Array_max T>`
@@ -92,17 +87,10 @@ There is no requirement that a single aggregate package `std` exist. If a user w
 - `reverse`
 - `sort`
 
-`ArrayBuilder<T>` publicly provides the following methods:
-
-- `append`
-- `build`
-
 Where:
 
 - `count` / `index` / `Array_contains` depend on an explicit `Eq<T>` support object
 - `sort` / `Array_sorted` / `Array_max` / `Array_min` depend on an explicit `Ord<T>` support object
-- `Array_filter_into` appends matching values into a caller-managed `ArrayBuilder<T>` in a single pass
-- `Array_concat_into` appends all items from an `Array<T>` into a caller-managed `ArrayBuilder<T>`
 - `Array_reversed` returns a new `Array<T>` snapshot, not an iterator/view
 - `index` performs an explicit runtime abort if the element is not found
 - `copy` / `Array_concat` must stably allocate the result array in generic cases
@@ -433,10 +421,10 @@ Where:
 ## 9. Builtin Boundary
 
 - `std~...` packages are ordinary packages, not part of the builtin name set
-- They may wrap runtime helpers exposed through `declare`, and may wrap language primitives, but the top-level names they expose after wrapping are still ordinary package exports
+- They may wrap runtime helpers exposed through `declare`, and may wrap language primitives, but the top-level names they expose after wrapping must still enter the ordinary package export set through `(export ...)`
 - These names are usable only when visible through the current package or an imported package
 
 ## 10. Compatibility Requirements
 
-- Future standard-library evolution should happen primarily by adding new `std~...` packages or new ordinary exports to existing `std~...` packages
+- Future standard-library evolution should happen primarily by adding new `std~...` packages or new explicit `(export ...)` entries to existing `std~...` packages
 - Synthetic `std` injection, base-lib AST injection, or special static-check / codegen branches for the base lib should not be introduced

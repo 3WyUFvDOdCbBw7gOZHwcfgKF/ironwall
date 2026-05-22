@@ -1,0 +1,6 @@
+{program test~public~visibility~public_wrap_expression@main
+  (class WrappedExpr
+    (public $1^i5)
+    (constructor () in unit)
+  )
+}

@@ -1,0 +1,29 @@
+{program test~precompiled~visibility~lib@defs
+  (export (class PublicVault
+    (property [hidden i5])
+    (public (property [shown i5]))
+    (constructor ([seed i5]) in
+      {
+        (cm_set self hidden seed)
+        (cm_set self shown (add seed $1^i5))
+      }
+    )
+    (method secret () to i5 in (add (cm_get self hidden) $10^i5))
+    (public (method reveal () to i5 in ((cm_get self secret))))
+  ))
+  (export (class <generic PublicBox T>
+    (property [hidden T])
+    (public (property [value T]))
+    (constructor ([value0 T]) in
+      {
+        (cm_set self hidden value0)
+        (cm_set self value value0)
+      }
+    )
+    (method echo_hidden () to T in (cm_get self hidden))
+    (public (method reveal () to T in ((cm_get self echo_hidden))))
+  ))
+  (export (function make_public_box_i5 ([value i5]) to <PublicBox i5> in
+    (class_new <PublicBox i5> value)
+  ))
+}

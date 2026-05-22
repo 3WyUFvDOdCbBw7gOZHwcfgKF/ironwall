@@ -122,6 +122,15 @@ function getCurrentPackageCanonicalName(referenceNode: AstNode, name: string): s
     return `${metadata.packageName}@${name}`;
 }
 
+function buildVisibilityMap(names: readonly string[], publicNames: Iterable<string>): Map<string, boolean> {
+    const publicNameSet = new Set(publicNames);
+    return new Map(names.map((name) => [name, publicNameSet.has(name)]));
+}
+
+function hasLegacyStdPublicVisibility(packageName: string | null): boolean {
+    return packageName !== null && packageName.startsWith("std~");
+}
+
 export class ClassInfo {
     public readonly name: string;
     public readonly exportedName: string;
@@ -133,8 +142,21 @@ export class ClassInfo {
     public readonly properties: ClassPropertyNode[];
     public readonly methodMap: Map<string, ClassMethodNode>;
     public readonly propertyMap: Map<string, ClassPropertyNode>;
+    public readonly methodVisibility: Map<string, boolean>;
+    public readonly propertyVisibility: Map<string, boolean>;
 
-    constructor(name: string, constructors: ClassConstructorNode[], methods: ClassMethodNode[], properties: ClassPropertyNode[], packageName: string | null = null, unitId: string | null = null, exportedName?: string, filePath: string | null = null) {
+    constructor(
+        name: string,
+        constructors: ClassConstructorNode[],
+        methods: ClassMethodNode[],
+        properties: ClassPropertyNode[],
+        packageName: string | null = null,
+        unitId: string | null = null,
+        exportedName?: string,
+        filePath: string | null = null,
+        publicPropertyNames: Iterable<string> = [],
+        publicMethodNames: Iterable<string> = []
+    ) {
         this.name = name;
         this.exportedName = exportedName ?? name;
         this.packageName = packageName;
@@ -145,6 +167,16 @@ export class ClassInfo {
         this.properties = properties;
         this.methodMap = new Map(methods.map((method) => [method.methodName.name, method]));
         this.propertyMap = new Map(properties.map((property) => [property.bind.var.name, property]));
+        this.methodVisibility = buildVisibilityMap(methods.map((method) => method.methodName.name), publicMethodNames);
+        this.propertyVisibility = buildVisibilityMap(properties.map((property) => property.bind.var.name), publicPropertyNames);
+    }
+
+    isMethodPublic(name: string): boolean {
+        return this.methodVisibility.get(name) === true || hasLegacyStdPublicVisibility(this.packageName);
+    }
+
+    isPropertyPublic(name: string): boolean {
+        return this.propertyVisibility.get(name) === true || hasLegacyStdPublicVisibility(this.packageName);
     }
 }
 
@@ -161,8 +193,23 @@ export class GenericClassInfo {
     public readonly properties: ClassPropertyNode[];
     public readonly methodMap: Map<string, ClassMethodNode>;
     public readonly propertyMap: Map<string, ClassPropertyNode>;
+    public readonly methodVisibility: Map<string, boolean>;
+    public readonly propertyVisibility: Map<string, boolean>;
 
-    constructor(name: string, genericName: string, typeParams: string[], constructors: ClassConstructorNode[], methods: ClassMethodNode[], properties: ClassPropertyNode[], packageName: string | null = null, unitId: string | null = null, exportedName?: string, filePath: string | null = null) {
+    constructor(
+        name: string,
+        genericName: string,
+        typeParams: string[],
+        constructors: ClassConstructorNode[],
+        methods: ClassMethodNode[],
+        properties: ClassPropertyNode[],
+        packageName: string | null = null,
+        unitId: string | null = null,
+        exportedName?: string,
+        filePath: string | null = null,
+        publicPropertyNames: Iterable<string> = [],
+        publicMethodNames: Iterable<string> = []
+    ) {
         this.name = name;
         this.genericName = genericName;
         this.exportedName = exportedName ?? genericName;
@@ -175,6 +222,16 @@ export class GenericClassInfo {
         this.properties = properties;
         this.methodMap = new Map(methods.map((method) => [method.methodName.name, method]));
         this.propertyMap = new Map(properties.map((property) => [property.bind.var.name, property]));
+        this.methodVisibility = buildVisibilityMap(methods.map((method) => method.methodName.name), publicMethodNames);
+        this.propertyVisibility = buildVisibilityMap(properties.map((property) => property.bind.var.name), publicPropertyNames);
+    }
+
+    isMethodPublic(name: string): boolean {
+        return this.methodVisibility.get(name) === true || hasLegacyStdPublicVisibility(this.packageName);
+    }
+
+    isPropertyPublic(name: string): boolean {
+        return this.propertyVisibility.get(name) === true || hasLegacyStdPublicVisibility(this.packageName);
     }
 }
 

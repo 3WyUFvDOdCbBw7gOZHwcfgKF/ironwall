@@ -18,6 +18,7 @@ import {
     LetNode,
     ListNode,
     MatchNode,
+    PublicNode,
     ProgramNode,
     SeqNode,
     SetNode,
@@ -168,15 +169,14 @@ export function annotateCanonicalTagsForSubtree(node: AstNode, rootTag: string):
 
     if (node instanceof ClassNode) {
         annotateChild(node.name, `${rootTag}/name`);
-        for (let index = 0; index < node.propertyNodeList.length; index += 1) {
-            annotateChild(node.propertyNodeList[index], `${rootTag}/property[${index}]`);
+        for (let index = 0; index < node.memberNodeList.length; index += 1) {
+            annotateChild(node.memberNodeList[index], `${rootTag}/member[${index}]`);
         }
-        for (let index = 0; index < node.methodNodeList.length; index += 1) {
-            annotateChild(node.methodNodeList[index], `${rootTag}/method[${index}]`);
-        }
-        for (let index = 0; index < node.constructorNodeList.length; index += 1) {
-            annotateChild(node.constructorNodeList[index], `${rootTag}/constructor[${index}]`);
-        }
+        return;
+    }
+
+    if (node instanceof PublicNode) {
+        annotateChild(node.inner, `${rootTag}/inner`);
         return;
     }
 
@@ -201,14 +201,8 @@ export function annotateCanonicalTagsForSubtree(node: AstNode, rootTag: string):
 
     if (node instanceof GenericClassNode) {
         annotateChild(node.genericName, `${rootTag}/name`);
-        for (let index = 0; index < node.propertyNodeList.length; index += 1) {
-            annotateChild(node.propertyNodeList[index], `${rootTag}/property[${index}]`);
-        }
-        for (let index = 0; index < node.methodNodeList.length; index += 1) {
-            annotateChild(node.methodNodeList[index], `${rootTag}/method[${index}]`);
-        }
-        for (let index = 0; index < node.constructorNodeList.length; index += 1) {
-            annotateChild(node.constructorNodeList[index], `${rootTag}/constructor[${index}]`);
+        for (let index = 0; index < node.memberNodeList.length; index += 1) {
+            annotateChild(node.memberNodeList[index], `${rootTag}/member[${index}]`);
         }
         return;
     }

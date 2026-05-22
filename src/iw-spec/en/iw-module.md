@@ -75,6 +75,7 @@ Literal-db files obey the same rule: semantic identity depends only on the file 
 Under module mode, the top level may contain only:
 
 - `(import package-path)`
+- `(export top-level-definition-or-var)`
 - `class`
 - `function`
 - `declare`
@@ -86,6 +87,7 @@ The following are forbidden at top level in module mode:
 
 - Bare top-level executable expressions
 - Non-top-level `import`
+- Non-top-level `export`
 - Non-top-level `class` / `function` / generic definitions
 
 ## 5. Packages and Exports
@@ -97,7 +99,7 @@ The following are forbidden at top level in module mode:
 
 ### 5.2 package export set
 
-The following named top-level definitions enter the package export set:
+Only named top-level definitions wrapped in `(export ...)` enter the ordinary package export set:
 
 - `class`
 - `function`
@@ -105,7 +107,12 @@ The following named top-level definitions enter the package export set:
 - Generic `class`
 - Generic `function`
 - Top-level globals
-- Literal-db references
+
+The `exp` in `(export exp)` may only be one of the top-level syntax nodes above: `class`, generic `class`, `function`, `declare`, generic `function`, or top-level `var`. `export` may not wrap `import`, `var_set`, `let`, `fn`, control flow, calls, literals, identifiers, or `{...}` blocks.
+
+Top-level names not wrapped in `export` still belong to the current package and may be resolved and used by other source units in the same package, but they are not visible to other packages.
+
+Literal-db references still form package-visible reference entries according to the literal-db file rules; they are not wrapped in `(export ...)`.
 
 ### 5.3 the special status of `main`
 
@@ -162,7 +169,7 @@ The resolution order for an unqualified short name is:
 
 1. Local lexical scope
 2. The current package
-3. Imported packages
+3. Exported names from imported packages
 4. Builtin names
 
 Once one layer uniquely matches, resolution stops and later layers are not searched.
@@ -184,7 +191,7 @@ Its meaning is:
 
 - Directly reference a top-level name visible from some package
 - Require the target package to be either the current package or an exact package imported by this unit
-- It may not bypass package-export rules to access unit-local special cases
+- It may not bypass package-export rules to access non-exported names or unit-local special cases
 - Overload resolution continues only inside the same package's same-name function set
 
 The package-qualified form of a database reference does not use `@`, but instead:
@@ -271,6 +278,7 @@ The following cases must be errors:
 - `self` is also a reserved name
 - Ordinary names exported from `std~...` are not part of the global reserved set; they are ordinary imported-package exports
 - User packages must not define top-level exports that conflict with the builtin reserved set
+- User packages may define non-exported internal helpers; they must still obey the same-package main namespace conflict rules, but they are not cross-package API
 
 ## 11. Top-level Globals
 

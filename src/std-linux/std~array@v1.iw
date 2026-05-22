@@ -146,24 +146,24 @@
   ))
 
   (export (class <generic Array T>
-    (property [raw <array T>])
-    (property [seed T])
+    (public (property [raw <array T>]))
+    (public (property [seed T]))
     (constructor ([raw0 <array T>] [seed0 T]) in
       {
         (cm_set self raw raw0)
         (cm_set self seed seed0)
       }
     )
-    (method get ([index i5]) to T in
+    (public (method get ([index i5]) to T in
       (array_get (cm_get self raw) index)
-    )
-    (method set ([index i5] [value T]) to unit in
+    ))
+    (public (method set ([index i5] [value T]) to unit in
       {
         (array_set (cm_get self raw) index value)
         unit
       }
-    )
-    (method fill ([value T]) to unit in
+    ))
+    (public (method fill ([value T]) to unit in
       {
         (var [target_raw <array T>] (cm_get self raw))
         (var [length i5] (array_length target_raw))
@@ -177,8 +177,8 @@
         (cm_set self seed value)
         unit
       }
-    )
-    (method copy () to <Array T> in
+    ))
+    (public (method copy () to <Array T> in
       {
         (var [source_raw <array T>] (cm_get self raw))
         (var [length i5] (array_length source_raw))
@@ -193,8 +193,8 @@
         )
         (class_new <Array T> result_raw seed_value)
       }
-    )
-    (method count ([rule <Eq T>] [value T]) to i5 in
+    ))
+    (public (method count ([rule <Eq T>] [value T]) to i5 in
       {
         (var [target_raw <array T>] (cm_get self raw))
         (var [length i5] (array_length target_raw))
@@ -215,8 +215,8 @@
         )
         (<box_unwrap i5> matches)
       }
-    )
-    (method index ([rule <Eq T>] [value T]) to i5 in
+    ))
+    (public (method index ([rule <Eq T>] [value T]) to i5 in
       {
         (var [target_raw <array T>] (cm_get self raw))
         (var [length i5] (array_length target_raw))
@@ -241,8 +241,8 @@
         )
         (if (lt result length) then result else (iw_match_unreachable))
       }
-    )
-    (method reverse () to unit in
+    ))
+    (public (method reverse () to unit in
       {
         (var [target_raw <array T>] (cm_get self raw))
         (var [left_index i5] $0^i5)
@@ -258,21 +258,21 @@
         )
         unit
       }
-    )
-    (method sort ([rule <Ord T>]) to unit in
+    ))
+    (public (method sort ([rule <Ord T>]) to unit in
       {
         (var [target_raw <array T>] (cm_get self raw))
         (var [length i5] (array_length target_raw))
         (<array_merge_sort_raw T> target_raw length (cm_get self seed) rule)
         unit
       }
-    )
+    ))
   ))
 
   (export (class <generic ArrayBuilder T>
-    (property [raw <array T>])
-    (property [seed T])
-    (property [length i5])
+    (public (property [raw <array T>]))
+    (public (property [seed T]))
+    (public (property [length i5]))
     (constructor ([seed0 T]) in
       {
         (cm_set self raw (array_new <array T> $0^i5 seed0))
@@ -280,7 +280,7 @@
         (cm_set self length $0^i5)
       }
     )
-    (method append ([value T]) to unit in
+    (public (method append ([value T]) to unit in
       {
         (var [length_now i5] (cm_get self length))
         (<array_builder_ensure_capacity T> self (checked_add_nonnegative_i5 length_now $1^i5))
@@ -288,8 +288,8 @@
         (cm_set self length (add length_now $1^i5))
         unit
       }
-    )
-    (method build () to <Array T> in
+    ))
+    (public (method build () to <Array T> in
       {
         (var [length_now i5] (cm_get self length))
         (var [target_raw <array T>] (cm_get self raw))
@@ -303,7 +303,7 @@
             }
         )
       }
-    )
+    ))
   ))
 
   (export (function <generic array_new_fill T> ([length i5] [initial_value T]) to <Array T> in

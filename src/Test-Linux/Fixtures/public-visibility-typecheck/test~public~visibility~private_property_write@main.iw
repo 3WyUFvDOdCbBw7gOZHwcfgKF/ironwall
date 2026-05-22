@@ -1,0 +1,13 @@
+{program test~public~visibility~private_property_write@main
+  (class PrivateCounter
+    (property [hidden i5])
+    (constructor ([seed i5]) in (cm_set self hidden seed))
+  )
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [box PrivateCounter] (class_new PrivateCounter $7^i5))
+      (cm_set box hidden $9^i5)
+      $0^i5
+    }
+  )
+}

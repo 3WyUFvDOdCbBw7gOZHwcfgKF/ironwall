@@ -21,6 +21,7 @@ export enum AstNodeType {
   ProgramNode,
   ImportNode,
   ExportNode,
+  PublicNode,
   DvarNode,
   DfunNode, //Named function node
   DeclaredDfunNode,
@@ -271,6 +272,15 @@ export class ExportNode {
   }
 }
 
+export class PublicNode {
+  readonly kind: AstNodeType = AstNodeType.PublicNode;
+
+  inner: AstNode;
+  constructor(inner: AstNode) {
+    this.inner = inner;
+  }
+}
+
 // 新增 DvarNode 类型
 export class DvarNode {
   readonly kind: AstNodeType = AstNodeType.DvarNode;
@@ -340,12 +350,22 @@ export class ClassNode {
   constructorNodeList: ClassConstructorNode[];
   methodNodeList: ClassMethodNode[];
   propertyNodeList: ClassPropertyNode[];
+  memberNodeList: ClassBodyMemberNode[];
 
-  constructor(name: IdentifierNode, constructorNodeList: ClassConstructorNode[], methodNodeList: ClassMethodNode[], propertyNodeList: ClassPropertyNode[]) {
+  constructor(
+    name: IdentifierNode,
+    constructorNodeList: ClassConstructorNode[],
+    methodNodeList: ClassMethodNode[],
+    propertyNodeList: ClassPropertyNode[],
+    memberNodeList?: ClassBodyMemberNode[]
+  ) {
+    const normalizedMemberNodeList = memberNodeList ?? [...propertyNodeList, ...methodNodeList, ...constructorNodeList];
+    const extractedMembers = extractClassBodyLists(normalizedMemberNodeList);
     this.name = name;
-    this.constructorNodeList = constructorNodeList;
-    this.methodNodeList = methodNodeList;
-    this.propertyNodeList = propertyNodeList;
+    this.constructorNodeList = extractedMembers.constructors;
+    this.methodNodeList = extractedMembers.methods;
+    this.propertyNodeList = extractedMembers.properties;
+    this.memberNodeList = normalizedMemberNodeList;
   }
 }
 
@@ -404,12 +424,22 @@ export class GenericClassNode {
   constructorNodeList: ClassConstructorNode[];
   methodNodeList: ClassMethodNode[];
   propertyNodeList: ClassPropertyNode[];
+  memberNodeList: ClassBodyMemberNode[];
 
-  constructor(genericName: GenericNameNode, constructorNodeList: ClassConstructorNode[], methodNodeList: ClassMethodNode[], propertyNodeList: ClassPropertyNode[]) {
+  constructor(
+    genericName: GenericNameNode,
+    constructorNodeList: ClassConstructorNode[],
+    methodNodeList: ClassMethodNode[],
+    propertyNodeList: ClassPropertyNode[],
+    memberNodeList?: ClassBodyMemberNode[]
+  ) {
+    const normalizedMemberNodeList = memberNodeList ?? [...propertyNodeList, ...methodNodeList, ...constructorNodeList];
+    const extractedMembers = extractClassBodyLists(normalizedMemberNodeList);
     this.genericName = genericName;
-    this.constructorNodeList = constructorNodeList;
-    this.methodNodeList = methodNodeList;
-    this.propertyNodeList = propertyNodeList;
+    this.constructorNodeList = extractedMembers.constructors;
+    this.methodNodeList = extractedMembers.methods;
+    this.propertyNodeList = extractedMembers.properties;
+    this.memberNodeList = normalizedMemberNodeList;
   }
 }
 
@@ -461,6 +491,41 @@ export class MatchNode {
   }
 }
 
+export type ClassBodyMemberNode =
+  | ClassPropertyNode
+  | ClassMethodNode
+  | ClassConstructorNode
+  | PublicNode;
+
+function extractClassBodyLists(memberNodeList: readonly ClassBodyMemberNode[]): {
+  properties: ClassPropertyNode[];
+  methods: ClassMethodNode[];
+  constructors: ClassConstructorNode[];
+} {
+  const properties: ClassPropertyNode[] = [];
+  const methods: ClassMethodNode[] = [];
+  const constructors: ClassConstructorNode[] = [];
+  for (const member of memberNodeList) {
+    const innerMember = member instanceof PublicNode ? member.inner : member;
+    if (innerMember instanceof ClassPropertyNode) {
+      properties.push(innerMember);
+      continue;
+    }
+    if (innerMember instanceof ClassMethodNode) {
+      methods.push(innerMember);
+      continue;
+    }
+    if (innerMember instanceof ClassConstructorNode) {
+      constructors.push(innerMember);
+    }
+  }
+  return { properties, methods, constructors };
+}
+
+export function getClassBodyMembers(node: ClassNode | GenericClassNode): readonly ClassBodyMemberNode[] {
+  return node.memberNodeList;
+}
+
 // AstNode 
 export type AstNode =
   | IdentifierNode
@@ -479,6 +544,7 @@ export type AstNode =
   | ProgramNode
   | ImportNode
   | ExportNode
+  | PublicNode
   | DvarNode
   | DfunNode
   | DeclaredDfunNode

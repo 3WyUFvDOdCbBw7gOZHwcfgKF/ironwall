@@ -25,6 +25,7 @@ import {
     getMonomorphizedClassName,
     getMonomorphizedFunctionName,
     typecheck,
+    withMemberVisibilityAccessContext,
     VarEnv,
     toplevelFunctionEnv
 } from "./Typecheck-Pipeline";
@@ -703,6 +704,10 @@ function buildTypecheckVarEnv(env: LoweringEnvironment): VarEnv {
 }
 
 function inferNodeType(node: AstNode, env: LoweringEnvironment): TypeValue {
+    const selfType = env.variableTypes.get("self");
+    if (selfType instanceof ClassTypeValue || selfType instanceof GenericClassInstanceTypeValue) {
+        return withMemberVisibilityAccessContext(selfType, () => typecheck(node, buildTypecheckVarEnv(env), toplevelFunctionEnv, new GenericTypeEnv()));
+    }
     return typecheck(node, buildTypecheckVarEnv(env), toplevelFunctionEnv, new GenericTypeEnv());
 }
 

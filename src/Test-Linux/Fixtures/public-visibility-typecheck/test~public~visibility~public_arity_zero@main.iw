@@ -1,0 +1,6 @@
+{program test~public~visibility~public_arity_zero@main
+  (class ArityZero
+    (public)
+    (constructor () in unit)
+  )
+}

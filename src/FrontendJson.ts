@@ -27,6 +27,7 @@ import {
     ListNode,
     MatchNode,
     NumberLiteralNode,
+    PublicNode,
     ProgramNode,
     RoundParenListNode,
     SeqNode,
@@ -302,6 +303,12 @@ function serializeAstNode(node: AstNode): JsonObject {
             inner: serializeAstNode(node.inner)
         };
     }
+    if (node instanceof PublicNode) {
+        return {
+            kind: "PublicNode",
+            inner: serializeAstNode(node.inner)
+        };
+    }
     if (node instanceof DvarNode) {
         return {
             kind: "DvarNode",
@@ -345,7 +352,8 @@ function serializeAstNode(node: AstNode): JsonObject {
             name: serializeAstNode(node.name),
             constructorNodeList: node.constructorNodeList.map((constructorNode: ClassConstructorNode): JsonObject => serializeAstNode(constructorNode)),
             methodNodeList: node.methodNodeList.map((methodNode: ClassMethodNode): JsonObject => serializeAstNode(methodNode)),
-            propertyNodeList: node.propertyNodeList.map((propertyNode: ClassPropertyNode): JsonObject => serializeAstNode(propertyNode))
+            propertyNodeList: node.propertyNodeList.map((propertyNode: ClassPropertyNode): JsonObject => serializeAstNode(propertyNode)),
+            memberNodeList: node.memberNodeList.map((memberNode: AstNode): JsonObject => serializeAstNode(memberNode))
         };
     }
     if (node instanceof ClassPropertyNode) {
@@ -383,7 +391,8 @@ function serializeAstNode(node: AstNode): JsonObject {
             genericName: serializeAstNode(node.genericName),
             constructorNodeList: node.constructorNodeList.map((constructorNode: ClassConstructorNode): JsonObject => serializeAstNode(constructorNode)),
             methodNodeList: node.methodNodeList.map((methodNode: ClassMethodNode): JsonObject => serializeAstNode(methodNode)),
-            propertyNodeList: node.propertyNodeList.map((propertyNode: ClassPropertyNode): JsonObject => serializeAstNode(propertyNode))
+            propertyNodeList: node.propertyNodeList.map((propertyNode: ClassPropertyNode): JsonObject => serializeAstNode(propertyNode)),
+            memberNodeList: node.memberNodeList.map((memberNode: AstNode): JsonObject => serializeAstNode(memberNode))
         };
     }
     if (node instanceof GenericDfunNode) {
@@ -501,6 +510,9 @@ function deserializeAstNode(value: JsonValue, context: string): AstNode {
     if (kind === "ExportNode") {
         return new ExportNode(readAstNodeField(object, "inner", context));
     }
+    if (kind === "PublicNode") {
+        return new PublicNode(readAstNodeField(object, "inner", context));
+    }
     if (kind === "DvarNode") {
         return new DvarNode(readAstNodeField(object, "bind", context), readAstNodeField(object, "value", context));
     }
@@ -530,7 +542,8 @@ function deserializeAstNode(value: JsonValue, context: string): AstNode {
             readIdentifierNodeField(object, "name", context),
             readClassConstructorArrayField(object, "constructorNodeList", context),
             readClassMethodArrayField(object, "methodNodeList", context),
-            readClassPropertyArrayField(object, "propertyNodeList", context)
+            readClassPropertyArrayField(object, "propertyNodeList", context),
+            "memberNodeList" in object ? readClassBodyMemberArrayField(object, "memberNodeList", context) : undefined
         );
     }
     if (kind === "ClassPropertyNode") {
@@ -555,7 +568,8 @@ function deserializeAstNode(value: JsonValue, context: string): AstNode {
             readGenericNameNodeField(object, "genericName", context),
             readClassConstructorArrayField(object, "constructorNodeList", context),
             readClassMethodArrayField(object, "methodNodeList", context),
-            readClassPropertyArrayField(object, "propertyNodeList", context)
+            readClassPropertyArrayField(object, "propertyNodeList", context),
+            "memberNodeList" in object ? readClassBodyMemberArrayField(object, "memberNodeList", context) : undefined
         );
     }
     if (kind === "GenericDfunNode") {
@@ -671,6 +685,16 @@ function readClassPropertyArrayField(source: JsonObject, fieldName: string, cont
             throw new Error(`${context}.${fieldName}[${index}] must be a ClassPropertyNode`);
         }
         return node;
+    });
+}
+
+function readClassBodyMemberArrayField(source: JsonObject, fieldName: string, context: string): (ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode)[] {
+    const nodes: AstNode[] = readAstNodeArrayField(source, fieldName, context);
+    return nodes.map((node: AstNode, index: number) => {
+        if (node instanceof ClassPropertyNode || node instanceof ClassMethodNode || node instanceof ClassConstructorNode || node instanceof PublicNode) {
+            return node;
+        }
+        throw new Error(`${context}.${fieldName}[${index}] must be a class body member node`);
     });
 }
 

@@ -5,11 +5,11 @@
 ## 1. 总体原则
 
 - base lib 的源单元不是特殊语法单元，也不是静态检查或生成阶段的注入片段。
-- base lib 必须完整遵守 package 系统规格：规范文件名、规范 `program` header、普通 `import`、普通 export。
+- base lib 必须完整遵守 package 系统规格：规范文件名、规范 `program` header、普通 `import`、显式 `(export ...)` 与 class 成员 `public`。
 
 ## 2. 载入模型
 
-- 标准库源单元与使用者源单元一样，统一经过同一套 unit id 验证、package 汇出与静态检查流程。
+- 标准库源单元与使用者源单元一样，统一经过同一套 unit id 验证、显式 package 汇出、class 成员可见性与静态检查流程。
 - 不允许因为 unit 来自 base lib 就跳过 package 规则、保留名字规则或 overload 规则。
 
 ## 3. 包划分
@@ -66,16 +66,11 @@
 `std~array` 提供对 builtin `<array T>` 的第一层 nominal wrapper：
 
 - `<Array T>`
-- `<ArrayBuilder T>`
 - `<array_new_fill T>`
-- `<array_builder_new T>`
 - `<array_wrap T>`
 - `<Array_len T>`
-- `<ArrayBuilder_len T>`
 - `<Array_contains T>`
-- `<Array_filter_into T>`
 - `<Array_concat T>`
-- `<Array_concat_into T>`
 - `<Array_sorted T>`
 - `<Array_reversed T>`
 - `<Array_max T>`
@@ -92,17 +87,10 @@
 - `reverse`
 - `sort`
 
-`ArrayBuilder<T>` 公开提供以下 method：
-
-- `append`
-- `build`
-
 其中：
 
 - `count` / `index` / `Array_contains` 依赖显式 `Eq<T>` support object。
 - `sort` / `Array_sorted` / `Array_max` / `Array_min` 依赖显式 `Ord<T>` support object。
-- `Array_filter_into` 会单次扫描，把符合条件的值 append 到调用端管理的 `ArrayBuilder<T>`。
-- `Array_concat_into` 会把一个 `Array<T>` 的所有元素 append 到调用端管理的 `ArrayBuilder<T>`。
 - `Array_reversed` 回传新的 `Array<T>` snapshot，而不是 iterator/view。
 - `index` 在找不到元素时走明确的 runtime abort。
 - `copy` / `Array_concat` 必须在 generic 情况下稳定配置结果阵列。
@@ -433,10 +421,10 @@
 ## 9. builtin 边界
 
 - `std~...` packages 是普通 package，不是 builtin 名字集合的一部分。
-- 它们可以包装 `declare` 的 runtime helper，也可以包装语言 primitive，但包装后暴露出的 top-level 名字仍然是普通 package export。
+- 它们可以包装 `declare` 的 runtime helper，也可以包装语言 primitive，但包装后暴露出的 top-level 名字仍然必须以 `(export ...)` 进入普通 package export 集。
 - 这些名字只有在本 package 或 imported package 可见时才可用。
 
 ## 10. 相容性要求
 
-- 新的标准库演进应优先透过新增 `std~...` package 或在现有 `std~...` package 中新增普通 export 完成。
+- 新的标准库演进应优先透过新增 `std~...` package 或在现有 `std~...` package 中新增显式 `(export ...)` 完成。
 - 不应引入 synthetic `std` 注入、base lib AST 注入、或对 base lib 的特殊静态检查 / 生成分支。

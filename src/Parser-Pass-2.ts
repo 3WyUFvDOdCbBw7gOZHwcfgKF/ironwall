@@ -16,6 +16,7 @@ import {
   SeqNode,
   ProgramNode,
   ImportNode,
+  PublicNode,
   AngleParenListNode,
   TypeVarBindNode,
   TypeToFromNode,
@@ -28,6 +29,7 @@ import {
   ClassPropertyNode,
   ClassMethodNode,
   ClassConstructorNode,
+  ClassBodyMemberNode,
   GenericNameNode,
   GenericClassNode,
   GenericDfunNode,
@@ -214,6 +216,8 @@ function parseRoundParenList(node: RoundParenListNode): AstNode {
       return parseWhileExpression(node);
     case "cond":
       return parseCondExpression(node);
+    case "public":
+      return parsePublicExpression(node);
     case "seq":
       throw new Error("Legacy '(seq ...)' blocks are no longer accepted; use '{...}' blocks instead");
     case "class":
@@ -232,6 +236,19 @@ function parseRoundParenList(node: RoundParenListNode): AstNode {
       return newFunctionCallNode;
       //return new RoundParenListNode(processedElements);
   }
+}
+
+function parsePublicExpression(node: RoundParenListNode): PublicNode {
+  if (node.elements.length !== 2) {
+    throw new Error("public expects exactly one argument");
+  }
+
+  const inner: AstNode = parsePass4(node.elements[1]);
+  if (inner instanceof PublicNode) {
+    throw new Error("public cannot wrap public");
+  }
+
+  return new PublicNode(inner);
 }
 
 function throwLegacyKeywordError(legacyKeyword: string, canonicalKeyword: string): never {
@@ -524,16 +541,16 @@ function parseClassExpression(node: RoundParenListNode): AstNode {
   
   // 检查是否是泛型类定义
   if (nameNode instanceof GenericNameNode) {
-    const { constructors, methods, properties } = parseClassBody(node.elements.slice(2));
-    return new GenericClassNode(nameNode, constructors, methods, properties);
+    const { constructors, methods, properties, memberNodeList } = parseClassBody(node.elements.slice(2));
+    return new GenericClassNode(nameNode, constructors, methods, properties, memberNodeList);
   }
 
   if (!(nameNode instanceof IdentifierNode)) {
     throw new Error("Class name must be an identifier");
   }
 
-  const { constructors, methods, properties } = parseClassBody(node.elements.slice(2));
-  return new ClassNode(nameNode, constructors, methods, properties);
+  const { constructors, methods, properties, memberNodeList } = parseClassBody(node.elements.slice(2));
+  return new ClassNode(nameNode, constructors, methods, properties, memberNodeList);
 }
 
 /**
@@ -543,34 +560,78 @@ function parseClassBody(bodyElements: AstNode[]): {
   constructors: ClassConstructorNode[];
   methods: ClassMethodNode[];
   properties: ClassPropertyNode[];
+  memberNodeList: ClassBodyMemberNode[];
 } {
   const constructors: ClassConstructorNode[] = [];
   const methods: ClassMethodNode[] = [];
   const properties: ClassPropertyNode[] = [];
+  const memberNodeList: ClassBodyMemberNode[] = [];
 
   for (const element of bodyElements) {
     if (element instanceof RoundParenListNode && element.elements.length > 0) {
-      const firstElement: AstNode = element.elements[0];
-      
-      if (firstElement instanceof IdentifierNode) {
-        switch (firstElement.name) {
-          case "property":
-            properties.push(parseClassProperty(element));
-            break;
-          case "method":
-            methods.push(parseClassMethod(element));
-            break;
-          case "constructor":
-            constructors.push(parseClassConstructor(element));
-            break;
-          default:
-            throw new Error(`Unknown class member type: ${firstElement.name}`);
-        }
+      const memberNode = parseClassBodyMember(element);
+      memberNodeList.push(memberNode);
+      const innerMember = memberNode instanceof PublicNode ? memberNode.inner : memberNode;
+      if (innerMember instanceof ClassPropertyNode) {
+        properties.push(innerMember);
+      } else if (innerMember instanceof ClassMethodNode) {
+        methods.push(innerMember);
+      } else if (innerMember instanceof ClassConstructorNode) {
+        constructors.push(innerMember);
       }
     }
   }
 
-  return { constructors, methods, properties };
+  return { constructors, methods, properties, memberNodeList };
+}
+
+function parseClassBodyMember(node: RoundParenListNode): ClassBodyMemberNode {
+  const firstElement: AstNode | undefined = node.elements[0];
+  if (!(firstElement instanceof IdentifierNode)) {
+    throw new Error("Unknown class member type");
+  }
+
+  switch (firstElement.name) {
+    case "property":
+      return parseClassProperty(node);
+    case "method":
+      return parseClassMethod(node);
+    case "constructor":
+      return parseClassConstructor(node);
+    case "public":
+      return parsePublicClassBodyMember(node);
+    default:
+      throw new Error(`Unknown class member type: ${firstElement.name}`);
+  }
+}
+
+function parsePublicClassBodyMember(node: RoundParenListNode): PublicNode {
+  if (node.elements.length !== 2) {
+    throw new Error("public expects exactly one argument");
+  }
+
+  const innerElement = node.elements[1];
+  if (!(innerElement instanceof RoundParenListNode) || innerElement.elements.length === 0) {
+    throw new Error("public may only wrap class properties and methods");
+  }
+
+  const firstInnerElement = innerElement.elements[0];
+  if (!(firstInnerElement instanceof IdentifierNode)) {
+    throw new Error("public may only wrap class properties and methods");
+  }
+
+  switch (firstInnerElement.name) {
+    case "property":
+      return new PublicNode(parseClassProperty(innerElement));
+    case "method":
+      return new PublicNode(parseClassMethod(innerElement));
+    case "constructor":
+      throw new Error("constructors are always public and cannot be wrapped in public");
+    case "public":
+      throw new Error("public cannot wrap public");
+    default:
+      throw new Error("public may only wrap class properties and methods");
+  }
 }
 
 /**

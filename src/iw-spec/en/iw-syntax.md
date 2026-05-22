@@ -22,6 +22,8 @@ The core syntax uses the following reserved syntactic words:
 
 - `program`
 - `import`
+- `export`
+- `public`
 - `var`
 - `var_set`
 - `fn`
@@ -195,7 +197,7 @@ Rules:
 
 ```ironwall
 (class <generic Box T>
-  (property [value T])
+  (public (property [value T]))
   (constructor ([v T]) in (cm_set self value v))
 )
 ```
@@ -229,9 +231,9 @@ Rules:
 
 ```ironwall
 (class Point
-  (property [x i5])
-  (property [y i5])
-  (method sum () to i5 in (add (cm_get self x) (cm_get self y)))
+  (public (property [x i5]))
+  (public (property [y i5]))
+  (public (method sum () to i5 in (add (cm_get self x) (cm_get self y))))
   (constructor ([x0 i5] [y0 i5]) in
     {
       (cm_set self x x0)
@@ -246,6 +248,10 @@ Rules:
 - `(property [name Type])`
 - `(method name ([p T] ...) to Ret in body)`
 - `(constructor ([p T] ...) in body)`
+- `(public (property [name Type]))`
+- `(public (method name ([p T] ...) to Ret in body))`
+
+`public` may appear only inside the class body of an ordinary class or generic class, and it may wrap only one property or method. Properties and methods not wrapped in `public` are private by default; constructors are public by default and must not be written as `(public (constructor ...))`.
 
 ## 13. Calls and Object Operations
 
@@ -346,7 +352,7 @@ If a short-name database reference is not unique within the visible package set,
 (array_length xs)
 ```
 
-## 16. import
+## 16. import and export
 
 ```ironwall
 (import a~b~c)
@@ -354,3 +360,22 @@ If a short-name database reference is not unique within the visible package set,
 
 - `import` may appear only at the top level
 - The target of `import` is a package path, not a file path
+
+```ironwall
+(export (function score ([x i5]) to i5 in x))
+
+(export (class Counter
+  (public (property [value i5]))
+  (constructor ([seed i5]) in (cm_set self value seed))
+))
+
+(export (class <generic Box T>
+  (public (property [value T]))
+  (constructor ([value T]) in (cm_set self value value))
+))
+```
+
+- `export` may appear only at the top level
+- `(export exp)` must have exactly one argument
+- `export` may wrap only a top-level `class`, generic `class`, `function`, `declare`, generic `function`, or top-level `var`
+- `export` does not change the wrapped definition's type or evaluation semantics; it only controls cross-package visibility

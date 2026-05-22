@@ -1,0 +1,15 @@
+{program test~public~visibility~generic_private_property_read@main
+  (class <generic PrivateBox T>
+    (property [hidden T])
+    (public (property [value T]))
+    (constructor ([value0 T]) in
+      {
+        (cm_set self hidden value0)
+        (cm_set self value value0)
+      }
+    )
+  )
+  (function main ([args <array s3>]) to i5 in
+    (cm_get (class_new <PrivateBox i5> $7^i5) hidden)
+  )
+}

@@ -1,0 +1,11 @@
+{program test~public~visibility~private_method_call@main
+  (class SecretCounter
+    (property [hidden i5])
+    (constructor ([seed i5]) in (cm_set self hidden seed))
+    (method read_hidden () to i5 in (cm_get self hidden))
+    (public (method reveal () to i5 in ((cm_get self read_hidden))))
+  )
+  (function main ([args <array s3>]) to i5 in
+    ((cm_get (class_new SecretCounter $7^i5) read_hidden))
+  )
+}

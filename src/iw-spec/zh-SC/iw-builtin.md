@@ -108,4 +108,4 @@ Ironwall 将可用能力分成两层：
 这代表：
 
 - 用户 package 不得导出 `add`、`array_new`、`s3_new`、`z5_real`、`self` 这类名字
-- `print`、`sin`、`val_to_f7`、`bin_to_f7` 这类 `std~...` 导出名只是在对应 package 内保留的普通 export，不是语言 builtin
+- `print`、`sin`、`val_to_f7`、`bin_to_f7` 这类 `std~...` 导出名只是在对应 package 内以 `(export ...)` 暴露的普通名字，不是语言 builtin

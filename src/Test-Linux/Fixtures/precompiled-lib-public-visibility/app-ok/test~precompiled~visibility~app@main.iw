@@ -1,0 +1,16 @@
+{program test~precompiled~visibility~app@main
+  (import test~precompiled~visibility~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [vault PublicVault] (class_new PublicVault $5^i5))
+      (var [box <PublicBox i5>] (class_new <PublicBox i5> $7^i5))
+      (add
+        (cm_get vault shown)
+        (add
+          ((cm_get vault reveal))
+          (add (cm_get box value) ((cm_get box reveal)))
+        )
+      )
+    }
+  )
+}

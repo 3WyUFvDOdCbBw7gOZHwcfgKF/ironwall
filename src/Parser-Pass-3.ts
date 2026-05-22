@@ -20,6 +20,7 @@ import {
 	LetNode,
 	ListNode,
 	MatchNode,
+	PublicNode,
 	ProgramNode,
 	SeqNode,
 	SetNode,
@@ -120,7 +121,8 @@ function rewriteAstNode(node: AstNode, rewriteCall: (node: FunctionCallNode) => 
 				node.name,
 				node.constructorNodeList.map((constructorNode: ClassConstructorNode) => rewriteClassConstructorNode(constructorNode, rewriteCall)),
 				node.methodNodeList.map((methodNode: ClassMethodNode) => rewriteClassMethodNode(methodNode, rewriteCall)),
-				node.propertyNodeList.map((propertyNode: ClassPropertyNode) => rewriteClassPropertyNode(propertyNode, rewriteCall))
+				node.propertyNodeList.map((propertyNode: ClassPropertyNode) => rewriteClassPropertyNode(propertyNode, rewriteCall)),
+				node.memberNodeList.map((memberNode) => rewriteClassBodyMemberNode(memberNode as ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode, rewriteCall))
 			);
 		} else if (node instanceof ClassPropertyNode) {
 			rewrittenNode = rewriteClassPropertyNode(node, rewriteCall);
@@ -128,6 +130,8 @@ function rewriteAstNode(node: AstNode, rewriteCall: (node: FunctionCallNode) => 
 			rewrittenNode = rewriteClassMethodNode(node, rewriteCall);
 		} else if (node instanceof ClassConstructorNode) {
 			rewrittenNode = rewriteClassConstructorNode(node, rewriteCall);
+		} else if (node instanceof PublicNode) {
+			rewrittenNode = new PublicNode(rewriteAstNode(node.inner, rewriteCall));
 		} else if (node instanceof GenericNameNode) {
 			rewrittenNode = new GenericNameNode(node.name, node.genericTypeArgs);
 		} else if (node instanceof GenericClassNode) {
@@ -135,7 +139,8 @@ function rewriteAstNode(node: AstNode, rewriteCall: (node: FunctionCallNode) => 
 				new GenericNameNode(node.genericName.name, node.genericName.genericTypeArgs),
 				node.constructorNodeList.map((constructorNode: ClassConstructorNode) => rewriteClassConstructorNode(constructorNode, rewriteCall)),
 				node.methodNodeList.map((methodNode: ClassMethodNode) => rewriteClassMethodNode(methodNode, rewriteCall)),
-				node.propertyNodeList.map((propertyNode: ClassPropertyNode) => rewriteClassPropertyNode(propertyNode, rewriteCall))
+				node.propertyNodeList.map((propertyNode: ClassPropertyNode) => rewriteClassPropertyNode(propertyNode, rewriteCall)),
+				node.memberNodeList.map((memberNode) => rewriteClassBodyMemberNode(memberNode as ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode, rewriteCall))
 			);
 		} else if (node instanceof GenericDfunNode) {
 			rewrittenNode = new GenericDfunNode(
@@ -195,6 +200,19 @@ function rewriteClassConstructorNode(node: ClassConstructorNode, rewriteCall: (n
 		node.params.map((param: TypeVarBindNode) => rewriteTypeVarBindNode(param, rewriteCall)),
 		rewriteAstNode(node.body, rewriteCall)
 	);
+}
+
+function rewriteClassBodyMemberNode(node: ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode, rewriteCall: (node: FunctionCallNode) => AstNode): ClassPropertyNode | ClassMethodNode | ClassConstructorNode | PublicNode {
+	if (node instanceof ClassPropertyNode) {
+		return rewriteClassPropertyNode(node, rewriteCall);
+	}
+	if (node instanceof ClassMethodNode) {
+		return rewriteClassMethodNode(node, rewriteCall);
+	}
+	if (node instanceof ClassConstructorNode) {
+		return rewriteClassConstructorNode(node, rewriteCall);
+	}
+	return new PublicNode(rewriteAstNode(node.inner, rewriteCall)) as PublicNode;
 }
 
 function foldVariadicBuiltinCall(node: FunctionCallNode): AstNode {

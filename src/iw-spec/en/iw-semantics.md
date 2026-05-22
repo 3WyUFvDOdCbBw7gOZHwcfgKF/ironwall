@@ -98,6 +98,9 @@ If a value does not satisfy the type precondition of `match`, that is an unrecov
 - Method names must be unique within a class
 - A property and a method may not share the same name
 - Inheritance is not supported
+- Properties and methods not marked `public` are private by default
+- `(public ...)` may mark only properties and methods; constructors are public by default
+- Ordinary classes and generic classes obey the same member-visibility rules
 
 ### 7.2 constructor constraints
 
@@ -109,6 +112,14 @@ If a value does not satisfy the type precondition of `match`, that is an unrecov
 
 - `self` is automatically bound only inside methods and constructors
 - `self` is an immutable binding, but its fields may be initialized or modified through `cm_set`
+
+### 7.4 member visibility
+
+- Outside a class, `cm_get`, member-chain sugar, and method-value access may read only public properties and methods
+- Outside a class, `cm_set` may write only public properties
+- Inside a class method or constructor, `self` may read and write private properties of the same class, and may read private methods of the same class
+- After generic class instantiation, the instantiated class still preserves the property / method visibility of the source generic class
+- External access to a private member must be rejected as a static error
 
 ## 8. Arrays
 

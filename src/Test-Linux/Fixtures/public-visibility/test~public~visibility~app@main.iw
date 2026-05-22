@@ -1,0 +1,16 @@
+{program test~public~visibility~app@main
+  (import test~public~visibility~lib)
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [counter VisibleCounter] (class_new VisibleCounter $5^i5))
+      (var [box <VisibleBox i5>] (class_new <VisibleBox i5> $7^i5))
+      (add
+        (cm_get counter shown)
+        (add
+          ((cm_get counter read_total))
+          (add (cm_get box value) ((cm_get box reveal)))
+        )
+      )
+    }
+  )
+}

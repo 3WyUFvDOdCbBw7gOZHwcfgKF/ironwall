@@ -1,0 +1,6 @@
+{program test~public~visibility~public_arity_many@main
+  (class ArityMany
+    (public (property [value i5]) (property [other i5]))
+    (constructor () in (cm_set self value $1^i5))
+  )
+}
