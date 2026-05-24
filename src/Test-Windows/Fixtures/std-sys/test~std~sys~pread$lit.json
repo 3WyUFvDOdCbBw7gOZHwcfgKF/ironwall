@@ -1,6 +1,0 @@
-{
-  "package": "test~std~sys~pread$lit",
-  "sys_pread_path_s3^s3": "artifacts/std-sys/pread.txt",
-  "sys_pread_slice_s3^s3": "456",
-  "sys_pread_leading_s3^s3": "01"
-}

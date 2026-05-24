@@ -1,0 +1,13 @@
+{program test~precompiled~lib@box
+  (class <generic Box T>
+    (public (property [value T]))
+    (constructor ([initial T]) in {(cm_set self value initial)})
+  )
+  (function <generic make_box T> ([value T]) to <Box T> in (class_new <Box T> value))
+  (function <generic nest_two T> ([value T]) to <Box <Box T>> in
+    (<make_box <Box T>> (<make_box T> value))
+  )
+  (function <generic nest_three T> ([value T]) to <Box <Box <Box T>>> in
+    (<make_box <Box <Box T>>> (<nest_two T> value))
+  )
+}

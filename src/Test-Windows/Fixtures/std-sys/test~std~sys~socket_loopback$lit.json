@@ -1,4 +1,0 @@
-{
-  "package": "test~std~sys~socket_loopback$lit",
-  "socket_payload_s3^s3": "loopback-payload"
-}

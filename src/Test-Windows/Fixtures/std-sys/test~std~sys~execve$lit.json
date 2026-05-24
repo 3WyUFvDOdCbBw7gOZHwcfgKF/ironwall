@@ -1,7 +1,0 @@
-{
-  "package": "test~std~sys~execve$lit",
-  "bin_echo_path_s3^s3": "/bin/echo",
-  "echo_argv0_s3^s3": "echo",
-  "echo_arg_s3^s3": "OK",
-  "echo_output_s3^s3": "OK\n"
-}

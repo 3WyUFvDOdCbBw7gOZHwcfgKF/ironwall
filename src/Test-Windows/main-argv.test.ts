@@ -2,7 +2,7 @@ import { ok, strictEqual } from "assert";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
-import { assertExpectedExitCode, assertRunResult, execBuildJsonCliSync, spawnBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { assertExpectedExitCode, assertRunResult, execBuildJsonCliSync, spawnBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 import { execLinuxToolSync, spawnLinuxBinarySync } from "./LinuxHostToolchainHarness";
 
 interface BackendRun {
@@ -19,8 +19,8 @@ const TEST_TIMEOUT_MS: number = 15000;
 const MAX_BUFFER_BYTES: number = 16 * 1024 * 1024;
 const repoRoot: string = resolve(__dirname, "..", "..");
 const cliPath: string = join(repoRoot, "build", "main.js");
-const fixtureDir: string = join(repoRoot, "src", "Test-Windows", "Fixtures", "main-argv");
-const typecheckFixtureDir: string = join(repoRoot, "src", "Test-Windows", "Fixtures", "main-argv-typecheck");
+const fixtureDir: string = join(repoRoot, "src", "Test", "Fixtures", "main-argv");
+const typecheckFixtureDir: string = join(repoRoot, "src", "Test", "Fixtures", "main-argv-typecheck");
 const x64FrontendArgs: readonly string[] = ["--frontend-profile", "no-optimized"];
 const programArgs: readonly string[] = ["aa", "bbbb", "z"];
 const expectedLines: readonly string[] = ["241"];

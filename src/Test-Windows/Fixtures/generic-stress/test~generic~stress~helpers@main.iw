@@ -1,6 +1,0 @@
-{program test~generic~stress~helpers@main
-  (import test~generic~stress~lib)
-  (function main ([args <array s3>]) to i5 in
-    (add_marker (<unwrap_relay i5> (class_new <Relay i5> $37^i5)))
-  )
-}

@@ -1,6 +1,6 @@
 import { ok, strictEqual } from "assert";
 import { join, resolve } from "path";
-import { spawnBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { spawnBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 
 interface AbortCase {
     readonly label: string;

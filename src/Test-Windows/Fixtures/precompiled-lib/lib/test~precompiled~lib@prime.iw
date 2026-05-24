@@ -1,8 +1,0 @@
-{program test~precompiled~lib@prime
-  (var [seed_value i5] $11^i5)
-  (function prime_single_i5 ([value i5]) to <Box i5> in (<make_box i5> value))
-  (function prime_double_i5 ([value i5]) to <Box <Box i5>> in (<nest_two i5> value))
-  (function prime_triple_i5 ([value i5]) to <Box <Box <Box i5>>> in
-    (<nest_three i5> value)
-  )
-}

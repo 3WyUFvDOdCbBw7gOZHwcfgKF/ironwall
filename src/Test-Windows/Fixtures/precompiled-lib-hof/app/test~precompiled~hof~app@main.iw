@@ -1,9 +1,0 @@
-{program test~precompiled~hof~app@main
-  (import test~precompiled~hof~lib)
-  (function apply_three ([start i5] [step <to i5 from i5>]) to i5 in
-    (step (step (step start)))
-  )
-  (function main ([args <array s3>]) to i5 in
-    (apply_three $1^i5 add_seed)
-  )
-}

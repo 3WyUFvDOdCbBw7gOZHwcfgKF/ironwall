@@ -5,15 +5,15 @@ import { tmpdir } from "os";
 import { join, relative, resolve } from "path";
 import type { BackendPipelineName, BuildConfig } from "../BuildConfig";
 import { buildDeclaredCFunctionName } from "../DeclaredCFunctionName";
-import { assertExpectedExitCode } from "./BuildJsonCliHarness";
+import { assertExpectedExitCode } from "../Test/BuildJsonCliHarness";
 import { execLinuxToolSync } from "./LinuxHostToolchainHarness";
 
 const TEST_TIMEOUT_MS = 15000;
 const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const repoRoot = resolve(__dirname, "..", "..");
 const cliPath = join(repoRoot, "build", "main.js");
-const seqFixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "seq-var-scope");
-const precompiledFixtureRoot = join(repoRoot, "src", "Test-Windows", "Fixtures", "precompiled-lib");
+const seqFixtureDir = join(repoRoot, "src", "Test", "Fixtures", "seq-var-scope");
+const precompiledFixtureRoot = join(repoRoot, "src", "Test", "Fixtures", "precompiled-lib");
 const precompiledLibDir = join(precompiledFixtureRoot, "lib");
 const precompiledAppDir = join(precompiledFixtureRoot, "app");
 

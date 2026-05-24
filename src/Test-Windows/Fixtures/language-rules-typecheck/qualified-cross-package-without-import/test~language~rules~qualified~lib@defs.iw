@@ -1,3 +1,0 @@
-{program test~language~rules~qualified~lib@defs
-  (function value ([payload i5]) to i5 in payload)
-}

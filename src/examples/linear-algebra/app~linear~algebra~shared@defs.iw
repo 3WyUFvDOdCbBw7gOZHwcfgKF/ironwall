@@ -85,65 +85,87 @@
     )
   )
 
-  (function f5_abs ([value f5]) to f5 in
-    (if (lt value $0p0^f5)
-      then (sub $0p0^f5 value)
-      else value
+  (export
+    (function f5_abs ([value f5]) to f5 in
+      (if (lt value $0p0^f5)
+        then (sub $0p0^f5 value)
+        else value
+      )
     )
   )
 
-  (function scaled_i5 ([value f5] [scale f5]) to i5 in
-    (round (mul value scale))
+  (export
+    (function scaled_i5 ([value f5] [scale f5]) to i5 in
+      (round (mul value scale))
+    )
   )
 
   (function matrix_index ([size i5] [row i5] [col i5]) to i5 in
     (add (mul row size) col)
   )
 
-  (function matrix_get ([matrix <array f5>] [size i5] [row i5] [col i5]) to f5 in
-    (array_get matrix (matrix_index size row col))
+  (export
+    (function matrix_get ([matrix <array f5>] [size i5] [row i5] [col i5]) to f5 in
+      (array_get matrix (matrix_index size row col))
+    )
   )
 
-  (function matrix_set ([matrix <array f5>] [size i5] [row i5] [col i5] [value f5]) to unit in
-    (array_set matrix (matrix_index size row col) value)
+  (export
+    (function matrix_set ([matrix <array f5>] [size i5] [row i5] [col i5] [value f5]) to unit in
+      (array_set matrix (matrix_index size row col) value)
+    )
   )
 
-  (function vector_get ([vector <array f5>] [slot i5]) to f5 in
-    (array_get vector slot)
+  (export
+    (function vector_get ([vector <array f5>] [slot i5]) to f5 in
+      (array_get vector slot)
+    )
   )
 
-  (function vector_set ([vector <array f5>] [slot i5] [value f5]) to unit in
-    (array_set vector slot value)
+  (export
+    (function vector_set ([vector <array f5>] [slot i5] [value f5]) to unit in
+      (array_set vector slot value)
+    )
   )
 
-  (function zero_matrix ([size i5]) to <array f5> in
-    (array_new <array f5> (mul size size) $0p0^f5)
+  (export
+    (function zero_matrix ([size i5]) to <array f5> in
+      (array_new <array f5> (mul size size) $0p0^f5)
+    )
   )
 
-  (function zero_vector ([size i5]) to <array f5> in
-    (array_new <array f5> size $0p0^f5)
+  (export
+    (function zero_vector ([size i5]) to <array f5> in
+      (array_new <array f5> size $0p0^f5)
+    )
   )
 
-  (function copy_f5_array ([source <array f5>] [target <array f5>]) to unit in
-    {
-      (var [index i5] $0^i5)
-      (while (lt index (array_length source)) in
-        {
-          (array_set target index (array_get source index))
-          (var_set index (add index $1^i5))
-        }
-      )
-    }
+  (export
+    (function copy_f5_array ([source <array f5>] [target <array f5>]) to unit in
+      {
+        (var [index i5] $0^i5)
+        (while (lt index (array_length source)) in
+          {
+            (array_set target index (array_get source index))
+            (var_set index (add index $1^i5))
+          }
+        )
+      }
+    )
   )
 
-  (function print_i5_line ([label s3] [value i5]) to unit in
-    {
-      (print label)
-      (println (i5_to_s3 value))
-    }
+  (export
+    (function print_i5_line ([label s3] [value i5]) to unit in
+      {
+        (print label)
+        (println (i5_to_s3 value))
+      }
+    )
   )
 
-  (function print_f5_scaled_line ([label s3] [value f5] [scale f5]) to unit in
-    (print_i5_line label (round (mul value scale)))
+  (export
+    (function print_f5_scaled_line ([label s3] [value f5] [scale f5]) to unit in
+      (print_i5_line label (round (mul value scale)))
+    )
   )
 }

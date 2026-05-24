@@ -1,3 +1,0 @@
-{program test~main~exit~code@main
-  (function main ([args <array s3>]) to i5 in $17^i5)
-}

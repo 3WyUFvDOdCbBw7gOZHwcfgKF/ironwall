@@ -26,7 +26,7 @@ interface X64StageCResult {
 const TEST_TIMEOUT_MS = 15000;
 const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "gc-validate");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "gc-validate");
 const entryUnitId = "test~gc~validate@main";
 
 const X64_NATIVE_DRIVER_SOURCE = `#include <stdint.h>

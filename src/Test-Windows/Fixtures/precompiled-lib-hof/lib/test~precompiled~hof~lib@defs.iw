@@ -1,4 +1,0 @@
-{program test~precompiled~hof~lib@defs
-  (var [seed i5] $4^i5)
-  (function add_seed ([value i5]) to i5 in (add value seed))
-}

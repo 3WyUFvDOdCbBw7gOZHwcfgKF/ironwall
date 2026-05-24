@@ -1,3 +1,0 @@
-{program test~language~rules~parent~child@defs
-  (function child_value ([payload i5]) to i5 in payload)
-}

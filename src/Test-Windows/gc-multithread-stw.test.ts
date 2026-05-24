@@ -7,7 +7,7 @@ import { performNoOptimizeCBackendLoweringStageCFromArtifacts } from "../Lowerin
 import { loadProgramAst } from "../ModuleLoader";
 import { performTypeChecking } from "../Typecheck-Pipeline";
 import { generateCFromFinalBackendIR } from "../backend-windows/Backend-Windows-C";
-import { assertExpectedExitCode } from "./BuildJsonCliHarness";
+import { assertExpectedExitCode } from "../Test/BuildJsonCliHarness";
 import { execLinuxToolSync, spawnLinuxBinarySync } from "./LinuxHostToolchainHarness";
 
 const repoRoot = resolve(__dirname, "..", "..");

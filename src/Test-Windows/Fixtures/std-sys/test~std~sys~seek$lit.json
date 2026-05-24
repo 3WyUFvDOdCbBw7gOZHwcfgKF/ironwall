@@ -1,7 +1,0 @@
-{
-  "package": "test~std~sys~seek$lit",
-  "seek_path_s3^s3": "artifacts/std-sys/seek.txt",
-  "seek_chunk1_s3^s3": "56",
-  "seek_chunk2_s3^s3": "67",
-  "seek_chunk3_s3^s3": "89"
-}

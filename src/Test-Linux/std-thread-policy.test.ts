@@ -1,5 +1,5 @@
 import { join, resolve } from "path";
-import { assertRunResult, execBuildJsonCliSync, spawnBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { assertRunResult, execBuildJsonCliSync, spawnBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 
 interface BackendRun {
     readonly label: string;

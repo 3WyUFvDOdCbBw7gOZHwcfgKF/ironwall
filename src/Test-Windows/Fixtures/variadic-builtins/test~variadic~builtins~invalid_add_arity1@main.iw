@@ -1,3 +1,0 @@
-{program test~variadic~builtins~invalid_add_arity1@main
-  (function main ([args <array s3>]) to i5 in (add $1^i5))
-}

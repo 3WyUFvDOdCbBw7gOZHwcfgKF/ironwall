@@ -1,6 +1,0 @@
-{
-  "package": "test~std~sys~readv_writev_socketpair$lit",
-  "readv_chunk0_s3^s3": "alpha",
-  "readv_chunk1_s3^s3": "-",
-  "readv_chunk2_s3^s3": "beta"
-}

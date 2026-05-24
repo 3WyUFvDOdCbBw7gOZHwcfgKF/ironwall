@@ -26,7 +26,7 @@ interface X64StageCResult {
 const TEST_TIMEOUT_MS = 15000;
 const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Linux", "Fixtures", "gc-global-print");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "gc-global-print");
 const entryUnitId = "test~gc~global~print@main";
 
 const X64_NATIVE_DRIVER_SOURCE = `#include <stdint.h>

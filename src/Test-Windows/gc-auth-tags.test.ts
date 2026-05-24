@@ -24,7 +24,7 @@ interface SyntheticAuthEntry {
 const U64_MASK = 0xffffffffffffffffn;
 const GC_TAG1_CONFIRMATION_SEED = 0xa5c9d3e17b2f0461n;
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "gc-table-collection");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "gc-table-collection");
 const entryUnitId = "test~gc~table~collection~app@main";
 const SYNTHETIC_SAMPLE_COUNT = 100000;
 const SYNTHETIC_TABLE_COUNT = 64;

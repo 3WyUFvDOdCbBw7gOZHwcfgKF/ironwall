@@ -1,8 +1,0 @@
-{program test~builtin~ops~invalid_var_set_value@main
-  (function main ([args <array s3>]) to i5 in
-    {
-      (var [value i5] $1^i5)
-      (var_set value $2^i5)
-    }
-  )
-}

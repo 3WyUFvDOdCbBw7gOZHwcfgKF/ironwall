@@ -1,0 +1,13 @@
+{program test~generic~stress~lib@helpers
+  (function <generic leaf_helper T> ([value T]) to T in value)
+  (function <generic bounce_helper T> ([value T]) to T in (<leaf_helper T> value))
+  (export (class <generic Relay T>
+    (property [payload T])
+    (public (method through_helpers () to T in (<bounce_helper T> self.payload)))
+    (constructor ([payload0 T]) in (cm_set self payload payload0))
+  ))
+  (export (function <generic unwrap_relay T> ([relay <Relay T>]) to T in
+    (relay.through_helpers)
+  ))
+  (export (function add_marker ([value i5]) to i5 in (add value $5^i5)))
+}

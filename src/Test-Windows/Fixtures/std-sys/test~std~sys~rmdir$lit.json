@@ -1,4 +1,0 @@
-{
-  "package": "test~std~sys~rmdir$lit",
-  "sys_rmdir_path_s3^s3": "artifacts/std-sys/rmdir-target"
-}

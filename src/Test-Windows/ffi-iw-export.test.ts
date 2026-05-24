@@ -10,7 +10,7 @@ import { loadProgramAst } from "../ModuleLoader";
 import { performTypeChecking } from "../Typecheck-Pipeline";
 import { generateCFromFinalBackendIR, generateX64NativeSupportCFromFinalBackendIR } from "../backend-windows/Backend-Windows-C";
 import type { FinalBackendIRProgram, X64LaidOutProgram, X64TextualAssemblyProgram } from "../backend-windows/Backend-Windows-IR-Shared";
-import { assertExpectedExitCode } from "./BuildJsonCliHarness";
+import { assertExpectedExitCode } from "../Test/BuildJsonCliHarness";
 import { execLinuxToolSync, spawnLinuxBinarySync } from "./LinuxHostToolchainHarness";
 
 interface X64Case {

@@ -1,6 +1,0 @@
-{program test~language~rules~qualified~ok@main
-  (import test~language~rules~lib)
-  (function main ([args <array s3>]) to i5 in
-    (test~language~rules~lib@score $13^i5)
-  )
-}

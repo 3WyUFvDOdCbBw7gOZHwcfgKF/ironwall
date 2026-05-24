@@ -10,7 +10,7 @@ import { loadProgramAst } from "../ModuleLoader";
 import { performTypeChecking } from "../Typecheck-Pipeline";
 import { generateCFromFinalBackendIR, generateX64NativeSupportCFromFinalBackendIR } from "../backend-windows/Backend-Windows-C";
 import type { FinalBackendIRProgram, X64LaidOutProgram, X64TextualAssemblyProgram } from "../backend-windows/Backend-Windows-IR-Shared";
-import { assertExpectedExitCode } from "./BuildJsonCliHarness";
+import { assertExpectedExitCode } from "../Test/BuildJsonCliHarness";
 import { execLinuxToolSync, spawnLinuxBinarySync } from "./LinuxHostToolchainHarness";
 
 interface X64Case {
@@ -26,7 +26,7 @@ interface X64StageCResult {
 }
 
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "ffi-c-heap-return");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "ffi-c-heap-return");
 const entryUnitId = "test~ffi~c~heap_return@main";
 const rawMakeS3Symbol = buildDeclaredCFunctionName("2e5a592513cbf7c516add0ab3f485299", "iw_ffi_make_s3");
 const rawMakeArrayS3Symbol = buildDeclaredCFunctionName("506e62be1de771259a772f31fa3d9e56", "iw_ffi_make_array_s3");

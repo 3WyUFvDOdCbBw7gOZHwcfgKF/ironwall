@@ -1,3 +1,0 @@
-{program test~main~argv~wrong_name@main
-  (function main ([argv <array s3>]) to i5 in $0^i5)
-}

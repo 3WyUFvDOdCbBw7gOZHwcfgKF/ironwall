@@ -1,6 +1,0 @@
-{
-  "package": "test~std~sys~openat_write$lit",
-  "sys_dir_path_s3^s3": "artifacts/std-sys",
-  "openat_write_child_s3^s3": "openat_write.txt",
-  "openat_write_payload_s3^s3": "openat-write"
-}

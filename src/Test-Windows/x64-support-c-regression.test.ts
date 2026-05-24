@@ -24,7 +24,7 @@ interface X64StageCResult {
 }
 
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "x64-support-c");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "x64-support-c");
 const entryUnitId = "test~x64~support_c@main";
 
 const X64_NATIVE_DRIVER_SOURCE = `#include <stdint.h>

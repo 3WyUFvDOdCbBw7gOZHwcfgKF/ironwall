@@ -1,9 +1,0 @@
-{program test~std~sys~unlink@main
-  (import std~windows~sys)
-  (function main ([args <array s3>]) to i5 in
-    {
-      (sys_path_unlink_s3 $sys_unlink_path_s3^s3)
-      $340^i5
-    }
-  )
-}

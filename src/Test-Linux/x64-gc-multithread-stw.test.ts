@@ -48,8 +48,8 @@ const PROGRAM_SOURCE = `{program ${entryUnitId}
   (import std~gc)
   (import std~thread)
   (class Token
-    (property [label s3])
-    (property [value i5])
+    (public (property [label s3]))
+    (public (property [value i5]))
     (constructor ([label0 s3] [value0 i5]) in
       {
         (cm_set self label label0)
@@ -58,9 +58,9 @@ const PROGRAM_SOURCE = `{program ${entryUnitId}
     )
   )
   (class Bundle
-    (property [token Token])
-    (property [items <array s3>])
-    (property [score i5])
+    (public (property [token Token]))
+    (public (property [items <array s3>]))
+    (public (property [score i5]))
     (constructor ([token0 Token] [items0 <array s3>] [score0 i5]) in
       {
         (cm_set self token token0)
@@ -70,10 +70,10 @@ const PROGRAM_SOURCE = `{program ${entryUnitId}
     )
   )
   (class StartGate
-    (property [lock Mutex])
-    (property [ready Cond])
-    (property [ready_count i5])
-    (property [started i5])
+    (public (property [lock Mutex]))
+    (public (property [ready Cond]))
+    (public (property [ready_count i5]))
+    (public (property [started i5]))
     (constructor ([lock0 Mutex] [ready0 Cond]) in
       {
         (cm_set self lock lock0)

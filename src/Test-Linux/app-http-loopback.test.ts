@@ -5,7 +5,7 @@ import { deepStrictEqual, ok, strictEqual } from "assert";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { IncomingHttpHeaders, request as httpRequest } from "http";
 import { join, resolve } from "path";
-import { execBuildJsonCliSync, spawnBuildJsonCli } from "./BuildJsonCliHarness";
+import { execBuildJsonCliSync, spawnBuildJsonCli } from "../Test/BuildJsonCliHarness";
 
 class BackendRun {
     public readonly label: string;

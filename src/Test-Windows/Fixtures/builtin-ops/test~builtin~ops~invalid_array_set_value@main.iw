@@ -1,8 +1,0 @@
-{program test~builtin~ops~invalid_array_set_value@main
-  (function main ([args <array s3>]) to i5 in
-    {
-      (var [items <array i5>] (array_new <array i5> $2^i5 $0^i5))
-      (array_set items $0^i5 $7^i5)
-    }
-  )
-}

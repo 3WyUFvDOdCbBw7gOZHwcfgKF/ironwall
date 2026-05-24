@@ -6,9 +6,9 @@
   (import std~linux~sys)
 
   (class Vec3
-    (property [x f5])
-    (property [y f5])
-    (property [z f5])
+    (public (property [x f5]))
+    (public (property [y f5]))
+    (public (property [z f5]))
     (constructor () in
       {
         (cm_set self x $0p0^f5)
@@ -26,8 +26,8 @@
   )
 
   (class Ray
-    (property [origin Vec3])
-    (property [direction Vec3])
+    (public (property [origin Vec3]))
+    (public (property [direction Vec3]))
     (constructor ([origin0 Vec3] [direction0 Vec3]) in
       {
         (cm_set self origin origin0)
@@ -37,8 +37,8 @@
   )
 
   (class Aabb
-    (property [min Vec3])
-    (property [max Vec3])
+    (public (property [min Vec3]))
+    (public (property [max Vec3]))
     (constructor ([min0 Vec3] [max0 Vec3]) in
       {
         (cm_set self min min0)
@@ -48,10 +48,10 @@
   )
 
   (class Camera
-    (property [origin Vec3])
-    (property [lower_left Vec3])
-    (property [horizontal Vec3])
-    (property [vertical Vec3])
+    (public (property [origin Vec3]))
+    (public (property [lower_left Vec3]))
+    (public (property [horizontal Vec3]))
+    (public (property [vertical Vec3]))
     (constructor ([origin0 Vec3] [lower_left0 Vec3] [horizontal0 Vec3] [vertical0 Vec3]) in
       {
         (cm_set self origin origin0)
@@ -63,7 +63,7 @@
   )
 
   (class DiffuseMaterial
-    (property [albedo Vec3])
+    (public (property [albedo Vec3]))
     (constructor ([albedo0 Vec3]) in
       {
         (cm_set self albedo albedo0)
@@ -72,8 +72,8 @@
   )
 
   (class MirrorMaterial
-    (property [albedo Vec3])
-    (property [reflectivity f5])
+    (public (property [albedo Vec3]))
+    (public (property [reflectivity f5]))
     (constructor ([albedo0 Vec3] [reflectivity0 f5]) in
       {
         (cm_set self albedo albedo0)
@@ -83,9 +83,9 @@
   )
 
   (class CheckerMaterial
-    (property [albedo_a Vec3])
-    (property [albedo_b Vec3])
-    (property [scale f5])
+    (public (property [albedo_a Vec3]))
+    (public (property [albedo_b Vec3]))
+    (public (property [scale f5]))
     (constructor ([albedo_a0 Vec3] [albedo_b0 Vec3] [scale0 f5]) in
       {
         (cm_set self albedo_a albedo_a0)
@@ -96,7 +96,7 @@
   )
 
   (class SurfaceMaterial
-    (property [kind <union DiffuseMaterial MirrorMaterial CheckerMaterial>])
+    (public (property [kind <union DiffuseMaterial MirrorMaterial CheckerMaterial>]))
     (constructor ([kind0 <union DiffuseMaterial MirrorMaterial CheckerMaterial>]) in
       {
         (cm_set self kind kind0)
@@ -105,9 +105,9 @@
   )
 
   (class Sphere
-    (property [center Vec3])
-    (property [radius f5])
-    (property [material SurfaceMaterial])
+    (public (property [center Vec3]))
+    (public (property [radius f5]))
+    (public (property [material SurfaceMaterial]))
     (constructor ([center0 Vec3] [radius0 f5] [material0 SurfaceMaterial]) in
       {
         (cm_set self center center0)
@@ -118,9 +118,9 @@
   )
 
   (class BoxShape
-    (property [center Vec3])
-    (property [half_extent Vec3])
-    (property [material SurfaceMaterial])
+    (public (property [center Vec3]))
+    (public (property [half_extent Vec3]))
+    (public (property [material SurfaceMaterial]))
     (constructor ([center0 Vec3] [half_extent0 Vec3] [material0 SurfaceMaterial]) in
       {
         (cm_set self center center0)
@@ -131,9 +131,9 @@
   )
 
   (class Plane
-    (property [point Vec3])
-    (property [normal Vec3])
-    (property [material SurfaceMaterial])
+    (public (property [point Vec3]))
+    (public (property [normal Vec3]))
+    (public (property [material SurfaceMaterial]))
     (constructor ([point0 Vec3] [normal0 Vec3] [material0 SurfaceMaterial]) in
       {
         (cm_set self point point0)
@@ -144,9 +144,9 @@
   )
 
   (class FaceIndex
-    (property [a i5])
-    (property [b i5])
-    (property [c i5])
+    (public (property [a i5]))
+    (public (property [b i5]))
+    (public (property [c i5]))
     (constructor () in
       {
         (cm_set self a $0^i5)
@@ -164,14 +164,14 @@
   )
 
   (class Triangle
-    (property [a Vec3])
-    (property [b Vec3])
-    (property [c Vec3])
-    (property [ab Vec3])
-    (property [ac Vec3])
-    (property [normal Vec3])
-    (property [bounds Aabb])
-    (property [center Vec3])
+    (public (property [a Vec3]))
+    (public (property [b Vec3]))
+    (public (property [c Vec3]))
+    (public (property [ab Vec3]))
+    (public (property [ac Vec3]))
+    (public (property [normal Vec3]))
+    (public (property [bounds Aabb]))
+    (public (property [center Vec3]))
     (constructor () in
       {
         (var [zero_vec Vec3] (class_new Vec3 $0p0^f5 $0p0^f5 $0p0^f5))
@@ -201,10 +201,10 @@
   )
 
   (class TransformSpec
-    (property [center_shift Vec3])
-    (property [scale_value f5])
-    (property [yaw f5])
-    (property [offset Vec3])
+    (public (property [center_shift Vec3]))
+    (public (property [scale_value f5]))
+    (public (property [yaw f5]))
+    (public (property [offset Vec3]))
     (constructor ([center_shift0 Vec3] [scale_value0 f5] [yaw0 f5] [offset0 Vec3]) in
       {
         (cm_set self center_shift center_shift0)
@@ -216,8 +216,8 @@
   )
 
   (class HitRange
-    (property [t_min f5])
-    (property [t_max f5])
+    (public (property [t_min f5]))
+    (public (property [t_max f5]))
     (constructor ([t_min0 f5] [t_max0 f5]) in
       {
         (cm_set self t_min t_min0)
@@ -227,8 +227,8 @@
   )
 
   (class BvhLeaf
-    (property [bounds Aabb])
-    (property [indices <Array i5>])
+    (public (property [bounds Aabb]))
+    (public (property [indices <Array i5>]))
     (constructor ([bounds0 Aabb] [indices0 <Array i5>]) in
       {
         (cm_set self bounds bounds0)
@@ -238,9 +238,9 @@
   )
 
   (class BvhBranch
-    (property [bounds Aabb])
-    (property [left <union BvhLeaf BvhBranch>])
-    (property [right <union BvhLeaf BvhBranch>])
+    (public (property [bounds Aabb]))
+    (public (property [left <union BvhLeaf BvhBranch>]))
+    (public (property [right <union BvhLeaf BvhBranch>]))
     (constructor ([bounds0 Aabb] [left0 <union BvhLeaf BvhBranch>] [right0 <union BvhLeaf BvhBranch>]) in
       {
         (cm_set self bounds bounds0)
@@ -251,10 +251,10 @@
   )
 
   (class MeshShape
-    (property [bounds Aabb])
-    (property [root <union BvhLeaf BvhBranch>])
-    (property [triangles <Array Triangle>])
-    (property [material SurfaceMaterial])
+    (public (property [bounds Aabb]))
+    (public (property [root <union BvhLeaf BvhBranch>]))
+    (public (property [triangles <Array Triangle>]))
+    (public (property [material SurfaceMaterial]))
     (constructor ([bounds0 Aabb] [root0 <union BvhLeaf BvhBranch>] [triangles0 <Array Triangle>] [material0 SurfaceMaterial]) in
       {
         (cm_set self bounds bounds0)
@@ -266,7 +266,7 @@
   )
 
   (class SceneObject
-    (property [kind <union Sphere BoxShape Plane MeshShape>])
+    (public (property [kind <union Sphere BoxShape Plane MeshShape>]))
     (constructor () in
       {
         (cm_set self kind
@@ -288,9 +288,9 @@
   )
 
   (class DirectionalLight
-    (property [direction Vec3])
-    (property [color Vec3])
-    (property [intensity f5])
+    (public (property [direction Vec3]))
+    (public (property [color Vec3]))
+    (public (property [intensity f5]))
     (constructor ([direction0 Vec3] [color0 Vec3] [intensity0 f5]) in
       {
         (cm_set self direction direction0)
@@ -301,9 +301,9 @@
   )
 
   (class PointLight
-    (property [position Vec3])
-    (property [color Vec3])
-    (property [intensity f5])
+    (public (property [position Vec3]))
+    (public (property [color Vec3]))
+    (public (property [intensity f5]))
     (constructor ([position0 Vec3] [color0 Vec3] [intensity0 f5]) in
       {
         (cm_set self position position0)
@@ -314,7 +314,7 @@
   )
 
   (class SceneLight
-    (property [kind <union DirectionalLight PointLight>])
+    (public (property [kind <union DirectionalLight PointLight>]))
     (constructor () in
       {
         (cm_set self kind
@@ -334,9 +334,9 @@
   )
 
   (class LightSample
-    (property [direction Vec3])
-    (property [color Vec3])
-    (property [max_distance f5])
+    (public (property [direction Vec3]))
+    (public (property [color Vec3]))
+    (public (property [max_distance f5]))
     (constructor ([direction0 Vec3] [color0 Vec3] [max_distance0 f5]) in
       {
         (cm_set self direction direction0)
@@ -347,10 +347,10 @@
   )
 
   (class HitRecord
-    (property [distance f5])
-    (property [position Vec3])
-    (property [normal Vec3])
-    (property [material SurfaceMaterial])
+    (public (property [distance f5]))
+    (public (property [position Vec3]))
+    (public (property [normal Vec3]))
+    (public (property [material SurfaceMaterial]))
     (constructor ([distance0 f5] [position0 Vec3] [normal0 Vec3] [material0 SurfaceMaterial]) in
       {
         (cm_set self distance distance0)
@@ -362,8 +362,8 @@
   )
 
   (class ObjCounts
-    (property [vertex_count i5])
-    (property [face_count i5])
+    (public (property [vertex_count i5]))
+    (public (property [face_count i5]))
     (constructor ([vertex_count0 i5] [face_count0 i5]) in
       {
         (cm_set self vertex_count vertex_count0)
@@ -373,8 +373,8 @@
   )
 
   (class ObjModel
-    (property [vertices <Array Vec3>])
-    (property [faces <Array FaceIndex>])
+    (public (property [vertices <Array Vec3>]))
+    (public (property [faces <Array FaceIndex>]))
     (constructor ([vertices0 <Array Vec3>] [faces0 <Array FaceIndex>]) in
       {
         (cm_set self vertices vertices0)
@@ -384,8 +384,8 @@
   )
 
   (class IndexSplit
-    (property [left <Array i5>])
-    (property [right <Array i5>])
+    (public (property [left <Array i5>]))
+    (public (property [right <Array i5>]))
     (constructor ([left0 <Array i5>] [right0 <Array i5>]) in
       {
         (cm_set self left left0)
@@ -395,10 +395,10 @@
   )
 
   (class RenderConfig
-    (property [obj_path s3])
-    (property [output_path s3])
-    (property [width i5])
-    (property [height i5])
+    (public (property [obj_path s3]))
+    (public (property [output_path s3]))
+    (public (property [width i5]))
+    (public (property [height i5]))
     (constructor ([obj_path0 s3] [output_path0 s3] [width0 i5] [height0 i5]) in
       {
         (cm_set self obj_path obj_path0)
@@ -410,9 +410,9 @@
   )
 
   (class SceneBundle
-    (property [camera Camera])
-    (property [objects <Array SceneObject>])
-    (property [lights <Array SceneLight>])
+    (public (property [camera Camera]))
+    (public (property [objects <Array SceneObject>]))
+    (public (property [lights <Array SceneLight>]))
     (constructor ([camera0 Camera] [objects0 <Array SceneObject>] [lights0 <Array SceneLight>]) in
       {
         (cm_set self camera camera0)

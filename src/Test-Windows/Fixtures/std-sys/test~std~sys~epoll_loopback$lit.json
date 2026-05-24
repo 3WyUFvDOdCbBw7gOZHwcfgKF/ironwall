@@ -1,4 +1,0 @@
-{
-  "package": "test~std~sys~epoll_loopback$lit",
-  "epoll_payload_s3^s3": "epoll-ready"
-}

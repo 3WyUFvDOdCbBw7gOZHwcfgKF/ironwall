@@ -1,0 +1,10 @@
+{program test~pkg~mono~lib@box
+  (export (class <generic Box T>
+    (public (property [value T]))
+    (constructor ([initial T]) in {(cm_set self value initial)})
+  ))
+  (export (function <generic make_box T> ([value T]) to <Box T> in (class_new <Box T> value)))
+  (export (function <generic nested_box T> ([value T]) to <Box <Box T>> in
+    (<make_box <Box T>> (<make_box T> value))
+  ))
+}

@@ -1,3 +1,0 @@
-{program test~builtin~ops~invalid_ls_f6@main
-  (function main ([args <array s3>]) to i5 in (ls $7p5^f6 $1p0^f6))
-}

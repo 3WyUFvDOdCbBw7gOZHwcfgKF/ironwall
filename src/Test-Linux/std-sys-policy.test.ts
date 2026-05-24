@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync } from "fs";
 import { join, resolve } from "path";
-import { assertRunResult, execBuildJsonCliSync, spawnBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { assertRunResult, execBuildJsonCliSync, spawnBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 
 interface FixtureCase {
     readonly label: string;

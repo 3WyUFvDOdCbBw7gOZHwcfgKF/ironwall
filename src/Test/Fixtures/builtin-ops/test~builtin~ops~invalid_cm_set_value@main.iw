@@ -1,0 +1,15 @@
+{program test~builtin~ops~invalid_cm_set_value@main
+  (class Box
+    (public (property [value i5]))
+    (constructor ([value0 i5]) in
+      (cm_set self value value0)
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [box Box] (class_new Box $1^i5))
+      (cm_set box value $2^i5)
+    }
+  )
+}

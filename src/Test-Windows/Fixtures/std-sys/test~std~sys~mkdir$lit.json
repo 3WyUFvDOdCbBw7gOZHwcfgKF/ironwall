@@ -1,4 +1,0 @@
-{
-  "package": "test~std~sys~mkdir$lit",
-  "sys_mkdir_path_s3^s3": "artifacts/std-sys/mkdir-target"
-}

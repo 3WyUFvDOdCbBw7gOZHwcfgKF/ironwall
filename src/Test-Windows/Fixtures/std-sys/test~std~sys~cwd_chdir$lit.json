@@ -1,7 +1,0 @@
-{
-  "package": "test~std~sys~cwd_chdir$lit",
-  "cwd_target_dir_s3^s3": "artifacts/std-sys/cwd-target",
-  "cwd_target_file_name_s3^s3": "cwd.txt",
-  "cwd_target_suffix_s3^s3": "artifacts/std-sys/cwd-target",
-  "cwd_expected_contents_s3^s3": "cwd-ok"
-}

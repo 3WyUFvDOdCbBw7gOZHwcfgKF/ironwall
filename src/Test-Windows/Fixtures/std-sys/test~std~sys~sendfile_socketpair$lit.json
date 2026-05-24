@@ -1,5 +1,0 @@
-{
-  "package": "test~std~sys~sendfile_socketpair$lit",
-  "sendfile_path_s3^s3": "artifacts/std-sys/sendfile.txt",
-  "sendfile_text_s3^s3": "sendfile-text"
-}

@@ -26,7 +26,7 @@ interface X64StageCResult {
 const TEST_TIMEOUT_MS = 15000;
 const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Linux", "Fixtures", "gc-table-collection");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "gc-table-collection");
 const entryUnitId = "test~gc~table~collection~app@main";
 
 const X64_NATIVE_DRIVER_SOURCE = `#include <stdint.h>

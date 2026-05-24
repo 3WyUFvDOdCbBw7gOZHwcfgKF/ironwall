@@ -1,6 +1,0 @@
-{
-  "package": "test~std~sys~openat_read$lit",
-  "sys_dir_path_s3^s3": "artifacts/std-sys",
-  "openat_input_child_s3^s3": "openat_input.txt",
-  "openat_input_text_s3^s3": "openat-alpha"
-}

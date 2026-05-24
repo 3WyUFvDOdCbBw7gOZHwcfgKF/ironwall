@@ -1,7 +1,0 @@
-{
-  "package": "test~array~new~class~zero_arg_builtin$lit",
-  "expected_default_s3^s3": "default string",
-  "expected_default_s4^s4": "default string",
-  "expected_default_s5^s5": "default string",
-  "changed_s3^s3": "changed string"
-}

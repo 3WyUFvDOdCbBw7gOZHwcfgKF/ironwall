@@ -5,12 +5,12 @@ import { performNoOptimizeCBackendLoweringStageCFromArtifacts } from "../Lowerin
 import { loadProgramAst } from "../ModuleLoader";
 import { performTypeChecking } from "../Typecheck-Pipeline";
 import { generateCFromFinalBackendIR } from "../backend-windows/Backend-Windows-C";
-import { normalizeOutputLines, spawnBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { normalizeOutputLines, spawnBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 
 const TEST_TIMEOUT_MS = 15000;
 const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const repoRoot = resolve(__dirname, "..", "..");
-const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "gc-table-collection");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "gc-table-collection");
 const entryUnitId = "test~gc~table~collection~app@main";
 
 const ast = loadProgramAst(fixtureDir, {

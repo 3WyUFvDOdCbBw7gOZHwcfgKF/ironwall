@@ -3,7 +3,7 @@ import { strictEqual } from "assert";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, relative, resolve } from "path";
-import { execBuildJsonCliSync, spawnBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { execBuildJsonCliSync, spawnBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 import { execLinuxToolSync, spawnLinuxBinarySync } from "./LinuxHostToolchainHarness";
 
 const TEST_TIMEOUT_MS = 15000;
@@ -11,7 +11,7 @@ const MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const repoRoot = resolve(__dirname, "..", "..");
 const cliPath = join(repoRoot, "build", "main.js");
 const releaseCliPath = join(repoRoot, "build", "main-release-windows.js");
-const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "main-exit-code");
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "main-exit-code");
 const entryUnitId = "test~main~exit~code@main";
 const expectedExitCode = 17;
 

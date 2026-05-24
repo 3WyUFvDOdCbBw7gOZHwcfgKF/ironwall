@@ -3,7 +3,7 @@ import { execFileSync, spawnSync, type SpawnSyncReturns } from "child_process";
 import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
-import { execBuildJsonCliSync } from "./BuildJsonCliHarness";
+import { execBuildJsonCliSync } from "../Test/BuildJsonCliHarness";
 
 interface NativeRunMeasurement {
     readonly label: string;

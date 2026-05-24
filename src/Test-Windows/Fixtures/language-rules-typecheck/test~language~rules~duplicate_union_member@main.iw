@@ -1,6 +1,0 @@
-{program test~language~rules~duplicate_union_member@main
-  (function reject_duplicate_union ([value <union i5 f5 i5>]) to i5 in
-    (match value ([payload i5] payload) ([float_payload f5] $1^i5))
-  )
-  (function main ([args <array s3>]) to i5 in (reject_duplicate_union $0^i5))
-}
