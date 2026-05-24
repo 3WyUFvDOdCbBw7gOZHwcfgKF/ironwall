@@ -3,16 +3,16 @@ CONFIG += c++20 testcase console warn_on
 TEMPLATE = app
 TARGET = tst_iwcore
 
-ASTVIS_BUILD_ROOT = $$clean_path($$PWD/../../../build-astvis-qt)
-ASTVIS_ASSETS_ROOT = $$clean_path($$PWD/../../../assets)
+IRONWALL_READER_BUILD_ROOT = $$clean_path($$PWD/../../../build-ironwall-reader)
+IRONWALL_READER_ASSETS_ROOT = $$clean_path($$PWD/../../../assets)
 
-DESTDIR = $$ASTVIS_BUILD_ROOT/bin
-OBJECTS_DIR = $$ASTVIS_BUILD_ROOT/tests/obj
-MOC_DIR = $$ASTVIS_BUILD_ROOT/tests/moc
-RCC_DIR = $$ASTVIS_BUILD_ROOT/tests/rcc
-UI_DIR = $$ASTVIS_BUILD_ROOT/tests/ui
+DESTDIR = $$IRONWALL_READER_BUILD_ROOT/bin
+OBJECTS_DIR = $$IRONWALL_READER_BUILD_ROOT/tests/obj
+MOC_DIR = $$IRONWALL_READER_BUILD_ROOT/tests/moc
+RCC_DIR = $$IRONWALL_READER_BUILD_ROOT/tests/rcc
+UI_DIR = $$IRONWALL_READER_BUILD_ROOT/tests/ui
 
-QMAKE_POST_LINK += $$escape_expand(\\n\\t)$(COPY_DIR) $$shell_path($$ASTVIS_ASSETS_ROOT/math-font) $$shell_path($$DESTDIR/math-font)
+QMAKE_POST_LINK += $$escape_expand(\\n\\t)$(COPY_DIR) $$shell_path($$IRONWALL_READER_ASSETS_ROOT/math-font) $$shell_path($$DESTDIR/math-font)
 
 INCLUDEPATH += ../core ../app
 

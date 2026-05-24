@@ -1,0 +1,5 @@
+{program test~build~json~ffi~multi_file@main
+  (declare (function _ab6f7ef4c1de43fb8d5cf17ae7e36c50_clang_iw_build_json_sum4_e57f8d7c ([a i5] [b i5] [c i5] [d i5]) to i5))
+  (declare (function _efa5590b9e1b497b9088681cc92f15a2_clang_iw_build_json_negate_c6c601ab ([value i5]) to i5))
+  (function main ([args <array s3>]) to i5 in (_efa5590b9e1b497b9088681cc92f15a2_clang_iw_build_json_negate_c6c601ab (_ab6f7ef4c1de43fb8d5cf17ae7e36c50_clang_iw_build_json_sum4_e57f8d7c $4^i5 $9^i5 $12^i5 $6^i5)))
+}

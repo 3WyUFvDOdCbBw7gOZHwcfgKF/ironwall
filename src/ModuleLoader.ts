@@ -1,5 +1,6 @@
 import { execFileSync } from "child_process";
-import { readdirSync, readFileSync, statSync } from "fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
 import { basename, extname, join, relative, resolve } from "path";
 import { ProgramNode } from "./AstNode";
 import { restoreAstFromJsonText } from "./FrontendJson";
@@ -40,17 +41,27 @@ export interface ParseProgramSourceOptions {
     readonly filePath?: string;
 }
 
+function parseWithExternalFrontend(command: string, source: string): ProgramNode {
+    const tempDir: string = mkdtempSync(join(tmpdir(), "ironwall-external-frontend-"));
+    try {
+        const inputPath: string = join(tempDir, "input.iw");
+        writeFileSync(inputPath, source, "utf8");
+        return restoreAstFromJsonText(
+            execFileSync(command, ["--input-file", inputPath], {
+                encoding: "utf8",
+                maxBuffer: 64 * 1024 * 1024
+            })
+        ) as ProgramNode;
+    } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+    }
+}
+
 export function parseProgramSource(source: string, options?: ParseProgramSourceOptions): ProgramNode {
     const externalFrontendJsonCommand: string | undefined = process.env[EXTERNAL_FRONTEND_JSON_COMMAND_ENV_NAME];
     const ast = externalFrontendJsonCommand === undefined || externalFrontendJsonCommand.trim().length === 0
         ? parse(tokenize(source, { filePath: options?.filePath }))
-        : restoreAstFromJsonText(
-            execFileSync(externalFrontendJsonCommand.trim(), [], {
-                encoding: "utf8",
-                input: source,
-                maxBuffer: 64 * 1024 * 1024
-            })
-        );
+        : parseWithExternalFrontend(externalFrontendJsonCommand.trim(), source);
     if (!(ast instanceof ProgramNode)) {
         throw new Error("An .iw file must contain exactly one root {program ...} block");
     }

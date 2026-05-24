@@ -18,9 +18,11 @@ const QSet<QString> LEGACY_GENERIC_CALLEE_KEYWORDS = {
     QStringLiteral("if"),
     QStringLiteral("while"),
     QStringLiteral("cond"),
+    QStringLiteral("public"),
     QStringLiteral("class"),
     QStringLiteral("match"),
-    QStringLiteral("array_new")
+    QStringLiteral("array_new"),
+    QStringLiteral("export")
 };
 
 const QSet<QString> VARIADIC_FOLD_BUILTIN_NAMES = {
@@ -123,6 +125,7 @@ struct ParsedClassBody final {
     std::vector<ClassConstructorNodePtr> constructors;
     std::vector<ClassMethodNodePtr> methods;
     std::vector<ClassPropertyNodePtr> properties;
+    AstNodeList memberNodeList;
 };
 
 AstNodePtr parsePass4(const AstNodePtr &node);
@@ -270,6 +273,26 @@ std::shared_ptr<ImportNode> parseImportExpression(const std::shared_ptr<RoundPar
     }
 
     return std::make_shared<ImportNode>(packageNode);
+}
+
+std::shared_ptr<PublicNode> parsePublicExpression(const std::shared_ptr<RoundParenListNode> &node) {
+    if (node->elements().size() != 2) {
+        throw std::runtime_error("public expects exactly one argument");
+    }
+
+    const AstNodePtr inner = parsePass4(node->elements().at(1));
+    if (std::dynamic_pointer_cast<PublicNode>(inner)) {
+        throw std::runtime_error("public cannot wrap public");
+    }
+    return std::make_shared<PublicNode>(inner);
+}
+
+std::shared_ptr<ExportNode> parseExportExpression(const std::shared_ptr<RoundParenListNode> &node) {
+    if (node->elements().size() != 2) {
+        throw std::runtime_error("export expects exactly one argument");
+    }
+
+    return std::make_shared<ExportNode>(parsePass4(node->elements().at(1)));
 }
 
 AstNodePtr parseDvarExpression(const std::shared_ptr<RoundParenListNode> &node) {
@@ -506,6 +529,58 @@ std::shared_ptr<ClassConstructorNode> parseClassConstructor(const std::shared_pt
     return std::make_shared<ClassConstructorNode>(parseParameterList(node->elements().at(1)), parsePass4(node->elements().at(3)));
 }
 
+std::shared_ptr<PublicNode> parsePublicClassBodyMember(const std::shared_ptr<RoundParenListNode> &node) {
+    if (node->elements().size() != 2) {
+        throw std::runtime_error("public expects exactly one argument");
+    }
+
+    const std::shared_ptr<RoundParenListNode> innerElement = std::dynamic_pointer_cast<RoundParenListNode>(node->elements().at(1));
+    if (!innerElement || innerElement->elements().empty()) {
+        throw std::runtime_error("public may only wrap class properties and methods");
+    }
+
+    const IdentifierNodePtr firstInnerElement = std::dynamic_pointer_cast<IdentifierNode>(innerElement->elements().at(0));
+    if (!firstInnerElement) {
+        throw std::runtime_error("public may only wrap class properties and methods");
+    }
+
+    const QString &keyword = firstInnerElement->name();
+    if (keyword == QStringLiteral("property")) {
+        return std::make_shared<PublicNode>(parseClassProperty(innerElement));
+    }
+    if (keyword == QStringLiteral("method")) {
+        return std::make_shared<PublicNode>(parseClassMethod(innerElement));
+    }
+    if (keyword == QStringLiteral("constructor")) {
+        throw std::runtime_error("constructors are always public and cannot be wrapped in public");
+    }
+    if (keyword == QStringLiteral("public")) {
+        throw std::runtime_error("public cannot wrap public");
+    }
+    throw std::runtime_error("public may only wrap class properties and methods");
+}
+
+AstNodePtr parseClassBodyMember(const std::shared_ptr<RoundParenListNode> &node) {
+    const IdentifierNodePtr firstIdentifier = std::dynamic_pointer_cast<IdentifierNode>(node->elements().at(0));
+    if (!firstIdentifier) {
+        throw std::runtime_error("Unknown class member type");
+    }
+
+    if (firstIdentifier->name() == QStringLiteral("property")) {
+        return parseClassProperty(node);
+    }
+    if (firstIdentifier->name() == QStringLiteral("method")) {
+        return parseClassMethod(node);
+    }
+    if (firstIdentifier->name() == QStringLiteral("constructor")) {
+        return parseClassConstructor(node);
+    }
+    if (firstIdentifier->name() == QStringLiteral("public")) {
+        return parsePublicClassBodyMember(node);
+    }
+    throw std::runtime_error(QStringLiteral("Unknown class member type: %1").arg(firstIdentifier->name()).toStdString());
+}
+
 ParsedClassBody parseClassBody(const AstNodeList &bodyElements) {
     ParsedClassBody result;
 
@@ -515,24 +590,25 @@ ParsedClassBody parseClassBody(const AstNodeList &bodyElements) {
             continue;
         }
 
-        const IdentifierNodePtr firstIdentifier = std::dynamic_pointer_cast<IdentifierNode>(roundNode->elements().at(0));
-        if (!firstIdentifier) {
-            continue;
+        const AstNodePtr memberNode = parseClassBodyMember(roundNode);
+        result.memberNodeList.push_back(memberNode);
+
+        AstNodePtr innerMember = memberNode;
+        if (const PublicNodePtr publicNode = std::dynamic_pointer_cast<PublicNode>(memberNode)) {
+            innerMember = publicNode->inner();
         }
 
-        if (firstIdentifier->name() == QStringLiteral("property")) {
-            result.properties.push_back(parseClassProperty(roundNode));
+        if (const ClassPropertyNodePtr propertyNode = std::dynamic_pointer_cast<ClassPropertyNode>(innerMember)) {
+            result.properties.push_back(propertyNode);
             continue;
         }
-        if (firstIdentifier->name() == QStringLiteral("method")) {
-            result.methods.push_back(parseClassMethod(roundNode));
+        if (const ClassMethodNodePtr methodNode = std::dynamic_pointer_cast<ClassMethodNode>(innerMember)) {
+            result.methods.push_back(methodNode);
             continue;
         }
-        if (firstIdentifier->name() == QStringLiteral("constructor")) {
-            result.constructors.push_back(parseClassConstructor(roundNode));
-            continue;
+        if (const ClassConstructorNodePtr constructorNode = std::dynamic_pointer_cast<ClassConstructorNode>(innerMember)) {
+            result.constructors.push_back(constructorNode);
         }
-        throw std::runtime_error(QStringLiteral("Unknown class member type: %1").arg(firstIdentifier->name()).toStdString());
     }
 
     return result;
@@ -548,7 +624,7 @@ AstNodePtr parseClassExpression(const std::shared_ptr<RoundParenListNode> &node)
 
     const GenericNameNodePtr genericName = std::dynamic_pointer_cast<GenericNameNode>(nameNode);
     if (genericName) {
-        return std::make_shared<GenericClassNode>(genericName, body.constructors, body.methods, body.properties);
+        return std::make_shared<GenericClassNode>(genericName, body.constructors, body.methods, body.properties, body.memberNodeList);
     }
 
     const IdentifierNodePtr className = std::dynamic_pointer_cast<IdentifierNode>(nameNode);
@@ -556,7 +632,7 @@ AstNodePtr parseClassExpression(const std::shared_ptr<RoundParenListNode> &node)
         throw std::runtime_error("Class name must be an identifier");
     }
 
-    return std::make_shared<ClassNode>(className, body.constructors, body.methods, body.properties);
+    return std::make_shared<ClassNode>(className, body.constructors, body.methods, body.properties, body.memberNodeList);
 }
 
 std::vector<TypeVarBindNodePtr> parseParameterList(const AstNodePtr &paramsNode) {
@@ -689,6 +765,9 @@ AstNodePtr parseRoundParenList(const std::shared_ptr<RoundParenListNode> &node) 
     if (keyword == QStringLiteral("cond")) {
         return parseCondExpression(node);
     }
+    if (keyword == QStringLiteral("public")) {
+        return parsePublicExpression(node);
+    }
     if (keyword == QStringLiteral("seq")) {
         throw std::runtime_error("Legacy '(seq ...)' blocks are no longer accepted; use '{...}' blocks instead");
     }
@@ -700,6 +779,9 @@ AstNodePtr parseRoundParenList(const std::shared_ptr<RoundParenListNode> &node) 
     }
     if (keyword == QStringLiteral("import")) {
         return parseImportExpression(node);
+    }
+    if (keyword == QStringLiteral("export")) {
+        return parseExportExpression(node);
     }
 
     AstNodeList processedElements;
@@ -728,6 +810,8 @@ AstNodePtr parsePass4(const AstNodePtr &node) {
         || std::dynamic_pointer_cast<TypeUnionNode>(node)
         || std::dynamic_pointer_cast<ProgramNode>(node)
         || std::dynamic_pointer_cast<ImportNode>(node)
+        || std::dynamic_pointer_cast<ExportNode>(node)
+        || std::dynamic_pointer_cast<PublicNode>(node)
         || std::dynamic_pointer_cast<DvarNode>(node)
         || std::dynamic_pointer_cast<DfunNode>(node)
         || std::dynamic_pointer_cast<DeclaredDfunNode>(node)
@@ -907,6 +991,12 @@ AstNodePtr rewriteAstNode(const AstNodePtr &node) {
         }
         return std::make_shared<ProgramNode>(programNode->unitId(), topLevelExpressions);
     }
+    if (const std::shared_ptr<ExportNode> exportNode = std::dynamic_pointer_cast<ExportNode>(node)) {
+        return std::make_shared<ExportNode>(rewriteAstNode(exportNode->inner()));
+    }
+    if (const PublicNodePtr publicNode = std::dynamic_pointer_cast<PublicNode>(node)) {
+        return std::make_shared<PublicNode>(rewriteAstNode(publicNode->inner()));
+    }
     if (const std::shared_ptr<DvarNode> dvarNode = std::dynamic_pointer_cast<DvarNode>(node)) {
         return std::make_shared<DvarNode>(rewriteAstNode(dvarNode->bind()), rewriteAstNode(dvarNode->value()));
     }
@@ -938,6 +1028,7 @@ AstNodePtr rewriteAstNode(const AstNodePtr &node) {
         std::vector<ClassConstructorNodePtr> constructors;
         std::vector<ClassMethodNodePtr> methods;
         std::vector<ClassPropertyNodePtr> properties;
+        AstNodeList memberNodeList;
         for (const ClassConstructorNodePtr &constructorNode : classNode->constructorNodeList()) {
             constructors.push_back(rewriteClassConstructorNode(constructorNode));
         }
@@ -947,7 +1038,10 @@ AstNodePtr rewriteAstNode(const AstNodePtr &node) {
         for (const ClassPropertyNodePtr &propertyNode : classNode->propertyNodeList()) {
             properties.push_back(rewriteClassPropertyNode(propertyNode));
         }
-        return std::make_shared<ClassNode>(classNode->name(), constructors, methods, properties);
+        for (const AstNodePtr &memberNode : classNode->memberNodeList()) {
+            memberNodeList.push_back(rewriteAstNode(memberNode));
+        }
+        return std::make_shared<ClassNode>(classNode->name(), constructors, methods, properties, memberNodeList);
     }
     if (const ClassPropertyNodePtr propertyNode = std::dynamic_pointer_cast<ClassPropertyNode>(node)) {
         return rewriteClassPropertyNode(propertyNode);
@@ -965,6 +1059,7 @@ AstNodePtr rewriteAstNode(const AstNodePtr &node) {
         std::vector<ClassConstructorNodePtr> constructors;
         std::vector<ClassMethodNodePtr> methods;
         std::vector<ClassPropertyNodePtr> properties;
+        AstNodeList memberNodeList;
         for (const ClassConstructorNodePtr &constructorNode : genericClassNode->constructorNodeList()) {
             constructors.push_back(rewriteClassConstructorNode(constructorNode));
         }
@@ -974,11 +1069,15 @@ AstNodePtr rewriteAstNode(const AstNodePtr &node) {
         for (const ClassPropertyNodePtr &propertyNode : genericClassNode->propertyNodeList()) {
             properties.push_back(rewriteClassPropertyNode(propertyNode));
         }
+        for (const AstNodePtr &memberNode : genericClassNode->memberNodeList()) {
+            memberNodeList.push_back(rewriteAstNode(memberNode));
+        }
         return std::make_shared<GenericClassNode>(
             std::make_shared<GenericNameNode>(genericClassNode->genericName()->name(), genericClassNode->genericName()->genericTypeArgs()),
             constructors,
             methods,
-            properties
+            properties,
+            memberNodeList
         );
     }
     if (const std::shared_ptr<GenericDfunNode> genericDfunNode = std::dynamic_pointer_cast<GenericDfunNode>(node)) {

@@ -144,6 +144,7 @@ private slots:
     void formatterRoundTripsDirectDotSugar();
     void lintFormatFixesEligibleMemberChainsOnly();
     void parserBuildsExpectedCallTree();
+    void parserPreservesPublicAndExportNodes();
     void parserRejectsMismatchedBrackets();
     void functionCallParensTrackChildHeightNotWidth();
     void graphicsRenderNestedCmGetAndCmSetCalls_data();
@@ -246,6 +247,37 @@ void IwCoreTest::parserBuildsExpectedCallTree() {
     const std::shared_ptr<iw::IdentifierNode> innerCallee = std::dynamic_pointer_cast<iw::IdentifierNode>(innerCall->callee());
     QVERIFY(innerCallee != nullptr);
     QCOMPARE(innerCallee->name(), QStringLiteral("cm_get"));
+}
+
+void IwCoreTest::parserPreservesPublicAndExportNodes() {
+    const std::shared_ptr<iw::ProgramNode> program = iw::parseProgramSource(
+        QStringLiteral(
+            "{program test~public~export@defs "
+            "(export (class Counter "
+            "(public (property [value i5])) "
+            "(public (method read () to i5 in (cm_get self value))) "
+            "(constructor ([init i5]) in (cm_set self value init))"
+            ")) "
+            "(export (function make_counter ([value i5]) to Counter in (class_new Counter value)))"
+            "}"));
+
+    QCOMPARE(program->topLevelExpressions().size(), std::size_t(2));
+
+    const std::shared_ptr<iw::ExportNode> exportedClass = std::dynamic_pointer_cast<iw::ExportNode>(program->topLevelExpressions().at(0));
+    QVERIFY(exportedClass != nullptr);
+    const std::shared_ptr<iw::ClassNode> classNode = std::dynamic_pointer_cast<iw::ClassNode>(exportedClass->inner());
+    QVERIFY(classNode != nullptr);
+    QCOMPARE(classNode->propertyNodeList().size(), std::size_t(1));
+    QCOMPARE(classNode->methodNodeList().size(), std::size_t(1));
+    QCOMPARE(classNode->constructorNodeList().size(), std::size_t(1));
+    QCOMPARE(classNode->memberNodeList().size(), std::size_t(3));
+    QVERIFY(std::dynamic_pointer_cast<iw::PublicNode>(classNode->memberNodeList().at(0)) != nullptr);
+    QVERIFY(std::dynamic_pointer_cast<iw::PublicNode>(classNode->memberNodeList().at(1)) != nullptr);
+    QVERIFY(std::dynamic_pointer_cast<iw::ClassConstructorNode>(classNode->memberNodeList().at(2)) != nullptr);
+
+    const std::shared_ptr<iw::ExportNode> exportedFunction = std::dynamic_pointer_cast<iw::ExportNode>(program->topLevelExpressions().at(1));
+    QVERIFY(exportedFunction != nullptr);
+    QVERIFY(std::dynamic_pointer_cast<iw::DfunNode>(exportedFunction->inner()) != nullptr);
 }
 
 void IwCoreTest::parserRejectsMismatchedBrackets() {

@@ -49,37 +49,6 @@ int main(int argc, char **argv) {
 }
 `;
 
-const PROGRAM_SOURCE = `{program ${entryUnitId}
-  (declare (function ${rawHostScaleSymbol} ([value i5]) to i5))
-  (declare (function ${rawHostWrapTextSymbol} ([value s3]) to s3))
-  (declare (function ${rawHostValidateSymbol} () to i5))
-  (function ${rawExportI5Symbol} ([value i5]) to i5 in
-    (add (${rawHostScaleSymbol} value) $1^i5)
-  )
-  (function ${rawExportS3Symbol} ([value s3]) to s3 in
-    (${rawHostWrapTextSymbol} value)
-  )
-  (function ${rawExportArrayI5Symbol} ([values <array i5>]) to <array i5> in
-    {
-      (var [result <array i5>] (array_new <array i5> $3^i5 $0^i5))
-      (array_set result $0^i5 (${rawHostScaleSymbol} (array_get values $0^i5)))
-      (array_set result $1^i5 (${rawHostScaleSymbol} (array_get values $1^i5)))
-      (array_set result $2^i5 (${rawHostScaleSymbol} (array_get values $2^i5)))
-      result
-    }
-  )
-  (function ${rawExportArrayS3Symbol} ([values <array s3>]) to <array s3> in
-    {
-      (var [result <array s3>] (array_new <array s3> $2^i5 (${rawHostWrapTextSymbol} (array_get values $0^i5))))
-      (array_set result $0^i5 (${rawHostWrapTextSymbol} (array_get values $0^i5)))
-      (array_set result $1^i5 (${rawHostWrapTextSymbol} (array_get values $1^i5)))
-      result
-    }
-  )
-  (function main ([args <array s3>]) to i5 in (${rawHostValidateSymbol}))
-}
-`;
-
 const EXTRA_SUPPORT_SOURCE = `static inline void iw_export_assert(int condition, const char *context) {
     if (!condition) {
         fprintf(stderr, "Ironwall exported IW ffi assertion failed in %s\\n", context);
@@ -160,12 +129,6 @@ const x64Cases: readonly X64Case[] = [
         backendProfile: "no-optimized-backend"
     }
 ];
-
-function createFixtureDir(): string {
-    const fixtureDir = mkdtempSync(join(tmpdir(), "ironwall-ffi-iw-export-fixture-"));
-    writeFileSync(join(fixtureDir, `${entryUnitId}.iw`), PROGRAM_SOURCE, "utf8");
-    return fixtureDir;
-}
 
 function loadTypedProgramAst(fixtureDir: string) {
     const ast = loadProgramAst(fixtureDir, {
@@ -273,9 +236,8 @@ function assertX64LinksAndRuns(supportC: string, assemblyText: string, expectedO
     }
 }
 
-const fixtureDir = createFixtureDir();
+const fixtureDir = join(repoRoot, "src", "Test", "Fixtures", "ffi-iw-export");
 
-try {
     const cBackendAst = loadTypedProgramAst(fixtureDir);
     const cBackendStageC = performNoOptimizeCBackendLoweringStageCFromArtifacts(cBackendAst, {
         disableBaseLibAutoLoad: false,
@@ -308,6 +270,3 @@ try {
         assertX64LinksAndRuns(supportC, asm, expectedStdout);
         process.stdout.write(`ffi-iw-export x64 ${testCase.label} ok\n`);
     }
-} finally {
-    rmSync(fixtureDir, { recursive: true, force: true });
-}

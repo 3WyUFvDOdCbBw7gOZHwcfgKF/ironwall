@@ -14,6 +14,7 @@ const seqFixtureDir = join(repoRoot, "src", "Test", "Fixtures", "seq-var-scope")
 const precompiledFixtureRoot = join(repoRoot, "src", "Test", "Fixtures", "precompiled-lib");
 const precompiledLibDir = join(precompiledFixtureRoot, "lib");
 const precompiledAppDir = join(precompiledFixtureRoot, "app");
+const ffiStaticFixtureRoot = join(repoRoot, "src", "Test", "Fixtures", "build-json-cli-ffi-static-lib");
 
 interface FfiSourceCase {
     readonly fileName: string;
@@ -23,7 +24,7 @@ interface FfiSourceCase {
 interface FfiStaticLibCase {
     readonly label: string;
     readonly unitId: string;
-    readonly entrySource: string;
+    readonly fixtureDir: string;
     readonly nativeSources: readonly FfiSourceCase[];
     readonly expectedOutput: string;
 }
@@ -203,14 +204,7 @@ try {
         {
             label: "unary-add",
             unitId: "test~build~json~ffi~unary@main",
-            entrySource: (() => {
-                const symbol = buildDeclaredCFunctionName("81af42c9d7354eb08bfe95163c04ad20", "iw_build_json_add_seven");
-                return `{program test~build~json~ffi~unary@main
-  (declare (function ${symbol} ([value i5]) to i5))
-  (function main ([args <array s3>]) to i5 in (${symbol} $35^i5))
-}
-`;
-            })(),
+            fixtureDir: join(ffiStaticFixtureRoot, "unary-add"),
             nativeSources: [(() => {
                 const symbol = buildDeclaredCFunctionName("81af42c9d7354eb08bfe95163c04ad20", "iw_build_json_add_seven");
                 return {
@@ -230,16 +224,7 @@ iw_value_t ${symbol}(iw_value_t value) {
         {
             label: "seed-and-mix",
             unitId: "test~build~json~ffi~seed_mix@main",
-            entrySource: (() => {
-                const seedSymbol = buildDeclaredCFunctionName("12f1e8bb90ca40d1a25d6457ce1b2e20", "iw_build_json_seed");
-                const mixSymbol = buildDeclaredCFunctionName("b7c8d11df8d2442a8f83e9831a69b8f4", "iw_build_json_mix3");
-                return `{program test~build~json~ffi~seed_mix@main
-  (declare (function ${seedSymbol} () to i5))
-  (declare (function ${mixSymbol} ([left i5] [right i5] [extra i5]) to i5))
-  (function main ([args <array s3>]) to i5 in (${mixSymbol} (${seedSymbol}) $10^i5 $11^i5))
-}
-`;
-            })(),
+            fixtureDir: join(ffiStaticFixtureRoot, "seed-and-mix"),
             nativeSources: [(() => {
                 const seedSymbol = buildDeclaredCFunctionName("12f1e8bb90ca40d1a25d6457ce1b2e20", "iw_build_json_seed");
                 const mixSymbol = buildDeclaredCFunctionName("b7c8d11df8d2442a8f83e9831a69b8f4", "iw_build_json_mix3");
@@ -263,16 +248,7 @@ iw_value_t ${mixSymbol}(iw_value_t left, iw_value_t right, iw_value_t extra) {
         {
             label: "multi-file-negate-sum",
             unitId: "test~build~json~ffi~multi_file@main",
-            entrySource: (() => {
-                const sum4Symbol = buildDeclaredCFunctionName("ab6f7ef4c1de43fb8d5cf17ae7e36c50", "iw_build_json_sum4");
-                const negSymbol = buildDeclaredCFunctionName("efa5590b9e1b497b9088681cc92f15a2", "iw_build_json_negate");
-                return `{program test~build~json~ffi~multi_file@main
-  (declare (function ${sum4Symbol} ([a i5] [b i5] [c i5] [d i5]) to i5))
-  (declare (function ${negSymbol} ([value i5]) to i5))
-  (function main ([args <array s3>]) to i5 in (${negSymbol} (${sum4Symbol} $4^i5 $9^i5 $12^i5 $6^i5)))
-}
-`;
-            })(),
+            fixtureDir: join(ffiStaticFixtureRoot, "multi-file-negate-sum"),
             nativeSources: [
                 (() => {
                     const sum4Symbol = buildDeclaredCFunctionName("ab6f7ef4c1de43fb8d5cf17ae7e36c50", "iw_build_json_sum4");
@@ -309,11 +285,8 @@ iw_value_t ${negSymbol}(iw_value_t value) {
 
     for (const ffiCase of ffiCases) {
         const ffiCaseRoot = join(ffiConfigRoot, ffiCase.label);
-        const ffiSourceDir = join(ffiCaseRoot, "src");
         const ffiBuildDir = join(ffiCaseRoot, "native");
-        mkdirSync(ffiSourceDir, { recursive: true });
         mkdirSync(ffiBuildDir, { recursive: true });
-        writeFileSync(join(ffiSourceDir, `${ffiCase.unitId}.iw`), ffiCase.entrySource, "utf8");
         const ffiArchivePath = join(ffiBuildDir, `lib${ffiCase.label}.a`);
         compileStaticArchive(ffiArchivePath, ffiBuildDir, ffiCase.nativeSources);
 
@@ -322,7 +295,7 @@ iw_value_t ${negSymbol}(iw_value_t value) {
             const ffiConfigPath = writeBuildConfig(ffiConfigDir, {
                 mode: "run",
                 directories: [{
-                    path: relative(ffiConfigDir, ffiSourceDir)
+                    path: relative(ffiConfigDir, ffiCase.fixtureDir)
                 }],
                 main: ffiCase.unitId,
                 precompiledLibs: [],

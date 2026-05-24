@@ -1,0 +1,29 @@
+{program test~ffi~iw_export@main
+  (declare (function _4a8b9c0d1e2f34567890abcdef123456_clang_iw_host_scale_i5_ff451404 ([value i5]) to i5))
+  (declare (function _0c95086a0a5442d98c4c6ee3e476a85d_clang_iw_host_wrap_s3_c05b8b9d ([value s3]) to s3))
+  (declare (function _210f5dbd46a3446a8b15e0f06e9d7b40_clang_iw_host_validate_exports_a67e7f0b () to i5))
+  (function _2c6c6793c93d4a21ae02c4ebc61838e1_iwlang_iw_export_i5_roundtrip_eb9c4ca4 ([value i5]) to i5 in
+    (add (_4a8b9c0d1e2f34567890abcdef123456_clang_iw_host_scale_i5_ff451404 value) $1^i5)
+  )
+  (function _9b257fd3654c46df9811d56581c188f6_iwlang_iw_export_s3_roundtrip_3676d41f ([value s3]) to s3 in
+    (_0c95086a0a5442d98c4c6ee3e476a85d_clang_iw_host_wrap_s3_c05b8b9d value)
+  )
+  (function _05c41829801949bba168d25585c7e0bf_iwlang_iw_export_array_i5_roundtrip_67b44a3c ([values <array i5>]) to <array i5> in
+    {
+      (var [result <array i5>] (array_new <array i5> $3^i5 $0^i5))
+      (array_set result $0^i5 (_4a8b9c0d1e2f34567890abcdef123456_clang_iw_host_scale_i5_ff451404 (array_get values $0^i5)))
+      (array_set result $1^i5 (_4a8b9c0d1e2f34567890abcdef123456_clang_iw_host_scale_i5_ff451404 (array_get values $1^i5)))
+      (array_set result $2^i5 (_4a8b9c0d1e2f34567890abcdef123456_clang_iw_host_scale_i5_ff451404 (array_get values $2^i5)))
+      result
+    }
+  )
+  (function _1905a92ae238496490f0a3513d821d33_iwlang_iw_export_array_s3_roundtrip_4d12e7fd ([values <array s3>]) to <array s3> in
+    {
+      (var [result <array s3>] (array_new <array s3> $2^i5 (_0c95086a0a5442d98c4c6ee3e476a85d_clang_iw_host_wrap_s3_c05b8b9d (array_get values $0^i5))))
+      (array_set result $0^i5 (_0c95086a0a5442d98c4c6ee3e476a85d_clang_iw_host_wrap_s3_c05b8b9d (array_get values $0^i5)))
+      (array_set result $1^i5 (_0c95086a0a5442d98c4c6ee3e476a85d_clang_iw_host_wrap_s3_c05b8b9d (array_get values $1^i5)))
+      result
+    }
+  )
+  (function main ([args <array s3>]) to i5 in (_210f5dbd46a3446a8b15e0f06e9d7b40_clang_iw_host_validate_exports_a67e7f0b))
+}

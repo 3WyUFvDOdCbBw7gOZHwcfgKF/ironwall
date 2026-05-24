@@ -3,8 +3,11 @@ import { basename, join, resolve } from "path";
 import { runBuiltTestSuite } from "../Test/RunSuiteSupport";
 
 const repoRoot: string = resolve(__dirname, "..", "..");
-const defaultExternalFrontendJsonCommand: string = join(repoRoot, "src", "astvis-qt", "build", "bin", "iw-frontend-json");
+const defaultExternalFrontendJsonCommand: string = join(repoRoot, "build-ironwall-reader", "bin", "iw-frontend-json");
 const parityTestFileName: string = "frontend-json-parity.test.js";
+const externalFrontendIncompatibleTestFileNames: ReadonlySet<string> = new Set([
+    "diagnostics-json.test.js"
+]);
 
 function getExternalFrontendJsonCommand(): string {
     const configuredPath: string | undefined = process.env.IW_EXTERNAL_FRONTEND_JSON_COMMAND;
@@ -19,7 +22,7 @@ function ensureUsableExternalFrontendJsonCommand(commandPath: string): void {
         throw new Error(
             [
                 `Missing C++ frontend JSON command at '${commandPath}'.`,
-                "Build src/astvis-qt first so the iw-frontend-json binary exists, or set IW_EXTERNAL_FRONTEND_JSON_COMMAND to an alternate path."
+                "Build src/astvis-qt/ironwall-reader.pro first so the iw-frontend-json binary exists, or set IW_EXTERNAL_FRONTEND_JSON_COMMAND to an alternate path."
             ].join(" ")
         );
     }
@@ -27,7 +30,10 @@ function ensureUsableExternalFrontendJsonCommand(commandPath: string): void {
 
 function orderTestFiles(testFiles: readonly string[]): string[] {
     const parityTestPath: string | undefined = testFiles.find((testFilePath: string) => basename(testFilePath) === parityTestFileName);
-    const remainingTests: string[] = testFiles.filter((testFilePath: string) => basename(testFilePath) !== parityTestFileName);
+    const remainingTests: string[] = testFiles.filter((testFilePath: string) => {
+        const testFileName: string = basename(testFilePath);
+        return testFileName !== parityTestFileName && !externalFrontendIncompatibleTestFileNames.has(testFileName);
+    });
     return parityTestPath === undefined
         ? [...remainingTests]
         : [parityTestPath, ...remainingTests];

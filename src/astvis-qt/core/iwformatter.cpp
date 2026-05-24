@@ -143,6 +143,16 @@ QString formatInline(const AstNodePtr &node) {
         return formatNode(node, 0);
     }
 
+    const std::shared_ptr<ExportNode> exportNode = std::dynamic_pointer_cast<ExportNode>(node);
+    if (exportNode) {
+        return formatNode(node, 0);
+    }
+
+    const PublicNodePtr publicNode = std::dynamic_pointer_cast<PublicNode>(node);
+    if (publicNode) {
+        return formatNode(node, 0);
+    }
+
     const std::shared_ptr<DfunNode> functionNode = std::dynamic_pointer_cast<DfunNode>(node);
     if (functionNode) {
         return formatNode(node, 0);
@@ -184,6 +194,16 @@ QString formatNode(const AstNodePtr &node, int depth) {
             return lines.join(QChar('\n'));
         }
         return indentText(depth) + head + QStringLiteral(" ") + formatInline(functionNode->body()) + QStringLiteral(")");
+    }
+
+    const std::shared_ptr<ExportNode> exportNode = std::dynamic_pointer_cast<ExportNode>(node);
+    if (exportNode) {
+        return indentText(depth) + QStringLiteral("(export ") + formatInline(exportNode->inner()) + QStringLiteral(")");
+    }
+
+    const PublicNodePtr publicNode = std::dynamic_pointer_cast<PublicNode>(node);
+    if (publicNode) {
+        return indentText(depth) + QStringLiteral("(public ") + formatInline(publicNode->inner()) + QStringLiteral(")");
     }
 
     const std::shared_ptr<SeqNode> seqNode = std::dynamic_pointer_cast<SeqNode>(node);

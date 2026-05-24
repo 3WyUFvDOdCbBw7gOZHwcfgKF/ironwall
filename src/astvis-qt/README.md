@@ -1,4 +1,4 @@
-# astvis-qt
+# ironwall-reader
 
 Qt Widgets project for visualizing a useful subset of the Ironwall AST.
 
@@ -14,7 +14,7 @@ Build:
 
 ```bash
 cd /home/blackcat/dev/ironwall/src/astvis-qt
-/home/blackcat/Qt/6.11.0/gcc_64/bin/qmake astvis-qt.pro
+/home/blackcat/Qt/6.11.0/gcc_64/bin/qmake ironwall-reader.pro
 make
 ```
 
@@ -22,12 +22,12 @@ Run the viewer:
 
 ```bash
 cd /home/blackcat/dev/ironwall/src/astvis-qt
-../../build-astvis-qt/bin/astvis-qt
+../../build-ironwall-reader/bin/ironwall-reader
 ```
 
 Run the tests:
 
 ```bash
 cd /home/blackcat/dev/ironwall/src/astvis-qt
-../../build-astvis-qt/bin/tst_iwcore
+../../build-ironwall-reader/bin/tst_iwcore
 ```

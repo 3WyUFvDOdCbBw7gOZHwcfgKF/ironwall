@@ -30,6 +30,8 @@ enum class AstNodeType {
     TypeUnionNode,
     ProgramNode,
     ImportNode,
+    ExportNode,
+    PublicNode,
     DvarNode,
     DfunNode,
     DeclaredDfunNode,
@@ -51,6 +53,7 @@ class AstNode;
 class IdentifierNode;
 class TypeVarBindNode;
 class ProgramNode;
+class PublicNode;
 class ClassConstructorNode;
 class ClassMethodNode;
 class ClassPropertyNode;
@@ -60,6 +63,7 @@ using AstNodePtr = std::shared_ptr<AstNode>;
 using AstNodeList = std::vector<AstNodePtr>;
 using IdentifierNodePtr = std::shared_ptr<IdentifierNode>;
 using TypeVarBindNodePtr = std::shared_ptr<TypeVarBindNode>;
+using PublicNodePtr = std::shared_ptr<PublicNode>;
 using ClassConstructorNodePtr = std::shared_ptr<ClassConstructorNode>;
 using ClassMethodNodePtr = std::shared_ptr<ClassMethodNode>;
 using ClassPropertyNodePtr = std::shared_ptr<ClassPropertyNode>;
@@ -566,6 +570,52 @@ private:
     IdentifierNodePtr m_packagePath;
 };
 
+class ExportNode final : public AstNode {
+public:
+    explicit ExportNode(const AstNodePtr &inner)
+        : AstNode(AstNodeType::ExportNode),
+          m_inner(inner) {
+    }
+
+    const AstNodePtr &inner() const {
+        return m_inner;
+    }
+
+    AstNodeList childNodes() const override {
+        return AstNodeList{m_inner};
+    }
+
+    QString summaryText() const override {
+        return QStringLiteral("Export");
+    }
+
+private:
+    AstNodePtr m_inner;
+};
+
+class PublicNode final : public AstNode {
+public:
+    explicit PublicNode(const AstNodePtr &inner)
+        : AstNode(AstNodeType::PublicNode),
+          m_inner(inner) {
+    }
+
+    const AstNodePtr &inner() const {
+        return m_inner;
+    }
+
+    AstNodeList childNodes() const override {
+        return AstNodeList{m_inner};
+    }
+
+    QString summaryText() const override {
+        return QStringLiteral("Public");
+    }
+
+private:
+    AstNodePtr m_inner;
+};
+
 class SeqNode final : public AstNode {
 public:
     explicit SeqNode(const AstNodeList &expressions)
@@ -841,12 +891,13 @@ private:
 
 class ClassNode final : public AstNode {
 public:
-    ClassNode(const IdentifierNodePtr &name, const std::vector<ClassConstructorNodePtr> &constructorNodeList, const std::vector<ClassMethodNodePtr> &methodNodeList, const std::vector<ClassPropertyNodePtr> &propertyNodeList)
+    ClassNode(const IdentifierNodePtr &name, const std::vector<ClassConstructorNodePtr> &constructorNodeList, const std::vector<ClassMethodNodePtr> &methodNodeList, const std::vector<ClassPropertyNodePtr> &propertyNodeList, const AstNodeList &memberNodeList)
         : AstNode(AstNodeType::ClassNode),
           m_name(name),
           m_constructorNodeList(constructorNodeList),
           m_methodNodeList(methodNodeList),
-          m_propertyNodeList(propertyNodeList) {
+          m_propertyNodeList(propertyNodeList),
+          m_memberNodeList(memberNodeList) {
     }
 
     const IdentifierNodePtr &name() const {
@@ -865,17 +916,15 @@ public:
         return m_propertyNodeList;
     }
 
+    const AstNodeList &memberNodeList() const {
+        return m_memberNodeList;
+    }
+
     AstNodeList childNodes() const override {
         AstNodeList nodes;
         nodes.push_back(m_name);
-        for (const ClassConstructorNodePtr &constructorNode : m_constructorNodeList) {
-            nodes.push_back(constructorNode);
-        }
-        for (const ClassMethodNodePtr &methodNode : m_methodNodeList) {
-            nodes.push_back(methodNode);
-        }
-        for (const ClassPropertyNodePtr &propertyNode : m_propertyNodeList) {
-            nodes.push_back(propertyNode);
+        for (const AstNodePtr &memberNode : m_memberNodeList) {
+            nodes.push_back(memberNode);
         }
         return nodes;
     }
@@ -889,6 +938,7 @@ private:
     std::vector<ClassConstructorNodePtr> m_constructorNodeList;
     std::vector<ClassMethodNodePtr> m_methodNodeList;
     std::vector<ClassPropertyNodePtr> m_propertyNodeList;
+    AstNodeList m_memberNodeList;
 };
 
 class GenericNameNode final : public AstNode {
@@ -927,12 +977,13 @@ private:
 
 class GenericClassNode final : public AstNode {
 public:
-    GenericClassNode(const GenericNameNodePtr &genericName, const std::vector<ClassConstructorNodePtr> &constructorNodeList, const std::vector<ClassMethodNodePtr> &methodNodeList, const std::vector<ClassPropertyNodePtr> &propertyNodeList)
+    GenericClassNode(const GenericNameNodePtr &genericName, const std::vector<ClassConstructorNodePtr> &constructorNodeList, const std::vector<ClassMethodNodePtr> &methodNodeList, const std::vector<ClassPropertyNodePtr> &propertyNodeList, const AstNodeList &memberNodeList)
         : AstNode(AstNodeType::GenericClassNode),
           m_genericName(genericName),
           m_constructorNodeList(constructorNodeList),
           m_methodNodeList(methodNodeList),
-          m_propertyNodeList(propertyNodeList) {
+          m_propertyNodeList(propertyNodeList),
+          m_memberNodeList(memberNodeList) {
     }
 
     const GenericNameNodePtr &genericName() const {
@@ -951,17 +1002,15 @@ public:
         return m_propertyNodeList;
     }
 
+    const AstNodeList &memberNodeList() const {
+        return m_memberNodeList;
+    }
+
     AstNodeList childNodes() const override {
         AstNodeList nodes;
         nodes.push_back(m_genericName);
-        for (const ClassConstructorNodePtr &constructorNode : m_constructorNodeList) {
-            nodes.push_back(constructorNode);
-        }
-        for (const ClassMethodNodePtr &methodNode : m_methodNodeList) {
-            nodes.push_back(methodNode);
-        }
-        for (const ClassPropertyNodePtr &propertyNode : m_propertyNodeList) {
-            nodes.push_back(propertyNode);
+        for (const AstNodePtr &memberNode : m_memberNodeList) {
+            nodes.push_back(memberNode);
         }
         return nodes;
     }
@@ -975,6 +1024,7 @@ private:
     std::vector<ClassConstructorNodePtr> m_constructorNodeList;
     std::vector<ClassMethodNodePtr> m_methodNodeList;
     std::vector<ClassPropertyNodePtr> m_propertyNodeList;
+    AstNodeList m_memberNodeList;
 };
 
 class GenericDfunNode final : public AstNode {

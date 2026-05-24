@@ -44,142 +44,6 @@ int main(int argc, char **argv) {
 }
 `;
 
-const PROGRAM_SOURCE = `{program ${entryUnitId}
-  (import std~gc)
-  (import std~thread)
-  (class Token
-    (property [label s3])
-    (property [value i5])
-    (constructor ([label0 s3] [value0 i5]) in
-      {
-        (cm_set self label label0)
-        (cm_set self value value0)
-      }
-    )
-  )
-  (class Bundle
-    (property [token Token])
-    (property [items <array s3>])
-    (property [score i5])
-    (constructor ([token0 Token] [items0 <array s3>] [score0 i5]) in
-      {
-        (cm_set self token token0)
-        (cm_set self items items0)
-        (cm_set self score score0)
-      }
-    )
-  )
-  (class StartGate
-    (property [lock Mutex])
-    (property [ready Cond])
-    (property [ready_count i5])
-    (property [started i5])
-    (constructor ([lock0 Mutex] [ready0 Cond]) in
-      {
-        (cm_set self lock lock0)
-        (cm_set self ready ready0)
-        (cm_set self ready_count $0^i5)
-        (cm_set self started $0^i5)
-      }
-    )
-  )
-  (function wait_for_start ([gate StartGate] [worker_count i5]) to unit in
-    {
-      (lock gate.lock)
-      (var [next_ready i5] (add gate.ready_count $1^i5))
-      (cm_set gate ready_count next_ready)
-      (if (eq next_ready worker_count) then
-        {
-          (cm_set gate started $1^i5)
-          (broadcast gate.ready)
-        }
-        else
-        (while (eq gate.started $0^i5) in
-          (wait gate.ready gate.lock)
-        )
-      )
-      (unlock gate.lock)
-      unit
-    }
-  )
-  (function dead_noise ([seed i5]) to i5 in
-    {
-      (var [dead_text s3] (s3_new $4^i5 (s3_get $dead_s3^s3 $0^i5)))
-      (var [dead_items <array s3>] (array_new <array s3> $2^i5 dead_text))
-      $0^i5
-    }
-  )
-  (function make_token ([seed i5]) to Token in
-    {
-      (var [label s3] (s3_new $5^i5 (s3_get $hello_s3^s3 $0^i5)))
-      (class_new Token label seed)
-    }
-  )
-  (function leaf ([worker_id i5] [bundle Bundle] [token Token] [iteration i5]) to i5 in
-    {
-      (var [reclaimed i5] (if (eq worker_id $1^i5) then (gc_collect) else $0^i5))
-      (add
-        bundle.score
-        (add token.value (add (s3_length token.label) (array_length bundle.items)))
-      )
-    }
-  )
-  (function middle ([worker_id i5] [seed i5] [iteration i5]) to i5 in
-    {
-      (var [waste i5] (dead_noise seed))
-      (var [token Token] (make_token seed))
-      (var [items <array s3>] (array_new <array s3> $3^i5 token.label))
-      (var [bundle Bundle] (class_new Bundle token items (add seed iteration)))
-      (add waste (leaf worker_id bundle token iteration))
-    }
-  )
-  (function exit_worker ([value i5]) to i5 in
-    {
-      (var [token Token] (make_token value))
-      (var [items <array s3>] (array_new <array s3> $2^i5 token.label))
-      (var [bundle Bundle] (class_new Bundle token items value))
-      (exit_thread bundle.score)
-    }
-  )
-  (function worker_entry ([worker_id i5] [limit i5] [gate StartGate]) to i5 in
-    {
-      (wait_for_start gate $${threadCount}^i5)
-      (var [index i5] $0^i5)
-      (var [total i5] $0^i5)
-      (while (lt index limit) in
-        {
-          (var [seed i5] (add worker_id index))
-          (var_set total (add total (middle worker_id seed index)))
-          (yield)
-          (var_set index (add index $1^i5))
-        }
-      )
-      (if (eq worker_id $1^i5) then
-        (exit_worker total)
-        else
-        total
-      )
-    }
-  )
-  (function main ([args <array s3>]) to i5 in
-    {
-      (var [gate StartGate] (class_new StartGate (mutex) (cond_var)))
-      (var [thread1 Thread] (spawn (fn ([ignored unit]) to i5 in (worker_entry $1^i5 $${iterations}^i5 gate))))
-      (var [thread2 Thread] (spawn (fn ([ignored unit]) to i5 in (worker_entry $2^i5 $${iterations}^i5 gate))))
-      (var [thread3 Thread] (spawn (fn ([ignored unit]) to i5 in (worker_entry $3^i5 $${iterations}^i5 gate))))
-      (var [thread4 Thread] (spawn (fn ([ignored unit]) to i5 in (worker_entry $4^i5 $${iterations}^i5 gate))))
-      (var [result1 i5] (join thread1))
-      (var [result2 i5] (join thread2))
-      (var [result3 i5] (join thread3))
-      (var [result4 i5] (join thread4))
-      (destroy_cond gate.ready)
-      (destroy_mutex gate.lock)
-      (add result1 (add result2 (add result3 result4)))
-    }
-  )
-}
-`;
-
 const x64Cases: readonly X64Case[] = [
     {
         label: "no-optimized-frontend optimized-backend",
@@ -214,17 +78,6 @@ function splitGcCollections(gcLines: readonly string[]): string[][] {
     }
     strictEqual(current.length, 0, `unterminated gc collection chunk\n${gcLines.join("\n")}`);
     return chunks;
-}
-
-function createFixtureDir(): string {
-    const fixtureDir = mkdtempSync(join(tmpdir(), "ironwall-x64-gc-multithread-stw-fixture-"));
-    writeFileSync(join(fixtureDir, `${entryUnitId}.iw`), PROGRAM_SOURCE, "utf8");
-    writeFileSync(join(fixtureDir, "test~gc~multithread~stw$lit.json"), JSON.stringify({
-        package: "test~gc~multithread~stw$lit",
-        "dead_s3^s3": "dead",
-        "hello_s3^s3": "hello"
-    }, null, 2), "utf8");
-    return fixtureDir;
 }
 
 function buildStageC(fixtureDir: string, testCase: X64Case): X64StageCResult {
@@ -277,9 +130,8 @@ function runNative(supportC: string, assemblyText: string): string {
     }
 }
 
-const fixtureDir = createFixtureDir();
+const fixtureDir = join(repoRoot, "src", "Test-Windows", "Fixtures", "gc-multithread-stw");
 
-try {
     for (const testCase of x64Cases) {
         const stageC = buildStageC(fixtureDir, testCase);
         const asm = stageC.pass22x64emit.text;
@@ -317,6 +169,3 @@ try {
 
         process.stdout.write(`x64-gc-multithread-stw ${testCase.label} ok\n`);
     }
-} finally {
-    rmSync(fixtureDir, { recursive: true, force: true });
-}

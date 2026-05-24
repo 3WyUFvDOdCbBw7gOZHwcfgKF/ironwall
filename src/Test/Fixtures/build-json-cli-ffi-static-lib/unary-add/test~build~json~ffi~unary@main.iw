@@ -1,0 +1,4 @@
+{program test~build~json~ffi~unary@main
+  (declare (function _81af42c9d7354eb08bfe95163c04ad20_clang_iw_build_json_add_seven_c267f2a7 ([value i5]) to i5))
+  (function main ([args <array s3>]) to i5 in (_81af42c9d7354eb08bfe95163c04ad20_clang_iw_build_json_add_seven_c267f2a7 $35^i5))
+}

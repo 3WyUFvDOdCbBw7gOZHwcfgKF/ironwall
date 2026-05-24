@@ -9,8 +9,11 @@ import {
     validateDeclaredCFunctionName,
     validateExportedIwFunctionName
 } from "../DeclaredCFunctionName";
-import { parseProgramSource } from "../ModuleLoader";
+import { loadProgramAst } from "../ModuleLoader";
 import { performTypeChecking } from "../Typecheck-Pipeline";
+import { join, resolve } from "path";
+
+const repoRoot: string = resolve(__dirname, "..", "..");
 
 const namespaceUuid: string = "6f3c1e4b2a9d4f6e8c1b3d5a7f9e2c4b";
 const functionName: string = "iw_sys_fd_open_read_s3";
@@ -77,14 +80,9 @@ throws(
     "legacy iwlang names should fail validation"
 );
 
-const duplicateUuid: string = "b7b865f2e4f9418e9d4e7634d480c82b";
-const duplicateLeft: string = buildDeclaredCFunctionName(duplicateUuid, "iw_duplicate_left");
-const duplicateRight: string = buildDeclaredCFunctionName(duplicateUuid, "iw_duplicate_right");
+const duplicateFixtureDir: string = join(repoRoot, "src", "Test", "Fixtures", "declared-c-function-name");
 throws(
-    () => performTypeChecking(parseProgramSource(`{program test~duplicate~extern~uuid@main
-  (declare (function ${duplicateLeft} () to i5))
-  (declare (function ${duplicateRight} () to i5))
-}`), { disableBaseLibAutoLoad: true }),
+    () => performTypeChecking(loadProgramAst(duplicateFixtureDir), { disableBaseLibAutoLoad: true }),
     /external function UUID 'b7b865f2e4f9418e9d4e7634d480c82b' is reused/,
     "declared extern functions must not reuse UUIDs"
 );

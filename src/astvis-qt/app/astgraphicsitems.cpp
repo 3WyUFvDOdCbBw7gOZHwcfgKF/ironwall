@@ -3847,6 +3847,8 @@ DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(RoundParenListNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(TypeVarBindNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(TypeToFromNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(TypeUnionNodeGraphicsItem);
+DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(ExportNodeGraphicsItem);
+DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(PublicNodeGraphicsItem);
 DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(GenericNameNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(GenericCallNodeGraphicsItem);
 
@@ -3888,6 +3890,10 @@ AstGraphicsItem *createAstGraphicsItemInternal(const iw::AstNodePtr &node, QGrap
         return new ProgramNodeGraphicsItem(node, parent);
     case iw::AstNodeType::ImportNode:
         return new ImportNodeGraphicsItem(node, parent);
+    case iw::AstNodeType::ExportNode:
+        return new ExportNodeGraphicsItem(node, parent);
+    case iw::AstNodeType::PublicNode:
+        return new PublicNodeGraphicsItem(node, parent);
     case iw::AstNodeType::DvarNode:
         return new DvarNodeGraphicsItem(node, parent);
     case iw::AstNodeType::DfunNode:

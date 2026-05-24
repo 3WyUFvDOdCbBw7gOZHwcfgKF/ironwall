@@ -1,0 +1,4 @@
+{program test~duplicate~extern~uuid@main
+  (declare (function _b7b865f2e4f9418e9d4e7634d480c82b_clang_iw_duplicate_left_a8cd1eb7 () to i5))
+  (declare (function _b7b865f2e4f9418e9d4e7634d480c82b_clang_iw_duplicate_right_5293fda8 () to i5))
+}

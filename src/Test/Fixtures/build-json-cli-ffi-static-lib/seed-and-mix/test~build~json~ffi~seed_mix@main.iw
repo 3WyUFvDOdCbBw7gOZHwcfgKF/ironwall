@@ -1,0 +1,5 @@
+{program test~build~json~ffi~seed_mix@main
+  (declare (function _12f1e8bb90ca40d1a25d6457ce1b2e20_clang_iw_build_json_seed_5698e69b () to i5))
+  (declare (function _b7c8d11df8d2442a8f83e9831a69b8f4_clang_iw_build_json_mix3_d21641b2 ([left i5] [right i5] [extra i5]) to i5))
+  (function main ([args <array s3>]) to i5 in (_b7c8d11df8d2442a8f83e9831a69b8f4_clang_iw_build_json_mix3_d21641b2 (_12f1e8bb90ca40d1a25d6457ce1b2e20_clang_iw_build_json_seed_5698e69b) $10^i5 $11^i5))
+}

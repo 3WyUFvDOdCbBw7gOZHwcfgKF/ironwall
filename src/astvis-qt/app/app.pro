@@ -1,18 +1,18 @@
 QT += widgets
 CONFIG += c++20 warn_on
 TEMPLATE = app
-TARGET = astvis-qt
+TARGET = ironwall-reader
 
-ASTVIS_BUILD_ROOT = $$clean_path($$PWD/../../../build-astvis-qt)
-ASTVIS_ASSETS_ROOT = $$clean_path($$PWD/../../../assets)
+IRONWALL_READER_BUILD_ROOT = $$clean_path($$PWD/../../../build-ironwall-reader)
+IRONWALL_READER_ASSETS_ROOT = $$clean_path($$PWD/../../../assets)
 
-DESTDIR = $$ASTVIS_BUILD_ROOT/bin
-OBJECTS_DIR = $$ASTVIS_BUILD_ROOT/app/obj
-MOC_DIR = $$ASTVIS_BUILD_ROOT/app/moc
-RCC_DIR = $$ASTVIS_BUILD_ROOT/app/rcc
-UI_DIR = $$ASTVIS_BUILD_ROOT/app/ui
+DESTDIR = $$IRONWALL_READER_BUILD_ROOT/bin
+OBJECTS_DIR = $$IRONWALL_READER_BUILD_ROOT/app/obj
+MOC_DIR = $$IRONWALL_READER_BUILD_ROOT/app/moc
+RCC_DIR = $$IRONWALL_READER_BUILD_ROOT/app/rcc
+UI_DIR = $$IRONWALL_READER_BUILD_ROOT/app/ui
 
-QMAKE_POST_LINK += $$escape_expand(\\n\\t)$(COPY_DIR) $$shell_path($$ASTVIS_ASSETS_ROOT/math-font) $$shell_path($$DESTDIR/math-font)
+QMAKE_POST_LINK += $$escape_expand(\\n\\t)$(COPY_DIR) $$shell_path($$IRONWALL_READER_ASSETS_ROOT/math-font) $$shell_path($$DESTDIR/math-font)
 
 INCLUDEPATH += ../core
 

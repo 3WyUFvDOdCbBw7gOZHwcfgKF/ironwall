@@ -150,6 +150,12 @@ QJsonValue serializeAstNode(const AstNodePtr &node) {
     if (const std::shared_ptr<ImportNode> importNode = std::dynamic_pointer_cast<ImportNode>(node)) {
         return QJsonObject{{QStringLiteral("kind"), QStringLiteral("ImportNode")}, {QStringLiteral("packagePath"), serializeAstNode(importNode->packagePath())}};
     }
+    if (const std::shared_ptr<ExportNode> exportNode = std::dynamic_pointer_cast<ExportNode>(node)) {
+        return QJsonObject{{QStringLiteral("kind"), QStringLiteral("ExportNode")}, {QStringLiteral("inner"), serializeAstNode(exportNode->inner())}};
+    }
+    if (const PublicNodePtr publicNode = std::dynamic_pointer_cast<PublicNode>(node)) {
+        return QJsonObject{{QStringLiteral("kind"), QStringLiteral("PublicNode")}, {QStringLiteral("inner"), serializeAstNode(publicNode->inner())}};
+    }
     if (const std::shared_ptr<DvarNode> dvarNode = std::dynamic_pointer_cast<DvarNode>(node)) {
         return QJsonObject{
             {QStringLiteral("kind"), QStringLiteral("DvarNode")},
@@ -210,7 +216,8 @@ QJsonValue serializeAstNode(const AstNodePtr &node) {
             {QStringLiteral("name"), serializeAstNode(classNode->name())},
             {QStringLiteral("constructorNodeList"), constructors},
             {QStringLiteral("methodNodeList"), methods},
-            {QStringLiteral("propertyNodeList"), properties}
+            {QStringLiteral("propertyNodeList"), properties},
+            {QStringLiteral("memberNodeList"), serializeAstNodeList(classNode->memberNodeList())}
         };
     }
     if (const ClassPropertyNodePtr classPropertyNode = std::dynamic_pointer_cast<ClassPropertyNode>(node)) {
@@ -265,7 +272,8 @@ QJsonValue serializeAstNode(const AstNodePtr &node) {
             {QStringLiteral("genericName"), serializeAstNode(genericClassNode->genericName())},
             {QStringLiteral("constructorNodeList"), constructors},
             {QStringLiteral("methodNodeList"), methods},
-            {QStringLiteral("propertyNodeList"), properties}
+            {QStringLiteral("propertyNodeList"), properties},
+            {QStringLiteral("memberNodeList"), serializeAstNodeList(genericClassNode->memberNodeList())}
         };
     }
     if (const std::shared_ptr<GenericDfunNode> genericDfunNode = std::dynamic_pointer_cast<GenericDfunNode>(node)) {
