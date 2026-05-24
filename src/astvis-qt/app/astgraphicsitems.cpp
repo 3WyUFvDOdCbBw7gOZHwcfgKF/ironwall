@@ -3707,20 +3707,12 @@ class ClassBlockGraphicsItem : public BracketedBlockGraphicsItem {
 public:
     ClassBlockGraphicsItem(const iw::AstNodePtr &node,
                            const QString &displayName,
-                           const std::vector<iw::ClassConstructorNodePtr> &constructors,
-                           const std::vector<iw::ClassMethodNodePtr> &methods,
-                           const std::vector<iw::ClassPropertyNodePtr> &properties,
+                           const iw::AstNodeList &members,
                            QGraphicsItem *parent = nullptr)
         : BracketedBlockGraphicsItem(node, parent) {
         addItemEntry(new InlineTextRunGraphicsItem(node, buildClassHeaderRuns(displayName, accentColor()), this));
-        for (const iw::ClassConstructorNodePtr &constructorNode : constructors) {
-            addItemEntry(createAstGraphicsItemInternal(constructorNode, this), BRACKET_BLOCK_INDENT);
-        }
-        for (const iw::ClassMethodNodePtr &methodNode : methods) {
-            addItemEntry(createAstGraphicsItemInternal(methodNode, this), BRACKET_BLOCK_INDENT);
-        }
-        for (const iw::ClassPropertyNodePtr &propertyNode : properties) {
-            addItemEntry(createAstGraphicsItemInternal(propertyNode, this), BRACKET_BLOCK_INDENT);
+        for (const iw::AstNodePtr &member : members) {
+            addItemEntry(createAstGraphicsItemInternal(member, this), BRACKET_BLOCK_INDENT);
         }
         addKeywordEntry(QStringLiteral("End Class"));
         layoutEntries();
@@ -3733,9 +3725,7 @@ public:
         : ClassBlockGraphicsItem(
               node,
               std::dynamic_pointer_cast<iw::ClassNode>(node)->name()->name(),
-              std::dynamic_pointer_cast<iw::ClassNode>(node)->constructorNodeList(),
-              std::dynamic_pointer_cast<iw::ClassNode>(node)->methodNodeList(),
-              std::dynamic_pointer_cast<iw::ClassNode>(node)->propertyNodeList(),
+              std::dynamic_pointer_cast<iw::ClassNode>(node)->memberNodeList(),
               parent) {
         Q_ASSERT(std::dynamic_pointer_cast<iw::ClassNode>(node) != nullptr);
     }
@@ -3747,11 +3737,52 @@ public:
         : ClassBlockGraphicsItem(
               node,
               signatureTextForAstNode(std::dynamic_pointer_cast<iw::GenericClassNode>(node)->genericName()),
-              std::dynamic_pointer_cast<iw::GenericClassNode>(node)->constructorNodeList(),
-              std::dynamic_pointer_cast<iw::GenericClassNode>(node)->methodNodeList(),
-              std::dynamic_pointer_cast<iw::GenericClassNode>(node)->propertyNodeList(),
+              std::dynamic_pointer_cast<iw::GenericClassNode>(node)->memberNodeList(),
               parent) {
         Q_ASSERT(std::dynamic_pointer_cast<iw::GenericClassNode>(node) != nullptr);
+    }
+};
+
+class WrapperBlockGraphicsItem : public BracketedBlockGraphicsItem {
+public:
+    WrapperBlockGraphicsItem(const iw::AstNodePtr &node,
+                             const QString &headerKeyword,
+                             const QString &footerKeyword,
+                             const iw::AstNodePtr &innerNode,
+                             QGraphicsItem *parent = nullptr)
+        : BracketedBlockGraphicsItem(node, parent) {
+        addKeywordEntry(headerKeyword);
+        if (innerNode) {
+            addItemEntry(createAstGraphicsItemInternal(innerNode, this), BRACKET_BLOCK_INDENT);
+        }
+        addKeywordEntry(footerKeyword);
+        layoutEntries();
+    }
+};
+
+class ExportNodeGraphicsItem final : public WrapperBlockGraphicsItem {
+public:
+    explicit ExportNodeGraphicsItem(const iw::AstNodePtr &node, QGraphicsItem *parent = nullptr)
+        : WrapperBlockGraphicsItem(
+              node,
+              QStringLiteral("Export"),
+              QStringLiteral("End Export"),
+              std::dynamic_pointer_cast<iw::ExportNode>(node)->inner(),
+              parent) {
+        Q_ASSERT(std::dynamic_pointer_cast<iw::ExportNode>(node) != nullptr);
+    }
+};
+
+class PublicNodeGraphicsItem final : public WrapperBlockGraphicsItem {
+public:
+    explicit PublicNodeGraphicsItem(const iw::AstNodePtr &node, QGraphicsItem *parent = nullptr)
+        : WrapperBlockGraphicsItem(
+              node,
+              QStringLiteral("Public"),
+              QStringLiteral("End Public"),
+              std::dynamic_pointer_cast<iw::PublicNode>(node)->inner(),
+              parent) {
+        Q_ASSERT(std::dynamic_pointer_cast<iw::PublicNode>(node) != nullptr);
     }
 };
 
@@ -3847,8 +3878,6 @@ DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(RoundParenListNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(TypeVarBindNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(TypeToFromNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(TypeUnionNodeGraphicsItem);
-DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(ExportNodeGraphicsItem);
-DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(PublicNodeGraphicsItem);
 DECLARE_STRUCTURED_NODE_GRAPHICS_ITEM(GenericNameNodeGraphicsItem);
 DECLARE_INLINE_FORMULA_NODE_GRAPHICS_ITEM(GenericCallNodeGraphicsItem);
 
