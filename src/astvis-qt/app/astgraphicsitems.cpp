@@ -364,7 +364,7 @@ void paintOrthogonalRoutes(QPainter *painter, const std::vector<OrthogonalRoute>
     }
 
     painter->setPen(Qt::NoPen);
-    painter->setBrush(Qt::black);
+    painter->setBrush(astTextColor());
     for (const OrthogonalRoute &route : routes) {
         if (route.points.empty()) {
             continue;
@@ -375,6 +375,57 @@ void paintOrthogonalRoutes(QPainter *painter, const std::vector<OrthogonalRoute>
 
     painter->restore();
 }
+
+class RouteEndpointOverlayGraphicsItem final : public QGraphicsItem {
+public:
+    explicit RouteEndpointOverlayGraphicsItem(QGraphicsItem *parent = nullptr)
+        : QGraphicsItem(parent) {
+        setAcceptedMouseButtons(Qt::NoButton);
+        setZValue(1000.0);
+    }
+
+    QRectF boundingRect() const override {
+        return m_bounds;
+    }
+
+    void setRoutes(const std::vector<OrthogonalRoute> &routes) {
+        std::vector<QPointF> endpoints;
+        endpoints.reserve(routes.size() * 2);
+        for (const OrthogonalRoute &route : routes) {
+            if (route.points.empty()) {
+                continue;
+            }
+            endpoints.push_back(route.points.front());
+            endpoints.push_back(route.points.back());
+        }
+
+        prepareGeometryChange();
+        m_endpoints = endpoints;
+        m_bounds = QRectF();
+        for (const QPointF &endpoint : m_endpoints) {
+            const QRectF endpointRect(endpoint.x() - 3.0, endpoint.y() - 3.0, 6.0, 6.0);
+            m_bounds = m_bounds.isNull() ? endpointRect : m_bounds.united(endpointRect);
+        }
+        update();
+    }
+
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) override {
+        if (m_endpoints.empty()) {
+            return;
+        }
+
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(astTextColor());
+        for (const QPointF &endpoint : m_endpoints) {
+            painter->drawEllipse(endpoint, 2.0, 2.0);
+        }
+    }
+
+private:
+    std::vector<QPointF> m_endpoints;
+    QRectF m_bounds;
+};
 
 QColor colorForNodeType(iw::AstNodeType nodeType) {
     switch (nodeType) {
@@ -1809,6 +1860,7 @@ private:
     qreal m_dividerX = -1.0;
     QPointF m_leftAnchor;
     QPointF m_rightAnchor;
+    RouteEndpointOverlayGraphicsItem *m_routeEndpointOverlay = nullptr;
     bool m_hasLeftAnchor = false;
     bool m_hasRightAnchor = false;
 };
@@ -1822,6 +1874,7 @@ AstStructuredGraphicsItem::AstStructuredGraphicsItem(const iw::AstNodePtr &node,
     for (const iw::AstNodePtr &child : children) {
         m_childItems.push_back(createAstGraphicsItemInternal(child, this));
     }
+    m_routeEndpointOverlay = new RouteEndpointOverlayGraphicsItem(this);
     layoutChildren();
 }
 
@@ -1904,6 +1957,21 @@ void AstStructuredGraphicsItem::layoutChildren() {
         m_dividerX = -1.0;
         m_hasRightAnchor = false;
     }
+
+    const QPointF titleAnchor(boundingRect().width() * 0.5, m_headerHeight);
+    const qreal fanoutY = m_headerHeight + (STRUCTURED_CONNECTOR_VERTICAL_GAP * 0.5);
+    std::vector<OrthogonalRoute> routes;
+    if (m_hasLeftAnchor) {
+        routes.push_back(OrthogonalRoute{
+            routePointsForExtractedBlock(titleAnchor, m_leftAnchor.x() - STRUCTURED_CONNECTOR_TARGET_GAP, fanoutY, m_leftAnchor),
+        });
+    }
+    if (m_hasRightAnchor) {
+        routes.push_back(OrthogonalRoute{
+            routePointsForExtractedBlock(titleAnchor, m_rightAnchor.x() - STRUCTURED_CONNECTOR_TARGET_GAP, fanoutY, m_rightAnchor),
+        });
+    }
+    m_routeEndpointOverlay->setRoutes(routes);
 }
 
 void AstStructuredGraphicsItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *) {
@@ -1988,6 +2056,8 @@ private:
     void layoutCallNode();
     void layoutSpecialCallNode();
     void paintSpecialCallNode(QPainter *painter) const;
+    std::vector<OrthogonalRoute> extractedArgumentRoutes() const;
+    void updateRouteEndpointOverlay();
     bool usesInlineSpecialCallSyntax() const;
     qreal argumentSlotOperandWidth(const ArgumentSlot &slot) const;
     qreal argumentSlotTotalWidth(const ArgumentSlot &slot, const QFontMetricsF &syntaxMetrics) const;
@@ -2019,6 +2089,7 @@ private:
     qreal m_openBraceWidth = 0.0;
     qreal m_closeBraceWidth = 0.0;
     qreal m_syntaxBaselineY = 0.0;
+    RouteEndpointOverlayGraphicsItem *m_routeEndpointOverlay = nullptr;
     const BuiltinOperatorInfo *m_builtinOperatorInfo = nullptr;
     SpecialCallSyntax m_specialCallSyntax = SpecialCallSyntax::None;
     bool m_calleeUsesInlineText = false;
@@ -2109,7 +2180,33 @@ FunctionCallNodeGraphicsItem::FunctionCallNodeGraphicsItem(const iw::AstNodePtr 
         m_argumentSlots.end(),
         [](const ArgumentSlot &slot) { return slot.extracted; });
 
+    m_routeEndpointOverlay = new RouteEndpointOverlayGraphicsItem(this);
     layoutCallNode();
+}
+
+std::vector<OrthogonalRoute> FunctionCallNodeGraphicsItem::extractedArgumentRoutes() const {
+    std::vector<OrthogonalRoute> routes;
+    const std::size_t extractedCount = static_cast<std::size_t>(std::count_if(
+        m_argumentSlots.begin(),
+        m_argumentSlots.end(),
+        [](const ArgumentSlot &slot) { return slot.extracted; }));
+    routes.reserve(extractedCount);
+
+    for (const ArgumentSlot &slot : m_argumentSlots) {
+        if (!slot.extracted) {
+            continue;
+        }
+
+        const QPointF start(slot.inlineRect.center().x(), slot.inlineRect.bottom());
+        routes.push_back(OrthogonalRoute{
+            routePointsForExtractedBlock(start, slot.routeLaneX, slot.routeFanoutY, slot.targetAnchor),
+        });
+    }
+    return routes;
+}
+
+void FunctionCallNodeGraphicsItem::updateRouteEndpointOverlay() {
+    m_routeEndpointOverlay->setRoutes(extractedArgumentRoutes());
 }
 
 bool FunctionCallNodeGraphicsItem::shouldExtractArgument(const iw::AstNodePtr &node, const AstGraphicsItem *item) const {
@@ -2381,6 +2478,7 @@ void FunctionCallNodeGraphicsItem::layoutSpecialCallNode() {
 
     const qreal totalHeight = std::max(m_mainBoxRect.bottom(), detailBottom) + (m_hasExtractedArgs ? CALL_OUTER_MARGIN : 0.0);
     setBounds(QRectF(0.0, 0.0, totalWidth, totalHeight));
+    updateRouteEndpointOverlay();
 }
 
 void FunctionCallNodeGraphicsItem::layoutCallNode() {
@@ -2551,6 +2649,7 @@ void FunctionCallNodeGraphicsItem::layoutCallNode() {
 
     const qreal totalHeight = std::max(m_mainBoxRect.bottom(), detailBottom) + CALL_OUTER_MARGIN;
     setBounds(QRectF(0.0, 0.0, totalWidth, totalHeight));
+    updateRouteEndpointOverlay();
 }
 
 void FunctionCallNodeGraphicsItem::paintSpecialCallNode(QPainter *painter) const {
@@ -2741,6 +2840,7 @@ public:
         }
 
         m_valueItem = createAstGraphicsItemInternal(m_valueNode, this);
+        m_routeEndpointOverlay = new RouteEndpointOverlayGraphicsItem(this);
         decideValueLayout();
         layoutStatement();
     }
@@ -2751,6 +2851,7 @@ public:
           m_valueNode(valueNode) {
         initializeBoundNameAndType(bindNode);
         m_valueItem = createAstGraphicsItemInternal(m_valueNode, this);
+        m_routeEndpointOverlay = new RouteEndpointOverlayGraphicsItem(this);
         decideValueLayout();
         layoutStatement();
     }
@@ -2997,6 +3098,13 @@ private:
             m_valueItem->setPos(detailX, detailTop);
             m_valueTargetAnchor = m_valueItem->pos() + m_valueItem->connectionAnchor();
             m_routeFanoutY = m_placeholderRect.bottom() + ((detailTop - m_placeholderRect.bottom()) * 0.5);
+            const QPointF start = QPointF(m_placeholderRect.center().x(), m_placeholderRect.bottom());
+            const qreal approachX = m_valueTargetAnchor.x() - CALL_BLOCK_TARGET_GAP;
+            m_routeEndpointOverlay->setRoutes({
+                OrthogonalRoute{routePointsForExtractedBlock(start, approachX, m_routeFanoutY, m_valueTargetAnchor)},
+            });
+        } else {
+            m_routeEndpointOverlay->setRoutes({});
         }
     }
 
@@ -3012,6 +3120,7 @@ private:
     std::vector<TextRunLayout> m_textRuns;
     QRectF m_placeholderRect;
     QPointF m_valueTargetAnchor;
+    RouteEndpointOverlayGraphicsItem *m_routeEndpointOverlay = nullptr;
     qreal m_routeFanoutY = 0.0;
     qreal m_mainLineCenterY = 0.0;
 };
@@ -3408,6 +3517,7 @@ class LinkedBranchGraphicsItem : public AstGraphicsItem {
 public:
     explicit LinkedBranchGraphicsItem(const iw::AstNodePtr &node, QGraphicsItem *parent = nullptr)
         : AstGraphicsItem(node, parent) {
+        m_routeEndpointOverlay = new RouteEndpointOverlayGraphicsItem(this);
     }
 
     void refreshLayout() override {
@@ -3493,6 +3603,16 @@ protected:
         m_leadAnchor = m_leadItem->pos() + m_leadItem->exitAnchor();
         m_bodyAnchor = m_bodyItem->pos() + m_bodyItem->connectionAnchor();
         m_routeY = leadBoxHeight + (LINKED_BRANCH_ROW_GAP * 0.5);
+        m_routeEndpointOverlay->setRoutes({
+            OrthogonalRoute{
+                routePointsFromExitToTarget(
+                    m_leadAnchor,
+                    m_leadAnchor.x() + LINKED_BRANCH_EXIT_RUNOUT,
+                    m_bodyAnchor.x() - LINKED_BRANCH_TARGET_GAP,
+                    m_routeY,
+                    m_bodyAnchor),
+            },
+        });
     }
 
 private:
@@ -3500,6 +3620,7 @@ private:
     AstGraphicsItem *m_bodyItem = nullptr;
     QPointF m_leadAnchor;
     QPointF m_bodyAnchor;
+    RouteEndpointOverlayGraphicsItem *m_routeEndpointOverlay = nullptr;
     qreal m_routeY = 0.0;
 };
 

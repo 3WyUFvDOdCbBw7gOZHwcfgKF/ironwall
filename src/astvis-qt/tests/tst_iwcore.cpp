@@ -133,6 +133,20 @@ int countNonWhitePixels(const QImage &image) {
     return count;
 }
 
+int countNearBlackPixels(const QImage &image) {
+    int count = 0;
+    for (int y = 0; y < image.height(); y += 1) {
+        const QRgb *scanLine = reinterpret_cast<const QRgb *>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); x += 1) {
+            const QColor color(scanLine[x]);
+            if (color.red() < 8 && color.green() < 8 && color.blue() < 8) {
+                count += 1;
+            }
+        }
+    }
+    return count;
+}
+
 }
 
 class IwCoreTest final : public QObject {
@@ -147,6 +161,7 @@ private slots:
     void parserPreservesPublicAndExportNodes();
     void parserRejectsMismatchedBrackets();
     void functionCallParensTrackChildHeightNotWidth();
+    void graphicsConnectorEndpointsUseThemeTextColor();
     void graphicsRenderNestedCmGetAndCmSetCalls_data();
     void graphicsRenderNestedCmGetAndCmSetCalls();
     void graphicsRenderVisualizationFixtures_data();
@@ -307,6 +322,28 @@ void IwCoreTest::functionCallParensTrackChildHeightNotWidth() {
     wideItem->refreshLayout();
 
     QVERIFY(qAbs(narrowItem->boundingRect().height() - wideItem->boundingRect().height()) < 0.25);
+}
+
+void IwCoreTest::graphicsConnectorEndpointsUseThemeTextColor() {
+    const AstVisTheme previousTheme = currentAstVisTheme();
+    AstVisTheme theme;
+    theme.backgroundColor = Qt::white;
+    theme.textColor = QColor(28, 116, 208);
+    theme.keywordColor = theme.textColor;
+    theme.typeColor = theme.textColor;
+    theme.numberColor = theme.textColor;
+    theme.stringColor = theme.textColor;
+    theme.logicalKeywordColor = theme.textColor;
+    setCurrentAstVisTheme(theme);
+
+    const iw::AstNodePtr ast = parseSourceText(
+        QStringLiteral("{program test~astvis~endpoint~color@main (function main ([args <array s3>]) to i5 in (emit (set_add alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu)))}"));
+    const QImage image = renderAstToImage(ast);
+
+    setCurrentAstVisTheme(previousTheme);
+
+    QVERIFY(countNonWhitePixels(image) > 120);
+    QCOMPARE(countNearBlackPixels(image), 0);
 }
 
 void IwCoreTest::graphicsRenderNestedCmGetAndCmSetCalls_data() {
