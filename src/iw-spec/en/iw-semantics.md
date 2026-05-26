@@ -133,30 +133,16 @@ If a value does not satisfy the type precondition of `match`, that is an unrecov
 - A top-level `var` in module mode denotes a global
 - A global must have both an explicit type and an initializer
 - A global type must be a primitive type, or a union containing at least one primitive member
-- A global initializer must be statically reduced to a primitive payload at compile time
+- A global initializer must be determined by static semantics as a primitive payload
 - A global initializer must not read other globals, and must not call user-defined functions, generic functions, or `declare`
 - A global initializer is restricted to control flow and builtins inside the static-primitive subset
 - As long as a global is visible to the current unit, that global may be read and written; short-name access must still obey import visibility rules
 
 Finer module-level global rules are defined by the module specification.
 
-## 10. Precompiled Generic Instantiation
+## 10. Error Model
 
-- Generic classes and generic functions coming from a precompiled library remain semantically generic, but the consumer may use only monomorph entries that the library has explicitly packaged
-- The consumer's static checking of these imported symbols as classes / functions / globals may rely only on the signature table in the library manifest; semantically, it must not require the library to still carry source code that can be re-resolved
-- For the type arguments of imported precompiled generics, the compiler must first perform compile-time `evalmon`-style normalization:
-- A primitive endtype remains itself
-- An already concrete class endtype remains itself
-- A nested generic class instance must first recursively normalize its inner type arguments, and then use the precompiled class monomorph table to find the corresponding concrete class endtype
-- Only after all type arguments converge into endtypes can the outer generic function / generic class monomorph lookup succeed
-- Therefore, for a shape such as `<make_box <Box <Box i5>>>`, the inner `<Box i5>` and `<Box <Box i5>>` must be reduced layer by layer into concrete class endtypes before looking up the outer `make_box` monomorph entry
-- The concrete class/function name returned by monomorph lookup must be the single name shared by later static checking and linking; if it is an internally generated name, that name must still preserve the full package-qualified name of the source generic
-- If lookup fails at any layer, it is a static error and compilation must be rejected
-- A consumer of a precompiled library must not rematerialize the library's user generics on the fly when a table entry is missing; the semantic contract is "usable only when the table lookup hits"
-
-## 11. Error Model
-
-### 11.1 Static errors
+### 10.1 Static errors
 
 The following are static diagnostics:
 
@@ -168,7 +154,7 @@ The following are static diagnostics:
 - Global-init cycles
 - Assignment to immutable bindings
 
-### 11.2 Runtime failures
+### 10.2 Runtime failures
 
 The following are unrecoverable runtime failures:
 
@@ -177,7 +163,7 @@ The following are unrecoverable runtime failures:
 - Violated builtin preconditions
 - Other unrecoverable failures that violate execution preconditions
 
-### 11.3 Exception ban
+### 10.3 Exception ban
 
 - The language does not provide `throw`, `try`, or `catch`
 - Recoverable failure should be modeled with unions or other explicit data models

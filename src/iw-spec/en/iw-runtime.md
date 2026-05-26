@@ -1,6 +1,6 @@
 # Ironwall Runtime Specification
 
-This document defines Ironwall's runtime position and GC direction. It is a principles document for the runtime layer, not a description of any specific implementation plan. Content related to concrete deployment conditions is treated only as design guidance, not as a language obligation.
+This document defines Ironwall's runtime position and GC direction. It is a principles document for the runtime layer, not a description of any specific engineering plan. Content related to concrete deployment conditions is treated only as design guidance, not as a language obligation.
 
 ## 1. Runtime Constitution
 
@@ -47,9 +47,8 @@ This does not mean memory can be wasted without limit. It means:
 - GC triggering must be manual
 - The runtime must not turn GC into an implicit, background, self-directed collection mechanism
 - Programs may trigger GC explicitly
-- Program callers may also trigger GC explicitly
 
-This is a hard Ironwall position, not a temporary implementation choice. The reason is direct:
+This is a hard Ironwall position, not a temporary compromise. The reason is direct:
 
 - When GC happens must be predictable, observable, and auditable
 - Once trigger control is handed over to implicit runtime heuristics, the timing model and safety boundary of the entire system become blurry
@@ -73,14 +72,13 @@ Its normative requirements are:
 
 - It must be an explicit collection entry
 - Once exposed as a language-visible API, code inside the program may call it
-- Callers outside the program must also be able to trigger an explicit collection with equivalent semantics through the host interface
 - It must not be disguised as a wrapper facade for an implicit background strategy
 
 Ironwall's position here is hard:
 
 - GC is not a hidden mechanism that the runtime "handles on its own"
 - GC must be part of explicit control
-- Both program authors and callers must be able to semantically require a clear collection step
+- Program authors must be able to semantically require a clear collection step
 
 ## 6. Safety Boundary
 

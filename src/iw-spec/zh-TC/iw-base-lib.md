@@ -208,7 +208,7 @@
 
 - `Dict<K, V>` 的表示是普通 generic class，內含顯式 `Hash<K>` / `Eq<K>` support object、key/value seed、key/value slot array、hash/state array、size/used/capacity 與插入順序 `List<K>`。
 - key slot 與 value slot 使用 `<union unit <Box T>>` 表示空槽與已佔用槽；state array 使用整數狀態區分 empty / occupied / tombstone。
-- `dict_new` 需要 caller 提供 `Hash<K>`、`Eq<K>`、key seed 與 value seed；初始 storage 由實作固定容量建立，後續按 used/capacity 閾值 resize。
+- `dict_new` 需要 caller 提供 `Hash<K>`、`Eq<K>`、key seed 與 value seed；初始 storage 具有固定初始容量，後續按 used/capacity 閾值 resize。
 - `get` 在找不到 key 時返回 caller 提供的 fallback；`setdefault` 在缺失時插入 fallback 並返回該值。
 - `pop` 在找不到 key 時走明確的 runtime abort；`popitem` 在空 dict 上也會走 runtime abort。
 - `keys` / `values` / `items` 回傳新的 `List` snapshot；`items` 的元素型別為 `<Pair K V>`。
@@ -285,12 +285,12 @@
 
 其中：
 
-- `SysProcess` 是以 pid 為中心的 nominal wrapper；為了保持 cross-platform surface 一致，呼叫端仍應在 Linux 上配對呼叫 `sys_process_close()`，即使目前 Linux 實作是 no-op。
+- `SysProcess` 是以 pid 為中心的 nominal wrapper；為了保持 cross-platform surface 一致，呼叫端仍應在 Linux 上配對呼叫 `sys_process_close()`。
 - `sys_file_*` 是較高層的 policy alias；`sys_fd_*` 仍保留給需要直接操作 fd / offset / flag 的低層程式碼。
 - `sys_fd_pipe2()` / `sys_pipe_create()` 都回傳長度為 2 的 `<array i5>`；index `0` 是 read end，index `1` 是 write end。
 - `sys_fd_openat_*` 走「顯式 dir fd + relative child path」模型，而不是隱式 `AT_FDCWD` helper。
 - `sys_fd_fstat()` / `sys_file_stat()` / `sys_path_stat_s3()` 都回傳 nominal `SysFileStat`；Linux 版本保留 `device/inode/mode/link_count/uid/gid/rdevice/size/block_size/block_count/atime_sec/mtime_sec/ctime_sec` 等欄位，常見 file-type 判斷應優先用 `sys_stat_is_regular` / `sys_stat_is_dir`。
-- `std~linux~sys` 不把 `sys_process_fork`、`sys_process_execve_s3`、`sys_process_wait4`、`sys_thread_tgkill` 作為 public wrapper 輸出；Linux runtime 仍可在內部用較低層 host primitive 實作 spawn / wait 行為。
+- `std~linux~sys` 不把 `sys_process_fork`、`sys_process_execve_s3`、`sys_process_wait4`、`sys_thread_tgkill` 作為 public wrapper 輸出。
 
 ### 6.2 Windows (`std~windows~sys`)
 
@@ -304,7 +304,7 @@
 其中：
 
 - Windows 與 Linux 共用 platform/env/path/process/time 這個高層 policy model，但 `sys_process_close()` 在 Windows 會實際釋放 native handle，因此跨平台程式碼不應省略它。
-- Windows TCP wrapper 對應 Winsock lifecycle，因此需要 `sys_net_startup()` / `sys_net_cleanup()`；socket close 走 `sys_net_close()`，普通 handle/event close 走 `sys_event_close()` 或內部 handle close wrapper。
+- Windows TCP wrapper 對應 Winsock lifecycle，因此需要 `sys_net_startup()` / `sys_net_cleanup()`；socket close 走 `sys_net_close()`，普通 handle/event close 走 `sys_event_close()`。
 - `std~windows~sys` 不公開 Linux-only raw primitive，例如 `fork` / `execve` / `wait4` / `tgkill`，也不公開 Linux-specific `epoll` / `eventfd` / `timerfd` / `signalfd` / `poll` surface。
 - 可移植程式碼應優先依賴兩個平台共有的 policy slice；只有明確需要 Linux readiness / signal primitive 時，才應顯式依賴 `std~linux~sys`。
 
@@ -413,7 +413,7 @@
 其中：
 
 - `StringS3` / `StringS4` / `StringS5` 分別包裝 `s3` / `s4` / `s5`。
-- `find` / `count` / `startswith` / `endswith` / `string_contains` 以逐字 `c3/c4/c5` 比較實作，不依賴整段 `sN` equality builtin。
+- `find` / `count` / `startswith` / `endswith` / `string_contains` 採逐字 `c3/c4/c5` 比較語義，不依賴整段 `sN` equality builtin。
 - `string_concat` / `string_repeat` / `string_reversed` 走 `sN_new` / `sN_set` / `sN_get` 的顯式重建路徑；`string_reversed` 返回反轉後的新字串 snapshot，不是 iterator。
 - 語義以單一 code-unit / byte 文字模型為準，不做 Unicode normalization 或 grapheme cluster 處理。
 - `find` 對找不到的子字串返回 `-1`；`count` 對空 needle 採 Python 風格 `len + 1` 語義。

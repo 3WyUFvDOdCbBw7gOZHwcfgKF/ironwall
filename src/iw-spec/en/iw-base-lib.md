@@ -208,7 +208,7 @@ Where:
 
 - `Dict<K, V>` is represented as an ordinary generic class containing explicit `Hash<K>` / `Eq<K>` support objects, key/value seeds, key/value slot arrays, hash/state arrays, size/used/capacity, and an insertion-order `List<K>`
 - Key slots and value slots use `<union unit <Box T>>` to represent empty and occupied slots; the state array uses integer states to distinguish empty / occupied / tombstone
-- `dict_new` requires the caller to provide `Hash<K>`, `Eq<K>`, a key seed, and a value seed; initial storage is created with an implementation-fixed capacity and later resized according to the used/capacity threshold
+- `dict_new` requires the caller to provide `Hash<K>`, `Eq<K>`, a key seed, and a value seed; initial storage has a fixed initial capacity and is later resized according to the used/capacity threshold
 - `get` returns the caller-provided fallback when the key is missing; `setdefault` inserts the fallback on miss and returns that value
 - `pop` performs an explicit runtime abort when the key is not found; `popitem` also performs a runtime abort on an empty dict
 - `keys` / `values` / `items` return new `List` snapshots; `items` has element type `<Pair K V>`
@@ -285,12 +285,12 @@ The public `std~linux~sys` surface is grouped into three slices:
 
 Where:
 
-- `SysProcess` is a pid-centric nominal wrapper. Callers should still pair it with `sys_process_close()` on Linux so cross-platform code keeps one symmetric lifecycle, even though the current Linux implementation is a no-op.
+- `SysProcess` is a pid-centric nominal wrapper. Callers should still pair it with `sys_process_close()` on Linux so the cross-platform surface remains consistent.
 - `sys_file_*` is the higher-level policy alias layer; `sys_fd_*` remains available for code that explicitly wants fd / offset / flag oriented operations.
 - `sys_fd_pipe2()` and `sys_pipe_create()` both return a length-2 `<array i5>` with index `0` as the read end and index `1` as the write end.
 - `sys_fd_openat_*` uses an explicit `dir fd + relative child path` model rather than an implicit `AT_FDCWD` helper.
 - `sys_fd_fstat()` / `sys_file_stat()` / `sys_path_stat_s3()` all produce nominal `SysFileStat` values. On Linux this structure preserves `device/inode/mode/link_count/uid/gid/rdevice/size/block_size/block_count/atime_sec/mtime_sec/ctime_sec`; common file-type checks should prefer `sys_stat_is_regular` / `sys_stat_is_dir`.
-- `std~linux~sys` does not export `sys_process_fork`, `sys_process_execve_s3`, `sys_process_wait4`, or `sys_thread_tgkill` as public wrappers. The Linux runtime may still use lower-level host primitives internally to implement spawn / wait behavior.
+- `std~linux~sys` does not export `sys_process_fork`, `sys_process_execve_s3`, `sys_process_wait4`, or `sys_thread_tgkill` as public wrappers.
 
 ### 6.2 Windows (`std~windows~sys`)
 
@@ -304,7 +304,7 @@ Where:
 Where:
 
 - Windows shares the same high-level platform/env/path/process/time policy model, but `sys_process_close()` really closes native handles on Windows, so portable code should not omit it.
-- Windows TCP wrappers follow the Winsock lifecycle, so callers use `sys_net_startup()` / `sys_net_cleanup()`; socket close goes through `sys_net_close()`, while ordinary handle/event close goes through `sys_event_close()` or the internal handle-close wrapper.
+- Windows TCP wrappers follow the Winsock lifecycle, so callers use `sys_net_startup()` / `sys_net_cleanup()`; socket close goes through `sys_net_close()`, while ordinary handle/event close goes through `sys_event_close()`.
 - `std~windows~sys` does not expose Linux-only raw primitives such as `fork` / `execve` / `wait4` / `tgkill`, and it does not expose Linux-specific `epoll` / `eventfd` / `timerfd` / `signalfd` / `poll` surfaces.
 - Portable code should target the shared policy slice first, and depend on `std~linux~sys` explicitly only when Linux readiness / signal primitives are actually required.
 
@@ -413,7 +413,7 @@ It publicly provides the following query methods:
 Where:
 
 - `StringS3` / `StringS4` / `StringS5` wrap `s3` / `s4` / `s5` respectively
-- `find` / `count` / `startswith` / `endswith` / `string_contains` are implemented through per-character `c3/c4/c5` comparison and do not rely on whole-`sN` equality builtins
+- `find` / `count` / `startswith` / `endswith` / `string_contains` use per-character `c3/c4/c5` comparison semantics and do not rely on whole-`sN` equality builtins
 - `string_concat` / `string_repeat` / `string_reversed` use explicit reconstruction through `sN_new` / `sN_set` / `sN_get`; `string_reversed` returns a reversed snapshot string, not an iterator
 - Semantics are defined by a single code-unit / byte text model; there is no Unicode normalization or grapheme-cluster handling
 - `find` returns `-1` when the substring is not found; `count` follows Python-style `len + 1` semantics for an empty needle

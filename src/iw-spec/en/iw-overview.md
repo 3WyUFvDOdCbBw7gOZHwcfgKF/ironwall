@@ -2,7 +2,7 @@
 
 Ironwall is a strongly typed, safety-first language. Its design favors clear rules over language complexity, auditable runtime costs over hidden mechanisms, and direct failure over recovery machinery that can hide broken invariants.
 
-Ironwall is intended to compile to native targets while keeping the core language model compact and inspectable. It accepts only a limited set of abstractions that improve practical expression without turning the language into a hard-to-audit system.
+Ironwall keeps the core language model compact and inspectable. It accepts only a limited set of abstractions that improve practical expression without turning the language into a hard-to-audit system.
 
 ## Key Features
 
@@ -26,4 +26,4 @@ Ironwall keeps the language surface deliberately simple. Bindings, function para
 
 Recoverable uncertainty should be modeled with data, especially `union` and `match`, rather than with `null` or exceptions. Unrecoverable violations such as illegal tags, failed preconditions, and out-of-bounds access fail immediately.
 
-The runtime design is equally explicit. GC is mandatory for memory safety, but collection is not hidden behind background heuristics. Ironwall uses a simple Stop-The-World Mark-Sweep direction, and collection must be triggered explicitly by the program or host interface.
+The runtime design is equally explicit. GC is mandatory for memory safety, but collection is not hidden behind background heuristics. Ironwall uses a simple Stop-The-World Mark-Sweep direction, and collection must be triggered explicitly by the program.

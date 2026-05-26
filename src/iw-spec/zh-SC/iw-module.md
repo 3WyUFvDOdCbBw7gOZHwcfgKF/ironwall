@@ -300,7 +300,7 @@ literal db 文件必须满足：
 
 global initializer 必须满足：
 
-- initializer 必须在 compile time 静态收敛成 primitive payload。
+- initializer 必须由静态语义收敛成 primitive payload。
 - initializer 不得读取任何 global。
 - initializer 不得呼叫普通函数、generic function、`declare`。
 - initializer 不得做 class / array / closure / union object 配置这类 heap shape 建立。
@@ -319,65 +319,44 @@ static primitive subset 至少包含：
 
 ## 12. Global initialization model
 
-- top-level global 的 initializer 语义结果在 compile time 就必须决定。
+- top-level global 的 initializer 语义结果必须静态决定。
 - global 之间不存在 initializer 读依赖；因此不定义 user-visible 的 global init dependency graph。
 - 文件发现顺序、目录顺序、字典序都没有语义效力。
-- 若某 global 没有被 entry reachable 程式片段读到，compiler 可以不把它纳入最终程式；这不改变语言级可观察语义。
 
-## 13. Separate compilation artifacts
+## 13. Precompiled library
 
-- 一个源单元可以独立被编译成自己的 unit artifact。
-- 若该 unit 含有 GC-visible layout 或 top-level global，artifact 应携带该 unit 专属的 metadata table 与 global var table。
-- metadata table 的 runtime identity 必须由 deterministic UUID 表示；link/整合时不得只靠载入顺序辨识它。
-- 多个 separately compiled unit 被整合时，最终程式必须生成 metadata table collection 与 global var table collection。
-- 这些 collection 是 runtime/GC 可见的连结结果；它们保留「每张表属于哪个 unit artifact」这个身份，而不是把所有条目无条件压平成失去 provenance 的单表。
+Precompiled library 是已封装的 package 集。对使用者而言，它提供的 package export 与普通 source package export 一样参与 `import`、名字解析、可见性与型别检查。
 
-### 13.1 precompiled lib archive
+基本规则：
 
-- toolchain 可以把一组 module 打包成 precompiled library archive，文件格式为 `.tgz`。
-- archive 至少必须携带：
-- `manifest.json`
-- 每个 separately compiled unit 各自的 machine artifact
-- 每个 separately compiled unit 各自的 runtime support artifact
-- archive 不携带 source bundle；consumer 对 precompiled lib 的静态检查必须只依赖 manifest signature table，而不是重新读取 lib 源码。
-- 同一 package 若拆成多个 unit，archive 内也必须保留这个 unit 边界；不得把它们偷偷压平成单一 `library.s` 而抹掉 per-unit metadata/global table identity。
+- precompiled library 不改变 package path、unit id、import 或 export 的语义。
+- 使用 precompiled library 内的 package，仍必须用 exact package path 显式 `import`。
+- precompiled library 只暴露其公开 export；未 export 名字不可见。
+- 同一程式中，source package 与 precompiled library package 不得提供同一 package identity 的互相冲突定义。
+- 对 precompiled library 的使用不得依赖其原始 source 是否可回读。
 
-### 13.2 manifest contracts
+### 13.1 泛型限制
 
-- manifest 的 `compiledUnits` 必须逐 unit 列出：
-- `unitId`
-- `assemblyPath`
-- `supportPath`
-- `metadataTableExportSymbol`
-- `globalTableExportSymbol`
-- `runtimeInitExportSymbol`
-- `runtimeInitExportSymbol` 负责把该 unit 的 local metadata/global table 挂入 collection，并执行该 unit 的 top-level initialization body。
-- manifest 必须携带这些 signature tables：
-- global signatures
-- class signatures
-- function signatures
-- generic class signatures
-- generic function signatures
-- 以上 signature table 内的名字，都必须使用完整 package-qualified name，而不是只存裸 exported short name。
-- manifest 还必须携带 generic monomorph table：
-- generic class monomorph table
-- generic function monomorph table
-- monomorph table 的 key 语义不是 source-level `<generic ...>` 字面形状，而是 `<generic, normalized endtype tuple>`。
-- 若某个 monomorph entry 的 type arg 内还包含 user generic class instance，则它必须先递回正规化成 endtype，再写入 table。
-- monomorph table 的 value 必须是 concrete class/function 的真实名字；这个名字可以是 monomorphized internal symbol，但必须保留来源 generic 的完整 package-qualified full name，而不是只剩 short export 或匿名 hash。
-- consumer compile 与最终 link 都必须解析到同一个 concrete class/function 名字。
+Precompiled library 中 export 的 generic class / generic function 仍然是泛型符号，但可用的 concrete instantiation 受 library 已提供的实例集合限制。
 
-### 13.3 consuming precompiled libs
+规则：
 
-- 可以在普通 compile/check/run/emit 流程中额外载入一个或多个 precompiled lib archive。
-- consumer 对 imported precompiled lib 的 class/function/global 静态检查，必须只依赖 manifest 的 signature table；不得要求 archive 内仍附带可回读的 source。
-- loaded archive 内的 generic class/function signature，对 consumer 而言必须像 imported package export 一样可见。
-- 当 consumer instantiate 某个来自 precompiled lib 的 generic class/function 时：
-- 必须先把每个 type arg 递回收敛到 endtype。
-- 然后以 `<generic, normalized endtype tuple>` 查 manifest 的 monomorph table。
-- 若查到，必须改用该 concrete name。
-- 若查不到，必须直接拒绝编译；不得偷偷回退成临时重新 monomorphize 该 lib generic。
-- consumer compile 完成后，最终 link 必须把 archive 内的 per-unit artifact 一起链进去。
+- 使用 precompiled generic 时，type argument 必须先收敛成具体 endtype。
+- 巢状 generic instance 必须由内到外逐层收敛。
+- 只有 library 已提供对应 concrete instantiation 时，该泛型使用才合法。
+- 若缺少对应 concrete instantiation，属静态错误；使用者不得要求在消费端临时展开 library 内部泛型定义。
+- concrete instantiation 的语义身份必须保留来源 package-qualified generic name 与完整 type argument tuple，避免与其他 package 或其他 arity 的泛型混淆。
+
+例：
+
+```ironwall
+(import lib~box)
+
+(function use_box ([value <lib~box@Box i5>]) to i5 in
+  (<lib~box@box_unwrap i5> value))
+```
+
+上例只有在 `lib~box` 提供 `<Box i5>` 与 `<box_unwrap i5>` 的 concrete instantiation 时才合法。若只提供 `<Box s3>`，则 `<Box i5>` 的使用必须作为静态错误拒绝。
 
 ## 14. Entry
 

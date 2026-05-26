@@ -133,30 +133,16 @@
 - top-level `var` 在 module mode 下表示 global。
 - global 必須顯式型別並帶初始化式。
 - global 型別必須是 primitive type，或是至少包含一個 primitive member 的 union。
-- global initializer 必須在 compile time 靜態算出 primitive payload。
+- global initializer 必須由靜態語義決定為 primitive payload。
 - global initializer 不得讀取其他 global，也不得呼叫 user-defined function / generic function / `declare`。
 - global initializer 只允許落在 static primitive subset 內的控制流與 builtin。
 - 只要某個 global 對當前 unit 可見，該 global 就可讀可寫；短名路徑仍需遵守 import 可見性規則。
 
 更細的 module-level global 規則由模組規格定義。
 
-## 10. Precompiled generic instantiation
+## 10. 錯誤模型
 
-- 來自 precompiled lib 的 generic class / generic function，語義上仍然是 generic；但 consumer 只能使用該 lib 已經顯式打包過的 monomorph entry。
-- consumer 對這些 imported symbol 的 class/function/global 靜態檢查，只能依賴 lib manifest 中的 signature table；語義上不得要求 lib 仍然附帶可重新解析的源碼。
-- 對 imported precompiled generic 的 type arg，compiler 必須先做 compile-time `evalmon` 式正規化：
-- primitive endtype 保持自身不變。
-- 已經 concrete 的 class endtype 保持自身不變。
-- nested generic class instance 必須先把其內部 type arg 遞迴正規化，再用 precompiled class monomorph table 找到對應 concrete class endtype。
-- 只有在 type arg 全部收斂成 endtype 之後，外層 generic function / generic class 的 monomorph lookup 才成立。
-- 因此像 `<make_box <Box <Box i5>>>` 這種多層嵌套 shape，必須先把內層 `<Box i5>`、`<Box <Box i5>>` 逐層收斂到 concrete class endtype，再查外層 `make_box` 的 monomorph entry。
-- monomorph lookup 返回的 concrete class/function 名字，必須是後續靜態檢查與 link 共用的唯一名字；若它是內部生成名，該名字也必須保留來源 generic 的完整 package-qualified full name。
-- 若任一層 lookup 失敗，屬靜態錯誤，必須拒絕編譯。
-- precompiled lib consumer 不得在缺失 table entry 時臨時重新 materialize 該 lib 的 user generic；語義契約是「table 命中才能使用」。
-
-## 11. 錯誤模型
-
-### 11.1 靜態錯誤
+### 10.1 靜態錯誤
 
 以下屬靜態診斷：
 
@@ -168,7 +154,7 @@
 - global init cycle
 - 對 immutable 綁定賦值
 
-### 11.2 運行時失敗
+### 10.2 運行時失敗
 
 以下屬不可恢復運行時失敗：
 
@@ -177,7 +163,7 @@
 - 內建前提被破壞
 - 違反執行前提的其他不可恢復失敗
 
-### 11.3 異常禁令
+### 10.3 異常禁令
 
 - 語言層不提供 `throw`、`try`、`catch`。
 - 可恢復失敗應由 union 或其他顯式資料模型建模。

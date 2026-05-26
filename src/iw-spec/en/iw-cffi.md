@@ -1,6 +1,6 @@
 # Ironwall C FFI Specification
 
-This document defines Ironwall's current C FFI rules, including Ironwall calling C, C calling Ironwall, the types allowed across the boundary, naming rules, and concrete examples.
+This document defines Ironwall's current C FFI rules, including Ironwall calling C, C calling Ironwall, and the types and naming rules allowed across the boundary.
 
 ## 1. Position
 
@@ -26,17 +26,17 @@ The existence of FFI is an engineering reality, not a language direction. Ironwa
 C FFI has two directions:
 
 - Ironwall calls C: external C functions are declared in Ironwall with `declare`
-- C calls Ironwall: Ironwall functions with names following the export rule are exported as C-callable wrappers
+- C calls Ironwall: Ironwall functions with names following the export rule are exported as C-callable functions
 
 The two directions use different ABIs:
 
 - `declare ... clang ...` uses the low-level runtime ABI, where C functions directly receive and return `iw_value_t`
-- `iwlang` export uses a host-friendly ABI, where C functions use `int64_t`, `const char *`, `char *`, and host array structs
+- `iwlang` export uses the C boundary ABI, where C functions use `int64_t`, `const char *`, `char *`, and array structs
 
 This split is intentional:
 
 - When Ironwall calls C, C is treated as an internal runtime extension and must understand `iw_value_t`
-- When C calls Ironwall, the external caller should not depend directly on heap-object layout, so the wrapper performs value conversion and copying
+- When C calls Ironwall, the external caller should not depend directly on heap-object layout; cross-boundary values must use ABI representations allowed by the specification
 
 ## 3. Naming Rules
 
@@ -92,17 +92,17 @@ The confirmation tag is not a security key and not a permission mechanism. Its p
 - To provide a low-cost consistency check for cross-language boundary names
 - To keep old-style bare symbols from silently mixing into the formal FFI spec
 
-Implementations should generate tags with one consistent hash rule. Users should not calculate tags manually; they should use tooling or existing helpers.
+Users may calculate tags by the following rule, or use a naming tool that follows this rule.
 
-### 3.4 confirmation-tag algorithm
+### 3.4 confirmation-tag calculation rule
 
-The confirmation tag is generated with Ironwall's current `hashText` algorithm.
+The confirmation tag is calculated with 64-bit FNV-1a.
 
-`hashText(input)` is defined as 64-bit FNV-1a:
+`hashText(input)` is defined as follows:
 
 - Initial value: `14695981039346656037`
 - Prime: `1099511628211`
-- For each character in input, take the integer value returned by `charCodeAt` / the UTF-16 code unit
+- For each UTF-16 code unit in the input:
 - `hash = hash xor code_unit`
 - `hash = (hash * prime) mod 2^64`
 - The final output is a 16-digit lowercase hexadecimal string, left-padded with `0` if needed
@@ -121,7 +121,7 @@ The hash input for an exported Ironwall function using `iwlang` is:
 
 `tag1` is the last 8 hexadecimal digits of `hashText(hash_input)`.
 
-For example:
+Example:
 
 ```text
 uuid = 81af42c9d7354eb08bfe95163c04ad20
@@ -136,53 +136,6 @@ Therefore the full symbol is:
 
 ```text
 _81af42c9d7354eb08bfe95163c04ad20_clang_iw_build_json_add_seven_c267f2a7
-```
-
-Runnable Node.js validation code:
-
-```javascript
-function hashText(input) {
-  let hash = 14695981039346656037n;
-  const prime = 1099511628211n;
-  for (let i = 0; i < input.length; i += 1) {
-    hash ^= BigInt(input.charCodeAt(i));
-    hash = (hash * prime) & 0xffffffffffffffffn;
-  }
-  return hash.toString(16).padStart(16, "0");
-}
-
-function confirmationTag(uuid, language, functionName) {
-  return hashText(`${uuid}${language}${functionName}`).slice(-8);
-}
-
-function declaredCFunctionName(uuid, functionName) {
-  const language = "clang";
-  return `_${uuid}_${language}_${functionName}_${confirmationTag(uuid, language, functionName)}`;
-}
-
-function exportedIwFunctionName(uuid, functionName) {
-  const language = "iwlang";
-  return `_${uuid}_${language}_${functionName}_${confirmationTag(uuid, language, functionName)}`;
-}
-
-const declaredUuid = "81af42c9d7354eb08bfe95163c04ad20";
-const exportedUuid = "4a8b9c0d1e2f34567890abcdef123456";
-
-console.log(hashText(`${declaredUuid}clangiw_build_json_add_seven`));
-console.log(declaredCFunctionName(declaredUuid, "iw_build_json_add_seven"));
-console.log(exportedIwFunctionName(exportedUuid, "iw_export_i5_roundtrip"));
-console.log(exportedIwFunctionName(exportedUuid, "iw_export_s3_roundtrip"));
-console.log(exportedIwFunctionName(exportedUuid, "iw_export_array_i5_roundtrip"));
-```
-
-Expected output:
-
-```text
-6d7038b4c267f2a7
-_81af42c9d7354eb08bfe95163c04ad20_clang_iw_build_json_add_seven_c267f2a7
-_4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_i5_roundtrip_bca9013a
-_4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_s3_roundtrip_d247d3be
-_4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_array_i5_roundtrip_f3f8886c
 ```
 
 ## 4. Ironwall Calling C
@@ -259,21 +212,37 @@ iw_value_t _5e8f0a4c71d24b6fa39ce2158bd7f043_clang_iw_sys_fd_close_a14b05cf(iw_v
 
 ### 4.4 building heap values on the C side
 
-When a declared C function needs to return `s3`, `<array i5>`, or `<array s3>`, the backend provides helpers when needed:
+If a declared C function needs to return an Ironwall heap value, it must not manually allocate or forge heap objects; it must use boundary functions provided by the declared C ABI.
+
+Public heap values that C may create include:
+
+- `s3`
+- `<array i5>`
+- `<array s3>`
+
+The declared C ABI must provide these operations:
 
 ```c
-static inline iw_value_t make_iw_s3(const char *data);
-static inline iw_value_t make_iw_array_i5(int64_t length);
-static inline iw_value_t make_iw_array_s3(int64_t length);
+iw_value_t iw_make_s3(const char *data);
+iw_value_t iw_make_array_i5(int64_t length);
+iw_value_t iw_make_array_s3(int64_t length);
 
-static inline int32_t _iw_array_i5_get(iw_value_t raw_value, int64_t index);
-static inline void _iw_array_i5_set(iw_value_t raw_value, int64_t index, int32_t element_value);
-static inline int64_t _iw_array_i5_length(iw_value_t raw_value);
+int32_t iw_array_i5_get(iw_value_t value, int64_t index);
+void iw_array_i5_set(iw_value_t value, int64_t index, int32_t element_value);
+int64_t iw_array_i5_length(iw_value_t value);
 
-static inline iw_value_t _iw_array_s3_get(iw_value_t raw_value, int64_t index);
-static inline void _iw_array_s3_set(iw_value_t raw_value, int64_t index, iw_value_t element_value);
-static inline int64_t _iw_array_s3_length(iw_value_t raw_value);
+iw_value_t iw_array_s3_get(iw_value_t value, int64_t index);
+void iw_array_s3_set(iw_value_t value, int64_t index, iw_value_t element_value);
+int64_t iw_array_s3_length(iw_value_t value);
 ```
+
+Rules:
+
+- `iw_make_s3` must copy C string content into Ironwall `s3`; Ironwall must not depend on the C buffer after the function returns
+- `iw_make_array_i5` / `iw_make_array_s3` create fixed-length Ironwall arrays
+- Array `get` / `set` must obey Ironwall array bounds rules; out-of-bounds access is an unrecoverable runtime failure
+- The element value passed to `iw_array_s3_set` must be a valid Ironwall `s3` value, usually created by `iw_make_s3`
+- C must not keep `iw_value_t` values returned by these functions as long-lived state across calls
 
 Example:
 
@@ -291,10 +260,10 @@ Example:
 
 ```c
 iw_value_t _9a4c2e1f6b7d8c0a1234567890abcdef_clang_iw_ffi_make_array_i5_dfb65f00(void) {
-    iw_value_t value = make_iw_array_i5(3);
-    _iw_array_i5_set(value, 0, 7);
-    _iw_array_i5_set(value, 1, 11);
-    _iw_array_i5_set(value, 2, 13);
+    iw_value_t value = iw_make_array_i5(3);
+    iw_array_i5_set(value, 0, 7);
+    iw_array_i5_set(value, 1, 11);
+    iw_array_i5_set(value, 2, 13);
     return value;
 }
 ```
@@ -331,8 +300,8 @@ Where:
 - All values cross the declared-C ABI as `iw_value_t`
 - Integer, unsigned, bool, and unit are immediate `iw_value_t`
 - Float, text, complex, and array values are heap/reference `iw_value_t`
-- `<array i5>` and `<array s3>` have stable helpers
-- Other heap types may exist internally as `iw_value_t`, but should not be used as public C FFI API types
+- `<array i5>` and `<array s3>` have stable boundary operations
+- Other heap types should not be used as public C FFI API types
 
 The following are not recommended across the declared-C boundary:
 
@@ -360,99 +329,51 @@ If an Ironwall function is to be exported to C, its function name must use the `
 }
 ```
 
-The backend will generate a C wrapper for that function.
-
 ### 5.2 C-visible signatures
 
-When C calls Ironwall, it does not use the declared-C `iw_value_t` ABI directly. Instead it uses a host-friendly ABI:
+When C calls Ironwall, it does not use the declared-C `iw_value_t` ABI directly. Instead it uses the C boundary ABI:
 
 | Ironwall type | C parameter type | C return type |
 | --- | --- | --- |
 | `i5` | `int32_t` | `int32_t` |
 | `s3` | `const char *` | `char *` |
-| `<array i5>` | `iw_host_array_i5_t` | `iw_host_array_i5_t` |
-| `<array s3>` | `iw_host_array_s3_t` | `iw_host_array_s3_t` |
+| `<array i5>` | `iw_c_array_i5_t` | `iw_c_array_i5_t` |
+| `<array s3>` | `iw_c_array_s3_t` | `iw_c_array_s3_t` |
 
 At present, only the types in the table above are supported for C calling Ironwall. Other types must not be used as parameters or return values of exported Ironwall functions.
 
-Host array ABI:
+C array ABI:
 
 ```c
-typedef struct iw_host_array_i5_t {
+typedef struct iw_c_array_i5_t {
     int64_t length;
     int32_t *items;
-} iw_host_array_i5_t;
+} iw_c_array_i5_t;
 
-typedef struct iw_host_array_s3_t {
+typedef struct iw_c_array_s3_t {
     int64_t length;
     char **items;
-} iw_host_array_s3_t;
+} iw_c_array_s3_t;
 ```
 
 ### 5.3 memory ownership
 
-Exported wrappers perform copying at the C/Ironwall boundary.
+Exported functions perform copying at the C/Ironwall boundary.
 
 Rules:
 
-- When C passes `const char *`, the wrapper copies it into Ironwall `s3`
-- When C passes an array struct, the wrapper copies the array contents
-- When Ironwall returns `s3`, the wrapper allocates a C `char *`
-- When Ironwall returns `<array i5>` or `<array s3>`, the wrapper allocates the `items` field inside the C array struct
-- The C caller must free heap memory returned by the wrapper
+- When C passes `const char *`, the boundary function copies it into Ironwall `s3`
+- When C passes an array struct, the boundary function copies the array contents
+- When Ironwall returns `s3`, the boundary function allocates a C `char *`
+- When Ironwall returns `<array i5>` or `<array s3>`, the boundary function allocates the `items` field inside the C array struct
+- The C caller must free heap memory returned by the C boundary
 
-The generated header/runtime provides free helpers:
-
-```c
-static inline void iw_host_free_s3(char *value);
-static inline void iw_host_free_array_i5(iw_host_array_i5_t value);
-static inline void iw_host_free_array_s3(iw_host_array_s3_t value);
-```
-
-### 5.4 example of C calling Ironwall
-
-Ironwall:
-
-```ironwall
-{program app@main
-  (function _4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_s3_roundtrip_d247d3be
-    ([value s3])
-    to s3
-    in
-    value)
-
-  (function _4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_array_i5_roundtrip_f3f8886c
-    ([values <array i5>])
-    to <array i5>
-    in
-    values)
-}
-```
-
-C:
+The C boundary ABI must provide corresponding free operations:
 
 ```c
-#include "ironwall-generated-ffi.h"
-#include <stdio.h>
-
-int main(void) {
-    __iw_c_init_runtime();
-
-    char *text = _4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_s3_roundtrip_d247d3be("hello");
-    puts(text);
-    iw_host_free_s3(text);
-
-    int32_t storage[3] = { 1, 2, 3 };
-    iw_host_array_i5_t input = { 3, storage };
-    iw_host_array_i5_t output =
-        _4a8b9c0d1e2f34567890abcdef123456_iwlang_iw_export_array_i5_roundtrip_f3f8886c(input);
-
-    for (int64_t index = 0; index < output.length; index += 1) {
-        printf("%d\n", (int)output.items[index]);
-    }
-    iw_host_free_array_i5(output);
-    return 0;
-}
+void iw_c_free_s3(char *value);
+void iw_c_free_array_i5(iw_c_array_i5_t value);
+void iw_c_free_array_s3(iw_c_array_s3_t value);
 ```
 
 ## 6. GC and Safety Requirements
@@ -463,15 +384,9 @@ C FFI must obey the following rules:
 - C must not manually `free` Ironwall heap objects
 - C must not forge `iw_value_t` heap references
 - C must not modify the Ironwall heap header, runtime type tag, GC tag, or metadata table
-- If C needs to construct Ironwall heap values, it must use runtime/helper functions
+- If C needs to construct Ironwall heap values, it must use boundary functions allowed by the specification
 - If C needs to return `unit`, it must return `iw_from_i64(0)`
-- If the C side takes ownership of `char *` / host arrays returned by an exported wrapper, it must release them using the corresponding `iw_host_free_*` helper
-
-With respect to GC:
-
-- FFI does not change Ironwall's explicit-GC position
-- The C side should not manipulate GC directly unless it understands the thread-attach/root rules
-- Exported Ironwall wrappers handle current-thread attach and necessary roots; a C caller should not bypass the wrapper and directly call an internal lowered function
+- If C takes ownership of `char *` / C arrays returned by an exported Ironwall function, it must release them using the corresponding C boundary free operation
 
 ## 7. Discouraged Patterns
 

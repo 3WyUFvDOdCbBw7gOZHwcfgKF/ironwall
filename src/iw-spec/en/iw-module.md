@@ -300,7 +300,7 @@ The following cases must be errors:
 
 A global initializer must satisfy the following:
 
-- The initializer must statically converge into a primitive payload at compile time
+- The initializer must converge into a primitive payload by static semantics
 - The initializer must not read any global
 - The initializer must not call ordinary functions, generic functions, or `declare`
 - The initializer must not allocate heap shapes such as class / array / closure / union objects
@@ -319,65 +319,44 @@ The static-primitive subset contains at least:
 
 ## 12. Global Initialization Model
 
-- The semantic result of a top-level global initializer must already be determined at compile time
+- The semantic result of a top-level global initializer must be statically determined
 - There is no initializer read-dependency between globals; therefore no user-visible global-init dependency graph is defined
 - File discovery order, directory order, and lexicographic order have no semantic force
-- If a global is never read by any program fragment reachable from the entry, the compiler may omit it from the final program; this does not change language-level observable semantics
 
-## 13. Separate Compilation Artifacts
+## 13. Precompiled Library
 
-- A source unit may be compiled independently into its own unit artifact
-- If the unit contains GC-visible layouts or top-level globals, the artifact should carry that unit's own metadata table and global-var table
-- The runtime identity of a metadata table must be represented by a deterministic UUID; link/integration must not identify it merely by load order
-- When multiple separately compiled units are integrated, the final program must produce a metadata-table collection and a global-var-table collection
-- These collections are the runtime/GC-visible link result; they preserve the identity of "which unit artifact a table belongs to" instead of flattening everything unconditionally into one table with lost provenance
+A precompiled library is a packaged set of packages. To the user, the package exports it provides participate in `import`, name resolution, visibility, and type checking in the same way as ordinary source package exports.
 
-### 13.1 precompiled-lib archives
+Basic rules:
 
-- The toolchain may package a set of modules into a precompiled library archive in `.tgz` format
-- An archive must at least carry:
-- `manifest.json`
-- Each separately compiled unit's own machine artifact
-- Each separately compiled unit's own runtime-support artifact
-- The archive does not carry a source bundle; a consumer's static checking of a precompiled library must rely only on the manifest signature tables rather than rereading the library source
-- If a single package is split across multiple units, the archive must preserve that unit boundary too; it may not secretly flatten them into a single `library.s` and erase per-unit metadata/global-table identity
+- A precompiled library does not change the semantics of package paths, unit ids, imports, or exports
+- A package inside a precompiled library must still be explicitly imported with its exact package path
+- A precompiled library exposes only its public exports; unexported names are not visible
+- In the same program, source packages and precompiled-library packages must not provide conflicting definitions for the same package identity
+- Use of a precompiled library must not depend on whether its original source can be reread
 
-### 13.2 manifest contracts
+### 13.1 Generic limits
 
-- The `compiledUnits` field of a manifest must list, per unit:
-- `unitId`
-- `assemblyPath`
-- `supportPath`
-- `metadataTableExportSymbol`
-- `globalTableExportSymbol`
-- `runtimeInitExportSymbol`
-- `runtimeInitExportSymbol` is responsible for attaching that unit's local metadata/global table into the collection and then executing that unit's top-level initialization body
-- The manifest must carry these signature tables:
-- global signatures
-- class signatures
-- function signatures
-- generic class signatures
-- generic function signatures
-- All names inside those signature tables must use full package-qualified names rather than bare exported short names
-- The manifest must also carry generic monomorph tables:
-- generic class monomorph table
-- generic function monomorph table
-- The semantic key of a monomorph table is not the source-level literal `<generic ...>` form, but `<generic, normalized endtype tuple>`
-- If the type arguments of a monomorph entry still contain user generic class instances, they must first be recursively normalized into endtypes before being written into the table
-- The value of a monomorph table must be the real name of the concrete class/function; this name may be a monomorphized internal symbol, but it must preserve the full package-qualified name of the source generic rather than degrading into only a short export or anonymous hash
-- Consumer compilation and final linking must both resolve to the same concrete class/function name
+Exported generic classes / generic functions in a precompiled library remain generic symbols, but the usable concrete instantiations are limited by the set of instances provided by that library.
 
-### 13.3 consuming precompiled libraries
+Rules:
 
-- One or more precompiled library archives may be loaded in an ordinary compile/check/run/emit flow
-- A consumer's static checking of imported classes/functions/globals from a precompiled library must rely only on the manifest signature tables; it must not require rereadable source from inside the archive
-- From the consumer's perspective, generic class/function signatures from the loaded archive must be visible just like imported package exports
-- When the consumer instantiates a generic class/function from a precompiled library:
-- Every type argument must first be recursively reduced into an endtype
-- Then the manifest monomorph table must be looked up using `<generic, normalized endtype tuple>`
-- If the lookup hits, the resulting concrete name must be used
-- If the lookup misses, compilation must be rejected immediately; the compiler must not silently fall back to remonomorphizing that library generic on the fly
-- After consumer compilation completes, final linking must link in the archive's per-unit artifacts as well
+- When using a precompiled generic, type arguments must first converge into concrete endtypes
+- Nested generic instances must converge layer by layer from the inside out
+- A generic use is legal only when the library provides the corresponding concrete instantiation
+- If the corresponding concrete instantiation is missing, that is a static error; the user must not require consumer-side expansion of the library's internal generic definition
+- The semantic identity of a concrete instantiation must preserve the source package-qualified generic name and the complete type-argument tuple, avoiding confusion with generics from other packages or with other arities
+
+Example:
+
+```ironwall
+(import lib~box)
+
+(function use_box ([value <lib~box@Box i5>]) to i5 in
+  (<lib~box@box_unwrap i5> value))
+```
+
+The example is legal only if `lib~box` provides concrete instantiations for `<Box i5>` and `<box_unwrap i5>`. If it provides only `<Box s3>`, the use of `<Box i5>` must be rejected as a static error.
 
 ## 14. Entry
 

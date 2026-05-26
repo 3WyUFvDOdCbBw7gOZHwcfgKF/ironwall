@@ -1,6 +1,6 @@
 # Ironwall Design Thesis
 
-This document is neither a syntax manual nor an implementation guide for a specific toolchain. It is a statement of Ironwall's design principles and positions. It answers not "how do I write this syntax", but "why is Ironwall designed this way".
+This document is neither a syntax manual nor a concrete engineering plan. It is a statement of Ironwall's design principles and positions. It answers not "how do I write this syntax", but "why is Ironwall designed this way".
 
 ## 1. Core Position
 
