@@ -1,0 +1,8 @@
+{
+  "kind": "ProgramNode",
+  "unitId": {
+    "kind": "IdentifierNode",
+    "name": "test~json~fixture@main"
+  },
+  "topLevelExpressions": []
+}

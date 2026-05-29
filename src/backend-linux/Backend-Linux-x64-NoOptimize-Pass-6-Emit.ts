@@ -121,6 +121,12 @@ function isMemoryOperand(operand: X64RegAllocatedOperand): boolean {
         || (operand.kind === "symbol" && !isImmediateSymbolOperand(operand));
 }
 
+function isImmediateTestOperand(operand: X64RegAllocatedOperand): boolean {
+    return operand.kind === "imm_i64"
+        || isImmediateSymbolOperand(operand)
+        || operand.kind === "text";
+}
+
 function operandsEqual(left: X64RegAllocatedOperand, right: X64RegAllocatedOperand): boolean {
     if (left.kind !== right.kind) {
         return false;
@@ -334,8 +340,19 @@ function emitInstruction(
             const rightText = formatReadOperand(instruction.right, slots);
             const leftIsMemory = isMemoryOperand(instruction.left);
             const rightIsMemory = isMemoryOperand(instruction.right);
+            const leftIsImmediate = isImmediateTestOperand(instruction.left);
+            const rightIsImmediate = isImmediateTestOperand(instruction.right);
             if (leftIsMemory && rightIsMemory) {
                 return [`mov ${GPR_SCRATCH}, ${leftText}`, `test ${GPR_SCRATCH}, ${rightText}`];
+            }
+            if (leftIsImmediate && rightIsImmediate) {
+                return [`mov ${GPR_SCRATCH}, ${leftText}`, `test ${GPR_SCRATCH}, ${rightText}`];
+            }
+            if (leftIsImmediate) {
+                if (rightIsMemory) {
+                    return [`test qword ptr ${rightText}, ${leftText}`];
+                }
+                return [`test ${rightText}, ${leftText}`];
             }
             if (leftIsMemory && instruction.right.kind === "imm_i64") {
                 return [`test qword ptr ${leftText}, ${rightText}`];

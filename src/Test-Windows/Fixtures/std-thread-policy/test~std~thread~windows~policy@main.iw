@@ -1,0 +1,56 @@
+{program test~std~thread~windows~policy@main
+  (import std~thread)
+
+  (function score ([value bool]) to i5 in (if value then $1^i5 else $0^i5))
+
+  (function worker ([done Semaphore]) to i5 in
+    {
+      (var [keep_running bool] true)
+      (while keep_running in
+        {
+          (if
+            (cancel_requested)
+            then
+            {
+              (sem_post done)
+              (var_set keep_running false)
+              unit
+            }
+            else
+            (yield)
+          )
+        }
+      )
+      $17^i5
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [gate Semaphore] (semaphore $0^i5))
+      (var [done Semaphore] (semaphore $0^i5))
+      (var [thread Thread] (spawn (fn ([ignored unit]) to i5 in (worker done))))
+      (var [timeout_before_post bool] (not (sem_timed_wait gate $10^i5)))
+      (sem_post gate)
+      (var [timeout_after_post bool] (sem_timed_wait gate $50^i5))
+      (request_cancel thread)
+      (var [observed_cancel bool] (sem_timed_wait done $500^i5))
+      (var [thread_result i5] (join thread))
+      (destroy_semaphore gate)
+      (destroy_semaphore done)
+      (add
+        (score timeout_before_post)
+        (add
+          (score timeout_after_post)
+          (add
+            (score observed_cancel)
+            (add
+              (score (eq thread_result $17^i5))
+              (score (eq (self_thread) (self_thread)))
+            )
+          )
+        )
+      )
+    }
+  )
+}

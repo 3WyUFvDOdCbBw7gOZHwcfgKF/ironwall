@@ -1,0 +1,19 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~json~lib@defs.iw",
+        "app~json~lib$lit.json",
+        "app~json~transform@main.iw"
+      ]
+    }
+  ],
+  "main": "app~json~transform@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

@@ -201,6 +201,7 @@ function writeRawOutput(text: string, outputPath?: string): void {
 }
 
 const WSL_LOCALHOST_PROXY_WARNING = "wsl: A localhost proxy configuration was detected but not mirrored into WSL. WSL in NAT mode does not support localhost proxies.";
+const RUN_BINARY_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
 function sanitizeCapturedStderr(text: string): string {
     const withoutNulls = text.replace(/\u0000/g, "");
@@ -253,6 +254,7 @@ function runBinary(target: BuildTarget, binaryPath: string, programArgs: readonl
     const invocation = toolchain.runBinaryInvocation(binaryPath, programArgs);
     const result = spawnSync(invocation.command, [...invocation.args], {
         encoding: "utf8",
+        maxBuffer: RUN_BINARY_MAX_BUFFER_BYTES,
         stdio: ["inherit", "pipe", "pipe"]
     });
 

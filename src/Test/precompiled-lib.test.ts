@@ -15,6 +15,16 @@ const libDir = join(fixtureRoot, "lib");
 const appDir = join(fixtureRoot, "app");
 const missingDir = join(fixtureRoot, "missing");
 const entryUnitId = "test~precompiled~app@main";
+const isWindowsTarget = process.env.IW_TEST_TARGET === "windows-x64";
+
+function packedAssemblyMatchesTargetExpectations(assemblyText: string): boolean {
+    if (!assemblyText.endsWith("\n")) {
+        return false;
+    }
+    return isWindowsTarget
+        ? !assemblyText.includes('.section .note.GNU-stack,"",@progbits')
+        : assemblyText.includes('.section .note.GNU-stack,"",@progbits');
+}
 
 function normalizeLines(output: string): string[] {
     return output
@@ -84,9 +94,11 @@ try {
         ok(
             loadedLibrary.compiledUnits.every((unit) => {
                 const assemblyText = readFileSync(unit.assemblyPath, "utf8");
-                return assemblyText.endsWith("\n") && assemblyText.includes('.section .note.GNU-stack,"",@progbits');
+                return packedAssemblyMatchesTargetExpectations(assemblyText);
             }),
-            "packed library assembly artifacts should end with a trailing newline and declare GNU-stack"
+            isWindowsTarget
+                ? "packed library assembly artifacts should end with a trailing newline and avoid Linux GNU-stack on windows"
+                : "packed library assembly artifacts should end with a trailing newline and declare GNU-stack"
         );
         ok(
             manifest.compiledUnits.every((unit) => (

@@ -1,0 +1,11 @@
+{program test~std~sys~windows~hidden_process_from_raw@main
+  (import std~windows~sys)
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [raw <array i5>] (array_new <array i5> $3^i5 $0^i5))
+      (var [process SysProcess] (sys_process_from_raw raw))
+      (sys_process_id process)
+    }
+  )
+}

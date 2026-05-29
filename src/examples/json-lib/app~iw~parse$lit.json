@@ -1,0 +1,12 @@
+{
+  "package": "app~iw~parse$lit",
+  "app_iw_parse_import_structure_message_s3^s3": "Invalid import structure: expected (import package-path)",
+  "app_iw_parse_export_exactly_one_argument_message_s3^s3": "export expects exactly one argument",
+  "app_iw_parse_export_plain_expression_message_s3^s3": "export may only wrap top-level definitions and top-level var",
+  "app_iw_parse_export_top_level_only_message_s3^s3": "export declarations must appear at top level",
+  "app_iw_parse_public_exactly_one_argument_message_s3^s3": "public expects exactly one argument",
+  "app_iw_parse_public_wrap_expression_message_s3^s3": "public may only wrap class properties and methods",
+  "app_iw_parse_public_wrap_constructor_message_s3^s3": "constructors are always public and cannot be wrapped in public",
+  "app_iw_parse_public_wrap_public_message_s3^s3": "public cannot wrap public",
+  "app_iw_parse_public_outside_class_message_s3^s3": "public declarations must appear inside class bodies"
+}

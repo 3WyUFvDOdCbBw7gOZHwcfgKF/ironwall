@@ -1,0 +1,28 @@
+{
+  "tokens": [
+    {
+      "kind": "LParenToken",
+      "bracketKind": "CURLY"
+    },
+    {
+      "kind": "IdentifierToken",
+      "name": "program"
+    },
+    {
+      "kind": "IdentifierToken",
+      "name": "test~json~fixture@main"
+    },
+    {
+      "kind": "RParenToken",
+      "bracketKind": "CURLY"
+    }
+  ],
+  "ast": {
+    "kind": "ProgramNode",
+    "unitId": {
+      "kind": "IdentifierNode",
+      "name": "test~json~fixture@main"
+    },
+    "topLevelExpressions": []
+  }
+}

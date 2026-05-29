@@ -1,0 +1,49 @@
+{program std~option@v1
+  (export (class <generic Option T>
+    (property [payload <union unit T>])
+    (constructor ([payload0 <union unit T>]) in
+      (cm_set self payload payload0)
+    )
+    (method is_some () to bool in
+      (match
+        (cm_get self payload)
+        ([none unit] false)
+        ([value T] true)
+      )
+    )
+    (method is_none () to bool in
+      (match
+        (cm_get self payload)
+        ([none unit] true)
+        ([value T] false)
+      )
+    )
+    (method unwrap () to T in
+      (match
+        (cm_get self payload)
+        ([none unit] (iw_match_unreachable))
+        ([value T] value)
+      )
+    )
+  ))
+
+  (export (function <generic option_some T> ([value T]) to <Option T> in
+    (class_new <Option T> value)
+  ))
+
+  (export (function <generic option_none T> () to <Option T> in
+    (class_new <Option T> unit)
+  ))
+
+  (export (function <generic option_is_some T> ([option <Option T>]) to bool in
+    ((cm_get option is_some))
+  ))
+
+  (export (function <generic option_is_none T> ([option <Option T>]) to bool in
+    ((cm_get option is_none))
+  ))
+
+  (export (function <generic option_unwrap T> ([option <Option T>]) to T in
+    ((cm_get option unwrap))
+  ))
+}

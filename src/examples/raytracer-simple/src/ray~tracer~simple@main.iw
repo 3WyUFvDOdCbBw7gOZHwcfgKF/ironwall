@@ -6,9 +6,9 @@
   (import std~linux~sys)
 
   (class Vec3
-    (property [x f5])
-    (property [y f5])
-    (property [z f5])
+    (public (property [x f5]))
+    (public (property [y f5]))
+    (public (property [z f5]))
     (constructor () in
       {
         (cm_set self x $0p0^f5)
@@ -26,8 +26,8 @@
   )
 
   (class Ray
-    (property [origin Vec3])
-    (property [direction Vec3])
+    (public (property [origin Vec3]))
+    (public (property [direction Vec3]))
     (constructor ([origin0 Vec3] [direction0 Vec3]) in
       {
         (cm_set self origin origin0)
@@ -37,10 +37,10 @@
   )
 
   (class Sphere
-    (property [center Vec3])
-    (property [radius f5])
-    (property [color Vec3])
-    (property [shine f5])
+    (public (property [center Vec3]))
+    (public (property [radius f5]))
+    (public (property [color Vec3]))
+    (public (property [shine f5]))
     (constructor () in
       {
         (cm_set self center (class_new Vec3))
@@ -60,10 +60,10 @@
   )
 
   (class Plane
-    (property [point Vec3])
-    (property [normal Vec3])
-    (property [color Vec3])
-    (property [shine f5])
+    (public (property [point Vec3]))
+    (public (property [normal Vec3]))
+    (public (property [color Vec3]))
+    (public (property [shine f5]))
     (constructor () in
       {
         (cm_set self point (class_new Vec3))
@@ -83,10 +83,10 @@
   )
 
   (class Camera
-    (property [origin Vec3])
-    (property [lower_left Vec3])
-    (property [horizontal Vec3])
-    (property [vertical Vec3])
+    (public (property [origin Vec3]))
+    (public (property [lower_left Vec3]))
+    (public (property [horizontal Vec3]))
+    (public (property [vertical Vec3]))
     (constructor ([origin0 Vec3] [lower_left0 Vec3] [horizontal0 Vec3] [vertical0 Vec3]) in
       {
         (cm_set self origin origin0)
@@ -98,9 +98,9 @@
   )
 
   (class RenderConfig
-    (property [output_path s3])
-    (property [width i5])
-    (property [height i5])
+    (public (property [output_path s3]))
+    (public (property [width i5]))
+    (public (property [height i5]))
     (constructor ([output_path0 s3] [width0 i5] [height0 i5]) in
       {
         (cm_set self output_path output_path0)
@@ -111,12 +111,12 @@
   )
 
   (class HitState
-    (property [did_hit bool])
-    (property [distance f5])
-    (property [point Vec3])
-    (property [normal Vec3])
-    (property [color Vec3])
-    (property [shine f5])
+    (public (property [did_hit bool]))
+    (public (property [distance f5]))
+    (public (property [point Vec3]))
+    (public (property [normal Vec3]))
+    (public (property [color Vec3]))
+    (public (property [shine f5]))
     (constructor () in
       {
         (cm_set self did_hit false)

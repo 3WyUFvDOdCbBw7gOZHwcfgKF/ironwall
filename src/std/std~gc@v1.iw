@@ -1,0 +1,7 @@
+{program std~gc@v1
+  (export (declare (function _97a8a29b29ab3c798aa3a81f5e793e4d_clang_iw_gc_collect_40f4ef1a () to i5)))
+
+  (export (function gc_collect () to i5 in
+    (_97a8a29b29ab3c798aa3a81f5e793e4d_clang_iw_gc_collect_40f4ef1a)
+  ))
+}

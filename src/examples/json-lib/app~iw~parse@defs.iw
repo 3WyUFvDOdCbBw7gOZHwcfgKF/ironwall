@@ -1,0 +1,1473 @@
+{program app~iw~parse@defs
+  (import app~iw~lex)
+  (import std~string)
+
+  (class IwParseAtom
+    (public (property [text s3]))
+    (public (property [start i5]))
+    (public (property [end_exclusive i5]))
+    (public (property [line i5]))
+    (public (property [column i5]))
+    (constructor ([text0 s3] [start0 i5] [end_exclusive0 i5] [line0 i5] [column0 i5]) in
+      {
+        (cm_set self text text0)
+        (cm_set self start start0)
+        (cm_set self end_exclusive end_exclusive0)
+        (cm_set self line line0)
+        (cm_set self column column0)
+      }
+    )
+  )
+
+  (export (class IwParseNodeSample
+    (public (property [node_kind s3]))
+    (public (property [name s3]))
+    (public (property [start i5]))
+    (public (property [end_exclusive i5]))
+    (public (property [line i5]))
+    (public (property [column i5]))
+    (public (property [is_flagged bool]))
+    (constructor () in
+      {
+        (cm_set self node_kind (s3_empty_like $ctor_seed_s3^s3))
+        (cm_set self name (s3_empty_like $ctor_seed_s3^s3))
+        (cm_set self start $0^i5)
+        (cm_set self end_exclusive $0^i5)
+        (cm_set self line $0^i5)
+        (cm_set self column $0^i5)
+        (cm_set self is_flagged false)
+      }
+    )
+    (constructor ([node_kind0 s3] [name0 s3] [start0 i5] [end_exclusive0 i5] [line0 i5] [column0 i5] [is_flagged0 bool]) in
+      {
+        (cm_set self node_kind node_kind0)
+        (cm_set self name name0)
+        (cm_set self start start0)
+        (cm_set self end_exclusive end_exclusive0)
+        (cm_set self line line0)
+        (cm_set self column column0)
+        (cm_set self is_flagged is_flagged0)
+      }
+    )
+  ))
+
+  (class IwParseState
+    (public (property [source s3]))
+    (public (property [length i5]))
+    (public (property [index i5]))
+    (public (property [line i5]))
+    (public (property [column i5]))
+    (public (property [has_errors bool]))
+    (public (property [diagnostic_message s3]))
+    (constructor ([source0 s3] [length0 i5] [index0 i5] [line0 i5] [column0 i5] [has_errors0 bool] [diagnostic_message0 s3]) in
+      {
+        (cm_set self source source0)
+        (cm_set self length length0)
+        (cm_set self index index0)
+        (cm_set self line line0)
+        (cm_set self column column0)
+        (cm_set self has_errors has_errors0)
+        (cm_set self diagnostic_message diagnostic_message0)
+      }
+    )
+  )
+
+  (class IwParseAccumulator
+    (public (property [program_unit s3]))
+    (public (property [first_import_unit s3]))
+    (public (property [first_function_name s3]))
+    (public (property [first_class_name s3]))
+    (public (property [import_count i5]))
+    (public (property [import_sample_count i5]))
+    (public (property [import_samples <array IwParseNodeSample>]))
+    (public (property [function_count i5]))
+    (public (property [class_count i5]))
+    (public (property [export_count i5]))
+    (public (property [public_count i5]))
+    (public (property [property_count i5]))
+    (public (property [constructor_count i5]))
+    (public (property [method_count i5]))
+    (public (property [return_type_count i5]))
+    (public (property [assignment_count i5]))
+    (public (property [first_import_start i5]))
+    (public (property [first_import_end i5]))
+    (public (property [first_import_line i5]))
+    (public (property [first_import_column i5]))
+    (public (property [first_function_start i5]))
+    (public (property [first_function_end i5]))
+    (public (property [first_function_line i5]))
+    (public (property [first_function_column i5]))
+    (public (property [first_class_start i5]))
+    (public (property [first_class_end i5]))
+    (public (property [first_class_line i5]))
+    (public (property [first_class_column i5]))
+    (public (property [declaration_sample_count i5]))
+    (public (property [declaration_samples <array IwParseNodeSample>]))
+    (public (property [member_sample_count i5]))
+    (public (property [member_samples <array IwParseNodeSample>]))
+    (public (property [form_sample_count i5]))
+    (public (property [form_samples <array IwParseNodeSample>]))
+    (constructor
+      ([program_unit0 s3]
+       [first_import_unit0 s3]
+       [first_function_name0 s3]
+       [first_class_name0 s3]
+       [import_count0 i5]
+        [import_sample_count0 i5]
+        [import_samples0 <array IwParseNodeSample>]
+       [function_count0 i5]
+       [class_count0 i5]
+       [export_count0 i5]
+       [public_count0 i5]
+       [property_count0 i5]
+       [constructor_count0 i5]
+       [method_count0 i5]
+       [return_type_count0 i5]
+       [assignment_count0 i5]
+       [first_import_start0 i5]
+       [first_import_end0 i5]
+       [first_import_line0 i5]
+       [first_import_column0 i5]
+       [first_function_start0 i5]
+       [first_function_end0 i5]
+       [first_function_line0 i5]
+       [first_function_column0 i5]
+       [first_class_start0 i5]
+       [first_class_end0 i5]
+       [first_class_line0 i5]
+       [first_class_column0 i5]
+       [declaration_sample_count0 i5]
+       [declaration_samples0 <array IwParseNodeSample>]
+       [member_sample_count0 i5]
+       [member_samples0 <array IwParseNodeSample>]
+       [form_sample_count0 i5]
+       [form_samples0 <array IwParseNodeSample>]) in
+      {
+        (cm_set self program_unit program_unit0)
+        (cm_set self first_import_unit first_import_unit0)
+        (cm_set self first_function_name first_function_name0)
+        (cm_set self first_class_name first_class_name0)
+        (cm_set self import_count import_count0)
+        (cm_set self import_sample_count import_sample_count0)
+        (cm_set self import_samples import_samples0)
+        (cm_set self function_count function_count0)
+        (cm_set self class_count class_count0)
+        (cm_set self export_count export_count0)
+        (cm_set self public_count public_count0)
+        (cm_set self property_count property_count0)
+        (cm_set self constructor_count constructor_count0)
+        (cm_set self method_count method_count0)
+        (cm_set self return_type_count return_type_count0)
+        (cm_set self assignment_count assignment_count0)
+        (cm_set self first_import_start first_import_start0)
+        (cm_set self first_import_end first_import_end0)
+        (cm_set self first_import_line first_import_line0)
+        (cm_set self first_import_column first_import_column0)
+        (cm_set self first_function_start first_function_start0)
+        (cm_set self first_function_end first_function_end0)
+        (cm_set self first_function_line first_function_line0)
+        (cm_set self first_function_column first_function_column0)
+        (cm_set self first_class_start first_class_start0)
+        (cm_set self first_class_end first_class_end0)
+        (cm_set self first_class_line first_class_line0)
+        (cm_set self first_class_column first_class_column0)
+        (cm_set self declaration_sample_count declaration_sample_count0)
+        (cm_set self declaration_samples declaration_samples0)
+        (cm_set self member_sample_count member_sample_count0)
+        (cm_set self member_samples member_samples0)
+        (cm_set self form_sample_count form_sample_count0)
+        (cm_set self form_samples form_samples0)
+      }
+    )
+  )
+
+  (export (class IwParseResult
+    (public (property [program_unit s3]))
+    (public (property [first_import_unit s3]))
+    (public (property [first_function_name s3]))
+    (public (property [first_class_name s3]))
+    (public (property [import_count i5]))
+    (public (property [import_sample_count i5]))
+    (public (property [import_samples <array IwParseNodeSample>]))
+    (public (property [function_count i5]))
+    (public (property [class_count i5]))
+    (public (property [top_level_count i5]))
+    (public (property [export_count i5]))
+    (public (property [public_count i5]))
+    (public (property [member_count i5]))
+    (public (property [property_count i5]))
+    (public (property [constructor_count i5]))
+    (public (property [method_count i5]))
+    (public (property [return_type_count i5]))
+    (public (property [assignment_count i5]))
+    (public (property [first_import_start i5]))
+    (public (property [first_import_end i5]))
+    (public (property [first_import_line i5]))
+    (public (property [first_import_column i5]))
+    (public (property [first_function_start i5]))
+    (public (property [first_function_end i5]))
+    (public (property [first_function_line i5]))
+    (public (property [first_function_column i5]))
+    (public (property [first_class_start i5]))
+    (public (property [first_class_end i5]))
+    (public (property [first_class_line i5]))
+    (public (property [first_class_column i5]))
+    (public (property [declaration_sample_count i5]))
+    (public (property [declaration_samples <array IwParseNodeSample>]))
+    (public (property [member_sample_count i5]))
+    (public (property [member_samples <array IwParseNodeSample>]))
+    (public (property [form_sample_count i5]))
+    (public (property [form_samples <array IwParseNodeSample>]))
+    (public (property [has_errors bool]))
+    (public (property [diagnostic_message s3]))
+    (constructor
+      ([program_unit0 s3]
+       [first_import_unit0 s3]
+       [first_function_name0 s3]
+       [first_class_name0 s3]
+       [import_count0 i5]
+        [import_sample_count0 i5]
+        [import_samples0 <array IwParseNodeSample>]
+       [function_count0 i5]
+       [class_count0 i5]
+       [top_level_count0 i5]
+       [export_count0 i5]
+       [public_count0 i5]
+       [member_count0 i5]
+       [property_count0 i5]
+       [constructor_count0 i5]
+       [method_count0 i5]
+       [return_type_count0 i5]
+       [assignment_count0 i5]
+       [first_import_start0 i5]
+       [first_import_end0 i5]
+       [first_import_line0 i5]
+       [first_import_column0 i5]
+       [first_function_start0 i5]
+       [first_function_end0 i5]
+       [first_function_line0 i5]
+       [first_function_column0 i5]
+       [first_class_start0 i5]
+       [first_class_end0 i5]
+       [first_class_line0 i5]
+       [first_class_column0 i5]
+       [declaration_sample_count0 i5]
+       [declaration_samples0 <array IwParseNodeSample>]
+       [member_sample_count0 i5]
+       [member_samples0 <array IwParseNodeSample>]
+       [form_sample_count0 i5]
+       [form_samples0 <array IwParseNodeSample>]
+      [has_errors0 bool]
+      [diagnostic_message0 s3]) in
+      {
+        (cm_set self program_unit program_unit0)
+        (cm_set self first_import_unit first_import_unit0)
+        (cm_set self first_function_name first_function_name0)
+        (cm_set self first_class_name first_class_name0)
+        (cm_set self import_count import_count0)
+        (cm_set self import_sample_count import_sample_count0)
+        (cm_set self import_samples import_samples0)
+        (cm_set self function_count function_count0)
+        (cm_set self class_count class_count0)
+        (cm_set self top_level_count top_level_count0)
+        (cm_set self export_count export_count0)
+        (cm_set self public_count public_count0)
+        (cm_set self member_count member_count0)
+        (cm_set self property_count property_count0)
+        (cm_set self constructor_count constructor_count0)
+        (cm_set self method_count method_count0)
+        (cm_set self return_type_count return_type_count0)
+        (cm_set self assignment_count assignment_count0)
+        (cm_set self first_import_start first_import_start0)
+        (cm_set self first_import_end first_import_end0)
+        (cm_set self first_import_line first_import_line0)
+        (cm_set self first_import_column first_import_column0)
+        (cm_set self first_function_start first_function_start0)
+        (cm_set self first_function_end first_function_end0)
+        (cm_set self first_function_line first_function_line0)
+        (cm_set self first_function_column first_function_column0)
+        (cm_set self first_class_start first_class_start0)
+        (cm_set self first_class_end first_class_end0)
+        (cm_set self first_class_line first_class_line0)
+        (cm_set self first_class_column first_class_column0)
+        (cm_set self declaration_sample_count declaration_sample_count0)
+        (cm_set self declaration_samples declaration_samples0)
+        (cm_set self member_sample_count member_sample_count0)
+        (cm_set self member_samples member_samples0)
+        (cm_set self form_sample_count form_sample_count0)
+        (cm_set self form_samples form_samples0)
+        (cm_set self has_errors has_errors0)
+        (cm_set self diagnostic_message diagnostic_message0)
+      }
+    )
+  ))
+
+  (function state_current_code ([state IwParseState]) to i5 in
+    (if (lt (cm_get state index) (cm_get state length))
+      then (val_to_i5 (s3_get (cm_get state source) (cm_get state index)))
+      else (sub $0^i5 $1^i5)
+    )
+  )
+
+  (function state_advance_one ([state IwParseState]) to unit in
+    {
+      (if (lt (cm_get state index) (cm_get state length))
+        then
+          {
+            (var [code i5] (state_current_code state))
+            (cm_set state index (add (cm_get state index) $1^i5))
+            (if (eq code $10^i5)
+              then
+                {
+                  (cm_set state line (add (cm_get state line) $1^i5))
+                  (cm_set state column $1^i5)
+                }
+              else (cm_set state column (add (cm_get state column) $1^i5))
+            )
+          }
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function mark_parse_error ([state IwParseState]) to unit in
+    {
+      (cm_set state has_errors true)
+      unit
+    }
+  )
+
+  (function set_parse_diagnostic_message ([state IwParseState] [message s3]) to unit in
+    {
+      (if (eq (s3_length (cm_get state diagnostic_message)) $0^i5)
+        then (cm_set state diagnostic_message message)
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function mark_parse_error_with_message ([state IwParseState] [message s3]) to unit in
+    {
+      (set_parse_diagnostic_message state message)
+      (mark_parse_error state)
+      unit
+    }
+  )
+
+  (function code_is_delimiter ([code i5]) to bool in
+    (or
+      (eq code (sub $0^i5 $1^i5))
+      (or
+        (eq code $40^i5)
+        (or
+          (eq code $41^i5)
+          (or
+            (eq code $91^i5)
+            (or
+              (eq code $93^i5)
+              (or
+                (eq code $123^i5)
+                (or
+                  (eq code $125^i5)
+                  (or
+                    (eq code $60^i5)
+                    (or
+                      (eq code $62^i5)
+                      (or
+                        (eq code $32^i5)
+                        (or
+                          (eq code $9^i5)
+                          (or (eq code $10^i5) (eq code $13^i5))
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
+  (function skip_ws ([state IwParseState]) to unit in
+    {
+      (var [done bool] false)
+      (while (and (not done) (lt (cm_get state index) (cm_get state length))) in
+        {
+          (if (is_ascii_space (s3_get (cm_get state source) (cm_get state index)))
+            then (state_advance_one state)
+            else (var_set done true)
+          )
+        }
+      )
+      unit
+    }
+  )
+
+  (function s3_matches2 ([value s3] [c0 i5] [c1 i5]) to bool in
+    (if (eq (s3_length value) $2^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (eq (val_to_i5 (s3_get value $1^i5)) c1)
+        )
+      else false
+    )
+  )
+
+  (function s3_matches3 ([value s3] [c0 i5] [c1 i5] [c2 i5]) to bool in
+    (if (eq (s3_length value) $3^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (and
+            (eq (val_to_i5 (s3_get value $1^i5)) c1)
+            (eq (val_to_i5 (s3_get value $2^i5)) c2)
+          )
+        )
+      else false
+    )
+  )
+
+  (function s3_matches4 ([value s3] [c0 i5] [c1 i5] [c2 i5] [c3_value i5]) to bool in
+    (if (eq (s3_length value) $4^i5)
+      then
+        (and
+          (s3_matches3 value c0 c1 c2)
+          (eq (val_to_i5 (s3_get value $3^i5)) c3_value)
+        )
+      else false
+    )
+  )
+
+  (function s3_matches5 ([value s3] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5]) to bool in
+    (if (eq (s3_length value) $5^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (and
+            (eq (val_to_i5 (s3_get value $1^i5)) c1)
+            (and
+              (eq (val_to_i5 (s3_get value $2^i5)) c2)
+              (and
+                (eq (val_to_i5 (s3_get value $3^i5)) c3_value)
+                (eq (val_to_i5 (s3_get value $4^i5)) c4)
+              )
+            )
+          )
+        )
+      else false
+    )
+  )
+
+  (function s3_matches6 ([value s3] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5]) to bool in
+    (if (eq (s3_length value) $6^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (and
+            (eq (val_to_i5 (s3_get value $1^i5)) c1)
+            (and
+              (eq (val_to_i5 (s3_get value $2^i5)) c2)
+              (and
+                (eq (val_to_i5 (s3_get value $3^i5)) c3_value)
+                (and
+                  (eq (val_to_i5 (s3_get value $4^i5)) c4)
+                  (eq (val_to_i5 (s3_get value $5^i5)) c5)
+                )
+              )
+            )
+          )
+        )
+      else false
+    )
+  )
+
+  (function s3_matches7 ([value s3] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5]) to bool in
+    (if (eq (s3_length value) $7^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (and
+            (eq (val_to_i5 (s3_get value $1^i5)) c1)
+            (and
+              (eq (val_to_i5 (s3_get value $2^i5)) c2)
+              (and
+                (eq (val_to_i5 (s3_get value $3^i5)) c3_value)
+                (and
+                  (eq (val_to_i5 (s3_get value $4^i5)) c4)
+                  (and
+                    (eq (val_to_i5 (s3_get value $5^i5)) c5)
+                    (eq (val_to_i5 (s3_get value $6^i5)) c6)
+                  )
+                )
+              )
+            )
+          )
+        )
+      else false
+    )
+  )
+
+  (function s3_matches8 ([value s3] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5] [c7 i5]) to bool in
+    (if (eq (s3_length value) $8^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (and
+            (eq (val_to_i5 (s3_get value $1^i5)) c1)
+            (and
+              (eq (val_to_i5 (s3_get value $2^i5)) c2)
+              (and
+                (eq (val_to_i5 (s3_get value $3^i5)) c3_value)
+                (and
+                  (eq (val_to_i5 (s3_get value $4^i5)) c4)
+                  (and
+                    (eq (val_to_i5 (s3_get value $5^i5)) c5)
+                    (and
+                      (eq (val_to_i5 (s3_get value $6^i5)) c6)
+                      (eq (val_to_i5 (s3_get value $7^i5)) c7)
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      else false
+    )
+  )
+
+  (function s3_matches11 ([value s3] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5] [c7 i5] [c8 i5] [c9 i5] [c10 i5]) to bool in
+    (if (eq (s3_length value) $11^i5)
+      then
+        (and
+          (eq (val_to_i5 (s3_get value $0^i5)) c0)
+          (and
+            (eq (val_to_i5 (s3_get value $1^i5)) c1)
+            (and
+              (eq (val_to_i5 (s3_get value $2^i5)) c2)
+              (and
+                (eq (val_to_i5 (s3_get value $3^i5)) c3_value)
+                (and
+                  (eq (val_to_i5 (s3_get value $4^i5)) c4)
+                  (and
+                    (eq (val_to_i5 (s3_get value $5^i5)) c5)
+                    (and
+                      (eq (val_to_i5 (s3_get value $6^i5)) c6)
+                      (and
+                        (eq (val_to_i5 (s3_get value $7^i5)) c7)
+                        (and
+                          (eq (val_to_i5 (s3_get value $8^i5)) c8)
+                          (and
+                            (eq (val_to_i5 (s3_get value $9^i5)) c9)
+                            (eq (val_to_i5 (s3_get value $10^i5)) c10)
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      else false
+    )
+  )
+
+  (function atom_is_program ([atom IwParseAtom]) to bool in
+    (s3_matches7 (cm_get atom text) $112^i5 $114^i5 $111^i5 $103^i5 $114^i5 $97^i5 $109^i5)
+  )
+
+  (function atom_is_import ([atom IwParseAtom]) to bool in
+    (s3_matches6 (cm_get atom text) $105^i5 $109^i5 $112^i5 $111^i5 $114^i5 $116^i5)
+  )
+
+  (function atom_is_function ([atom IwParseAtom]) to bool in
+    (s3_matches8 (cm_get atom text) $102^i5 $117^i5 $110^i5 $99^i5 $116^i5 $105^i5 $111^i5 $110^i5)
+  )
+
+  (function atom_is_class ([atom IwParseAtom]) to bool in
+    (s3_matches5 (cm_get atom text) $99^i5 $108^i5 $97^i5 $115^i5 $115^i5)
+  )
+
+  (function atom_is_export ([atom IwParseAtom]) to bool in
+    (s3_matches6 (cm_get atom text) $101^i5 $120^i5 $112^i5 $111^i5 $114^i5 $116^i5)
+  )
+
+  (function atom_is_public ([atom IwParseAtom]) to bool in
+    (s3_matches6 (cm_get atom text) $112^i5 $117^i5 $98^i5 $108^i5 $105^i5 $99^i5)
+  )
+
+  (function atom_is_property ([atom IwParseAtom]) to bool in
+    (s3_matches8 (cm_get atom text) $112^i5 $114^i5 $111^i5 $112^i5 $101^i5 $114^i5 $116^i5 $121^i5)
+  )
+
+  (function atom_is_constructor ([atom IwParseAtom]) to bool in
+    (s3_matches11 (cm_get atom text) $99^i5 $111^i5 $110^i5 $115^i5 $116^i5 $114^i5 $117^i5 $99^i5 $116^i5 $111^i5 $114^i5)
+  )
+
+  (function atom_is_method ([atom IwParseAtom]) to bool in
+    (s3_matches6 (cm_get atom text) $109^i5 $101^i5 $116^i5 $104^i5 $111^i5 $100^i5)
+  )
+
+  (function atom_is_var ([atom IwParseAtom]) to bool in
+    (s3_matches3 (cm_get atom text) $118^i5 $97^i5 $114^i5)
+  )
+
+  (function atom_is_var_set ([atom IwParseAtom]) to bool in
+    (s3_matches7 (cm_get atom text) $118^i5 $97^i5 $114^i5 $95^i5 $115^i5 $101^i5 $116^i5)
+  )
+
+  (function atom_is_cm_set ([atom IwParseAtom]) to bool in
+    (s3_matches6 (cm_get atom text) $99^i5 $109^i5 $95^i5 $115^i5 $101^i5 $116^i5)
+  )
+
+  (function atom_is_if ([atom IwParseAtom]) to bool in
+    (s3_matches2 (cm_get atom text) $105^i5 $102^i5)
+  )
+
+  (function atom_is_while ([atom IwParseAtom]) to bool in
+    (s3_matches5 (cm_get atom text) $119^i5 $104^i5 $105^i5 $108^i5 $101^i5)
+  )
+
+  (function atom_is_match ([atom IwParseAtom]) to bool in
+    (s3_matches5 (cm_get atom text) $109^i5 $97^i5 $116^i5 $99^i5 $104^i5)
+  )
+
+  (function atom_is_let ([atom IwParseAtom]) to bool in
+    (s3_matches3 (cm_get atom text) $108^i5 $101^i5 $116^i5)
+  )
+
+  (function atom_is_cond ([atom IwParseAtom]) to bool in
+    (s3_matches4 (cm_get atom text) $99^i5 $111^i5 $110^i5 $100^i5)
+  )
+
+  (function atom_is_declare ([atom IwParseAtom]) to bool in
+    (s3_matches7 (cm_get atom text) $100^i5 $101^i5 $99^i5 $108^i5 $97^i5 $114^i5 $101^i5)
+  )
+
+  (function atom_is_generic ([atom IwParseAtom]) to bool in
+    (s3_matches7 (cm_get atom text) $103^i5 $101^i5 $110^i5 $101^i5 $114^i5 $105^i5 $99^i5)
+  )
+
+  (function parse_atom ([state IwParseState] [fallback_seed s3]) to IwParseAtom in
+    {
+      (var [start i5] (cm_get state index))
+      (var [line i5] (cm_get state line))
+      (var [column i5] (cm_get state column))
+      (while
+        (and
+          (lt (cm_get state index) (cm_get state length))
+          (not (code_is_delimiter (state_current_code state)))
+        ) in
+        {
+          (state_advance_one state)
+        }
+      )
+      (if (eq start (cm_get state index))
+        then
+          {
+            (mark_parse_error state)
+            (class_new IwParseAtom
+              (s3_slice_span fallback_seed $0^i5 $0^i5 fallback_seed)
+              start
+              (cm_get state index)
+              line
+              column
+            )
+          }
+        else
+          (class_new IwParseAtom
+            (s3_slice_span (cm_get state source) start (cm_get state index) fallback_seed)
+            start
+            (cm_get state index)
+            line
+            column
+          )
+      )
+    }
+  )
+
+  (function parse_decl_name_atom ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3]) to IwParseAtom in
+    {
+      (skip_ws state)
+      (if (eq (state_current_code state) $60^i5)
+        then
+          {
+            (var [generic_start i5] (cm_get state index))
+            (var [generic_line i5] (cm_get state line))
+            (var [generic_column i5] (cm_get state column))
+            (state_advance_one state)
+            (skip_ws state)
+            (var [generic_atom IwParseAtom] (parse_atom state fallback_seed))
+            (if (atom_is_generic generic_atom)
+              then unit
+              else (mark_parse_error state)
+            )
+            (skip_ws state)
+            (var [name_atom IwParseAtom] (parse_atom state fallback_seed))
+            (skip_group_contents state acc fallback_seed $62^i5)
+            (class_new IwParseAtom
+              (cm_get name_atom text)
+              generic_start
+              (cm_get state index)
+              generic_line
+              generic_column
+            )
+          }
+        else (parse_atom state fallback_seed)
+      )
+    }
+  )
+
+  (function record_node_sample ([samples <array IwParseNodeSample>] [sample_count i5] [node_kind s3] [name s3] [start i5] [end_exclusive i5] [line i5] [column i5] [is_flagged bool]) to i5 in
+    {
+      (if (lt sample_count (array_length samples))
+        then
+          {
+            (array_set samples sample_count (class_new IwParseNodeSample node_kind name start end_exclusive line column is_flagged))
+            (add sample_count $1^i5)
+          }
+        else sample_count
+      )
+    }
+  )
+
+  (function record_form_from_head ([acc IwParseAccumulator] [head_atom IwParseAtom] [form_start i5] [form_end i5] [form_line i5] [form_column i5]) to unit in
+    {
+      (if
+        (or
+          (atom_is_var head_atom)
+          (or
+            (atom_is_if head_atom)
+            (or
+              (atom_is_while head_atom)
+              (or
+                (atom_is_match head_atom)
+                (or
+                  (atom_is_let head_atom)
+                  (or
+                    (atom_is_cond head_atom)
+                    (or (atom_is_var_set head_atom) (atom_is_cm_set head_atom))
+                  )
+                )
+              )
+            )
+          )
+        )
+        then
+          (cm_set acc form_sample_count
+            (record_node_sample
+              (cm_get acc form_samples)
+              (cm_get acc form_sample_count)
+              (cm_get head_atom text)
+              (cm_get head_atom text)
+              form_start
+              form_end
+              form_line
+              form_column
+              false
+            )
+          )
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function skip_group_contents ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3] [close_code i5]) to unit in
+    {
+      (while
+        (and
+          (lt (cm_get state index) (cm_get state length))
+          (neq (state_current_code state) close_code)
+        ) in
+        {
+          (var [code i5] (state_current_code state))
+          (if (eq code $40^i5)
+            then
+              {
+                (var [nested_start i5] (cm_get state index))
+                (var [nested_line i5] (cm_get state line))
+                (var [nested_column i5] (cm_get state column))
+                (state_advance_one state)
+                (skip_nested_paren_form state acc fallback_seed nested_start nested_line nested_column)
+              }
+            else
+              (if (eq code $91^i5)
+                then
+                  {
+                    (state_advance_one state)
+                    (skip_group_contents state acc fallback_seed $93^i5)
+                  }
+                else
+                  (if (eq code $123^i5)
+                    then
+                      {
+                        (state_advance_one state)
+                        (skip_group_contents state acc fallback_seed $125^i5)
+                      }
+                    else
+                      (if (eq code $60^i5)
+                        then
+                          {
+                            (state_advance_one state)
+                            (skip_group_contents state acc fallback_seed $62^i5)
+                          }
+                        else
+                          (if
+                            (or
+                              (eq code $41^i5)
+                              (or (eq code $93^i5) (or (eq code $125^i5) (eq code $62^i5)))
+                            )
+                            then
+                              {
+                                (mark_parse_error state)
+                                (state_advance_one state)
+                              }
+                            else (state_advance_one state)
+                          )
+                      )
+                  )
+              )
+          )
+        }
+      )
+      (if (eq (state_current_code state) close_code)
+        then (state_advance_one state)
+        else (mark_parse_error state)
+      )
+      unit
+    }
+  )
+
+  (function record_import ([acc IwParseAccumulator] [unit_name s3] [form_start i5] [form_end i5] [form_line i5] [form_column i5]) to unit in
+    {
+      (cm_set acc import_count (add (cm_get acc import_count) $1^i5))
+      (cm_set acc import_sample_count
+        (record_node_sample
+          (cm_get acc import_samples)
+          (cm_get acc import_sample_count)
+          unit_name
+          unit_name
+          form_start
+          form_end
+          form_line
+          form_column
+          false
+        )
+      )
+      (if (eq (s3_length (cm_get acc first_import_unit)) $0^i5)
+        then
+          {
+            (cm_set acc first_import_unit unit_name)
+            (cm_set acc first_import_start form_start)
+            (cm_set acc first_import_end form_end)
+            (cm_set acc first_import_line form_line)
+            (cm_set acc first_import_column form_column)
+          }
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function skip_bracketed_name_tail ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3]) to unit in
+    {
+      (skip_group_contents state acc fallback_seed $93^i5)
+      unit
+    }
+  )
+
+  (function record_function ([acc IwParseAccumulator] [node_kind s3] [name s3] [form_start i5] [form_end i5] [form_line i5] [form_column i5] [is_exported bool]) to unit in
+    {
+      (cm_set acc function_count (add (cm_get acc function_count) $1^i5))
+      (if (eq (s3_length (cm_get acc first_function_name)) $0^i5)
+        then
+          {
+            (cm_set acc first_function_name name)
+            (cm_set acc first_function_start form_start)
+            (cm_set acc first_function_end form_end)
+            (cm_set acc first_function_line form_line)
+            (cm_set acc first_function_column form_column)
+          }
+        else unit
+      )
+      (cm_set acc declaration_sample_count
+        (record_node_sample
+          (cm_get acc declaration_samples)
+          (cm_get acc declaration_sample_count)
+          node_kind
+          name
+          form_start
+          form_end
+          form_line
+          form_column
+          is_exported
+        )
+      )
+      unit
+    }
+  )
+
+  (function record_class ([acc IwParseAccumulator] [node_kind s3] [name s3] [form_start i5] [form_end i5] [form_line i5] [form_column i5] [is_exported bool]) to unit in
+    {
+      (cm_set acc class_count (add (cm_get acc class_count) $1^i5))
+      (if (eq (s3_length (cm_get acc first_class_name)) $0^i5)
+        then
+          {
+            (cm_set acc first_class_name name)
+            (cm_set acc first_class_start form_start)
+            (cm_set acc first_class_end form_end)
+            (cm_set acc first_class_line form_line)
+            (cm_set acc first_class_column form_column)
+          }
+        else unit
+      )
+      (cm_set acc declaration_sample_count
+        (record_node_sample
+          (cm_get acc declaration_samples)
+          (cm_get acc declaration_sample_count)
+          node_kind
+          name
+          form_start
+          form_end
+          form_line
+          form_column
+          is_exported
+        )
+      )
+      unit
+    }
+  )
+
+  (function member_name_after_head ([state IwParseState] [acc IwParseAccumulator] [head_atom IwParseAtom] [fallback_seed s3]) to s3 in
+    (if (atom_is_constructor head_atom)
+      then (cm_get head_atom text)
+      else
+        {
+          (skip_ws state)
+          (if (atom_is_property head_atom)
+            then
+              (if (eq (state_current_code state) $91^i5)
+                then
+                  {
+                    (state_advance_one state)
+                    (skip_ws state)
+                    (var [property_name s3] (cm_get (parse_atom state fallback_seed) text))
+                    (skip_bracketed_name_tail state acc fallback_seed)
+                    property_name
+                  }
+                else (cm_get head_atom text)
+              )
+            else
+              (if (code_is_delimiter (state_current_code state))
+                then (cm_get head_atom text)
+                else (cm_get (parse_atom state fallback_seed) text)
+              )
+          )
+        }
+    )
+  )
+
+  (function record_member_sample ([acc IwParseAccumulator] [head_atom IwParseAtom] [name s3] [form_start i5] [form_end i5] [form_line i5] [form_column i5] [is_public bool]) to unit in
+    {
+      (cm_set acc member_sample_count
+        (record_node_sample
+          (cm_get acc member_samples)
+          (cm_get acc member_sample_count)
+          (cm_get head_atom text)
+          name
+          form_start
+          form_end
+          form_line
+          form_column
+          is_public
+        )
+      )
+      unit
+    }
+  )
+
+  (function record_member_from_head ([acc IwParseAccumulator] [head_atom IwParseAtom]) to unit in
+    {
+      (if (atom_is_property head_atom)
+        then (cm_set acc property_count (add (cm_get acc property_count) $1^i5))
+        else
+          (if (atom_is_constructor head_atom)
+            then (cm_set acc constructor_count (add (cm_get acc constructor_count) $1^i5))
+            else
+              (if (atom_is_method head_atom)
+                then (cm_set acc method_count (add (cm_get acc method_count) $1^i5))
+                else unit
+              )
+          )
+      )
+      unit
+    }
+  )
+
+  (function parse_import_after_head ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3] [form_start i5] [form_line i5] [form_column i5]) to unit in
+    {
+      (skip_ws state)
+      (var [unit_atom IwParseAtom] (parse_atom state fallback_seed))
+      (skip_ws state)
+      (if (eq (s3_length (cm_get unit_atom text)) $0^i5)
+        then (set_parse_diagnostic_message state $app_iw_parse_import_structure_message_s3^s3)
+        else
+          (if (neq (state_current_code state) $41^i5)
+            then (set_parse_diagnostic_message state $app_iw_parse_import_structure_message_s3^s3)
+            else unit
+          )
+      )
+      (skip_group_contents state acc fallback_seed $41^i5)
+      (record_import acc (cm_get unit_atom text) form_start (cm_get state index) form_line form_column)
+      unit
+    }
+  )
+
+  (function parse_function_after_head ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3] [node_kind s3] [form_start i5] [form_line i5] [form_column i5] [is_exported bool]) to unit in
+    {
+      (skip_ws state)
+      (var [name_atom IwParseAtom] (parse_decl_name_atom state acc fallback_seed))
+      (skip_group_contents state acc fallback_seed $41^i5)
+      (record_function acc node_kind (cm_get name_atom text) form_start (cm_get state index) form_line form_column is_exported)
+      unit
+    }
+  )
+
+  (function parse_public_member_after_head ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3]) to unit in
+    {
+      (skip_ws state)
+      (if (eq (state_current_code state) $40^i5)
+        then
+          {
+            (var [member_start i5] (cm_get state index))
+            (var [member_line i5] (cm_get state line))
+            (var [member_column i5] (cm_get state column))
+            (state_advance_one state)
+            (skip_ws state)
+            (var [inner_head IwParseAtom] (parse_atom state fallback_seed))
+            (if (atom_is_property inner_head)
+              then
+                {
+                  (record_member_from_head acc inner_head)
+                  {
+                    (var [member_name s3] (member_name_after_head state acc inner_head fallback_seed))
+                    (skip_group_contents state acc fallback_seed $41^i5)
+                    (record_member_sample acc inner_head member_name member_start (cm_get state index) member_line member_column true)
+                  }
+                }
+              else
+                (if (atom_is_method inner_head)
+                  then
+                    {
+                      (record_member_from_head acc inner_head)
+                      {
+                        (var [member_name s3] (member_name_after_head state acc inner_head fallback_seed))
+                        (skip_group_contents state acc fallback_seed $41^i5)
+                        (record_member_sample acc inner_head member_name member_start (cm_get state index) member_line member_column true)
+                      }
+                    }
+                  else
+                    (if (atom_is_constructor inner_head)
+                      then
+                        {
+                          (mark_parse_error_with_message state $app_iw_parse_public_wrap_constructor_message_s3^s3)
+                          (skip_group_contents state acc fallback_seed $41^i5)
+                        }
+                      else
+                        (if (atom_is_public inner_head)
+                          then
+                            {
+                              (mark_parse_error_with_message state $app_iw_parse_public_wrap_public_message_s3^s3)
+                              (skip_group_contents state acc fallback_seed $41^i5)
+                            }
+                          else
+                            {
+                              (mark_parse_error_with_message state $app_iw_parse_public_wrap_expression_message_s3^s3)
+                              (skip_group_contents state acc fallback_seed $41^i5)
+                            }
+                        )
+                    )
+                )
+            )
+          }
+        else
+          (if (eq (state_current_code state) $41^i5)
+            then (mark_parse_error_with_message state $app_iw_parse_public_exactly_one_argument_message_s3^s3)
+            else (mark_parse_error_with_message state $app_iw_parse_public_wrap_expression_message_s3^s3)
+          )
+      )
+      (skip_ws state)
+      (if (eq (state_current_code state) $41^i5)
+        then (state_advance_one state)
+        else (mark_parse_error_with_message state $app_iw_parse_public_exactly_one_argument_message_s3^s3)
+      )
+      unit
+    }
+  )
+
+  (function parse_class_member ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3]) to unit in
+    {
+      (var [member_start i5] (cm_get state index))
+      (var [member_line i5] (cm_get state line))
+      (var [member_column i5] (cm_get state column))
+      (state_advance_one state)
+      (skip_ws state)
+      (var [head_atom IwParseAtom] (parse_atom state fallback_seed))
+      (if (atom_is_public head_atom)
+        then
+          {
+            (cm_set acc public_count (add (cm_get acc public_count) $1^i5))
+            (parse_public_member_after_head state acc fallback_seed)
+          }
+        else
+          {
+            (record_member_from_head acc head_atom)
+            {
+              (var [member_name s3] (member_name_after_head state acc head_atom fallback_seed))
+              (skip_group_contents state acc fallback_seed $41^i5)
+              (record_member_sample acc head_atom member_name member_start (cm_get state index) member_line member_column false)
+            }
+          }
+      )
+      unit
+    }
+  )
+
+  (function parse_class_after_head ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3] [node_kind s3] [form_start i5] [form_line i5] [form_column i5] [is_exported bool]) to unit in
+    {
+      (skip_ws state)
+      (var [name_atom IwParseAtom] (parse_decl_name_atom state acc fallback_seed))
+      (var [done bool] false)
+      (while (and (not done) (lt (cm_get state index) (cm_get state length))) in
+        {
+          (skip_ws state)
+          (if (eq (state_current_code state) $41^i5)
+            then
+              {
+                (state_advance_one state)
+                (var_set done true)
+              }
+            else
+              (if (eq (state_current_code state) $40^i5)
+                then (parse_class_member state acc fallback_seed)
+                else
+                  {
+                    (mark_parse_error state)
+                    (state_advance_one state)
+                  }
+              )
+          )
+        }
+      )
+      (if (not done)
+        then (mark_parse_error state)
+        else unit
+      )
+      (record_class acc node_kind (cm_get name_atom text) form_start (cm_get state index) form_line form_column is_exported)
+      unit
+    }
+  )
+
+  (function parse_declare_after_head ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3] [form_start i5] [form_line i5] [form_column i5] [is_exported bool] [consume_outer_close bool]) to unit in
+    {
+      (skip_ws state)
+      (if (eq (state_current_code state) $40^i5)
+        then
+          {
+            (var [inner_start i5] (cm_get state index))
+            (var [inner_line i5] (cm_get state line))
+            (var [inner_column i5] (cm_get state column))
+            (state_advance_one state)
+            (skip_ws state)
+            (var [inner_head IwParseAtom] (parse_atom state fallback_seed))
+            (if (atom_is_function inner_head)
+              then
+                {
+                  (skip_ws state)
+                  (var [name_atom IwParseAtom] (parse_decl_name_atom state acc fallback_seed))
+                  (skip_group_contents state acc fallback_seed $41^i5)
+                  (record_function acc (cm_get inner_head text) (cm_get name_atom text) inner_start (cm_get state index) inner_line inner_column is_exported)
+                }
+              else
+                {
+                  (skip_group_contents state acc fallback_seed $41^i5)
+                  (mark_parse_error state)
+                }
+            )
+          }
+        else (mark_parse_error state)
+      )
+      (if consume_outer_close
+        then
+          {
+            (skip_ws state)
+            (if (eq (state_current_code state) $41^i5)
+              then (state_advance_one state)
+              else (mark_parse_error state)
+            )
+          }
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function parse_export_after_head ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3]) to unit in
+    {
+      (cm_set acc export_count (add (cm_get acc export_count) $1^i5))
+      (skip_ws state)
+      (if (eq (state_current_code state) $40^i5)
+        then
+          {
+            (var [inner_start i5] (cm_get state index))
+            (var [inner_line i5] (cm_get state line))
+            (var [inner_column i5] (cm_get state column))
+            (state_advance_one state)
+            (skip_ws state)
+            (var [inner_head IwParseAtom] (parse_atom state fallback_seed))
+            (if (atom_is_function inner_head)
+              then (parse_function_after_head state acc fallback_seed (cm_get inner_head text) inner_start inner_line inner_column true)
+              else
+                (if (atom_is_class inner_head)
+                  then (parse_class_after_head state acc fallback_seed (cm_get inner_head text) inner_start inner_line inner_column true)
+                  else
+                    (if (atom_is_declare inner_head)
+                      then (parse_declare_after_head state acc fallback_seed inner_start inner_line inner_column true true)
+                      else
+                        (if (atom_is_export inner_head)
+                          then
+                            {
+                              (skip_group_contents state acc fallback_seed $41^i5)
+                            }
+                          else (skip_group_contents state acc fallback_seed $41^i5)
+                        )
+                    )
+                )
+            )
+          }
+        else
+          (if (eq (state_current_code state) $41^i5)
+            then (mark_parse_error_with_message state $app_iw_parse_export_exactly_one_argument_message_s3^s3)
+            else
+              {
+                (parse_atom state fallback_seed)
+                unit
+              }
+          )
+      )
+      (skip_ws state)
+      (if (eq (state_current_code state) $41^i5)
+        then (state_advance_one state)
+        else (mark_parse_error_with_message state $app_iw_parse_export_exactly_one_argument_message_s3^s3)
+      )
+      unit
+    }
+  )
+
+  (function parse_top_level_form ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3]) to unit in
+    {
+      (var [form_start i5] (cm_get state index))
+      (var [form_line i5] (cm_get state line))
+      (var [form_column i5] (cm_get state column))
+      (state_advance_one state)
+      (skip_ws state)
+      (var [head_atom IwParseAtom] (parse_atom state fallback_seed))
+      (if (atom_is_import head_atom)
+        then (parse_import_after_head state acc fallback_seed form_start form_line form_column)
+        else
+          (if (atom_is_function head_atom)
+            then (parse_function_after_head state acc fallback_seed (cm_get head_atom text) form_start form_line form_column false)
+            else
+              (if (atom_is_class head_atom)
+                then (parse_class_after_head state acc fallback_seed (cm_get head_atom text) form_start form_line form_column false)
+                else
+                  (if (atom_is_export head_atom)
+                    then (parse_export_after_head state acc fallback_seed)
+                    else
+                      (if (atom_is_declare head_atom)
+                        then (parse_declare_after_head state acc fallback_seed form_start form_line form_column false true)
+                        else
+                          (skip_group_contents state acc fallback_seed $41^i5)
+                      )
+                  )
+              )
+          )
+      )
+      unit
+    }
+  )
+
+  (function skip_nested_paren_form ([state IwParseState] [acc IwParseAccumulator] [fallback_seed s3] [nested_start i5] [nested_line i5] [nested_column i5]) to unit in
+    {
+      (skip_ws state)
+      (if (code_is_delimiter (state_current_code state))
+        then
+          {
+            (skip_group_contents state acc fallback_seed $41^i5)
+          }
+        else
+          {
+            (var [nested_head IwParseAtom] (parse_atom state fallback_seed))
+            (skip_group_contents state acc fallback_seed $41^i5)
+            (record_form_from_head acc nested_head nested_start (cm_get state index) nested_line nested_column)
+          }
+      )
+      unit
+    }
+  )
+
+  (export (function iw_parse_source ([lex_result IwLexResult] [source_path s3] [source s3]) to IwParseResult in
+    {
+      (var [empty_text s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [empty_sample IwParseNodeSample] (class_new IwParseNodeSample empty_text empty_text $0^i5 $0^i5 $0^i5 $0^i5 false))
+      (var [state IwParseState] (class_new IwParseState source (s3_length source) $0^i5 $1^i5 $1^i5 false (s3_slice_span source_path $0^i5 $0^i5 source_path)))
+      (var [acc IwParseAccumulator]
+        (class_new IwParseAccumulator
+          empty_text
+          empty_text
+          empty_text
+          empty_text
+          $0^i5
+          $0^i5
+          (array_new <array IwParseNodeSample> $64^i5 empty_sample)
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          (cm_get lex_result return_type_count)
+          (cm_get lex_result assignment_count)
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          $0^i5
+          (array_new <array IwParseNodeSample> $32^i5 empty_sample)
+          $0^i5
+          (array_new <array IwParseNodeSample> $32^i5 empty_sample)
+          $0^i5
+          (array_new <array IwParseNodeSample> $64^i5 empty_sample)
+        )
+      )
+      (skip_ws state)
+      (if (eq (state_current_code state) $123^i5)
+        then (state_advance_one state)
+        else (mark_parse_error state)
+      )
+      (skip_ws state)
+      (var [program_atom IwParseAtom] (parse_atom state source_path))
+      (var [has_program_header bool] (atom_is_program program_atom))
+      (if has_program_header
+        then unit
+        else (mark_parse_error state)
+      )
+      (skip_ws state)
+      (var [program_unit_atom IwParseAtom] (class_new IwParseAtom empty_text $0^i5 $0^i5 $0^i5 $0^i5))
+      (if has_program_header
+        then (var_set program_unit_atom (parse_atom state source_path))
+        else unit
+      )
+      (cm_set acc program_unit (cm_get program_unit_atom text))
+      (var [done bool] false)
+      (while (and (not done) (lt (cm_get state index) (cm_get state length))) in
+        {
+          (skip_ws state)
+          (if (eq (state_current_code state) $125^i5)
+            then
+              {
+                (state_advance_one state)
+                (var_set done true)
+              }
+            else
+              (if (eq (state_current_code state) $40^i5)
+                then (parse_top_level_form state acc source_path)
+                else
+                  {
+                    (mark_parse_error state)
+                    (state_advance_one state)
+                  }
+              )
+          )
+        }
+      )
+      (if (not done)
+        then (mark_parse_error state)
+        else unit
+      )
+      {
+        (var [top_level_count i5] (add (cm_get acc function_count) (cm_get acc class_count)))
+        (var [member_count i5]
+          (add
+            (cm_get acc property_count)
+            (add (cm_get acc constructor_count) (cm_get acc method_count))
+          )
+        )
+        (class_new IwParseResult
+          (cm_get acc program_unit)
+          (cm_get acc first_import_unit)
+          (cm_get acc first_function_name)
+          (cm_get acc first_class_name)
+          (cm_get acc import_count)
+          (cm_get acc import_sample_count)
+          (cm_get acc import_samples)
+          (cm_get acc function_count)
+          (cm_get acc class_count)
+          top_level_count
+          (cm_get acc export_count)
+          (cm_get acc public_count)
+          member_count
+          (cm_get acc property_count)
+          (cm_get acc constructor_count)
+          (cm_get acc method_count)
+          (cm_get acc return_type_count)
+          (cm_get acc assignment_count)
+          (cm_get acc first_import_start)
+          (cm_get acc first_import_end)
+          (cm_get acc first_import_line)
+          (cm_get acc first_import_column)
+          (cm_get acc first_function_start)
+          (cm_get acc first_function_end)
+          (cm_get acc first_function_line)
+          (cm_get acc first_function_column)
+          (cm_get acc first_class_start)
+          (cm_get acc first_class_end)
+          (cm_get acc first_class_line)
+          (cm_get acc first_class_column)
+          (cm_get acc declaration_sample_count)
+          (cm_get acc declaration_samples)
+          (cm_get acc member_sample_count)
+          (cm_get acc member_samples)
+          (cm_get acc form_sample_count)
+          (cm_get acc form_samples)
+          (or
+            (cm_get state has_errors)
+            (or
+              (cm_get lex_result has_unbalanced_brackets)
+              (eq (s3_length (cm_get acc program_unit)) $0^i5)
+            )
+          )
+          (cm_get state diagnostic_message)
+        )
+      }
+    }
+  ))
+}

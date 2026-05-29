@@ -1,0 +1,47 @@
+{program test~x64~branch~immediate~regression@main
+  (function cond_score ([first bool] [second bool] [third bool]) to i5 in
+    (cond
+      (first $11^i5)
+      (second $22^i5)
+      (third $33^i5)
+      (else $44^i5)
+    )
+  )
+
+  (function nested_if_score ([first bool] [second bool] [third bool]) to i5 in
+    (if first
+      then $11^i5
+      else
+        (if second
+          then $22^i5
+          else
+            (if third
+              then $33^i5
+              else $44^i5
+            )
+        )
+    )
+  )
+
+  (function compare_case ([first bool] [second bool] [third bool]) to i5 in
+    {
+      (var [cond_value i5] (cond_score first second third))
+      (var [if_value i5] (nested_if_score first second third))
+      (if (eq cond_value if_value)
+        then cond_value
+        else $99^i5
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [total i5] (compare_case true true true))
+      (var_set total (add total (compare_case false true true)))
+      (var_set total (add total (compare_case false false true)))
+      (var_set total (add total (compare_case false false false)))
+      (var_set total (add total (compare_case true false false)))
+      total
+    }
+  )
+}

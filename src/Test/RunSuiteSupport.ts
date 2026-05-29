@@ -12,6 +12,8 @@ export interface RunBuiltTestSuiteOptions {
     readonly suiteName: string;
     readonly buildTestDirs: readonly string[];
     readonly env?: NodeJS.ProcessEnv;
+    readonly excludeTestFileNames?: ReadonlySet<string>;
+    readonly startAtTestFileName?: string;
     readonly orderTestFiles?: (testFiles: readonly string[]) => string[];
 }
 
@@ -49,14 +51,25 @@ function formatExecOutput(output: string | Buffer | undefined): string {
     return Buffer.isBuffer(output) ? output.toString("utf8") : output;
 }
 
-function runBuiltTest(suiteName: string, testFilePath: string, env: NodeJS.ProcessEnv): void {
+function formatProgressLabel(testIndex: number, testCount: number): string {
+    return `[${String(testIndex)}/${String(testCount)}]`;
+}
+
+function runBuiltTest(
+    suiteName: string,
+    testFilePath: string,
+    env: NodeJS.ProcessEnv,
+    testIndex: number,
+    testCount: number
+): void {
     const testFileName: string = basename(testFilePath);
+    const progressLabel: string = formatProgressLabel(testIndex, testCount);
     if (heavyTestFileNames.has(testFileName) && !shouldRunHeavyTests()) {
-        process.stdout.write(`${suiteName} skipped heavy ${testFileName}\n`);
+        process.stdout.write(`${suiteName} skipped heavy ${progressLabel} ${testFileName}\n`);
         return;
     }
 
-    process.stdout.write(`${suiteName} running ${testFileName}\n`);
+    process.stdout.write(`${suiteName} running ${progressLabel} ${testFileName}\n`);
     try {
         const output: string = execFileSync(process.execPath, [testFilePath], {
             cwd: repoRoot,
@@ -68,6 +81,7 @@ function runBuiltTest(suiteName: string, testFilePath: string, env: NodeJS.Proce
         if (output.length > 0) {
             process.stdout.write(output);
         }
+        process.stdout.write(`${suiteName} passed ${progressLabel} ${testFileName}\n`);
     } catch (error) {
         const execError = error as Error & {
             readonly stdout?: string | Buffer;
@@ -89,16 +103,29 @@ function runBuiltTest(suiteName: string, testFilePath: string, env: NodeJS.Proce
 }
 
 export function runBuiltTestSuite(options: RunBuiltTestSuiteOptions): void {
-    const collectedTestFiles: string[] = collectBuiltTestFiles(options.buildTestDirs);
+    const excludedFileNames: ReadonlySet<string> = options.excludeTestFileNames ?? new Set<string>();
+    const collectedTestFiles: string[] = collectBuiltTestFiles(options.buildTestDirs).filter(
+        (testFilePath: string) => !excludedFileNames.has(basename(testFilePath))
+    );
+    if (collectedTestFiles.length === 0) {
+        throw new Error(`${options.suiteName} has no test files after exclusions.`);
+    }
     const orderedTestFiles: string[] = options.orderTestFiles === undefined
         ? collectedTestFiles
         : options.orderTestFiles(collectedTestFiles);
+    const startIndex: number = options.startAtTestFileName === undefined
+        ? 0
+        : orderedTestFiles.findIndex((testFilePath: string) => basename(testFilePath) === options.startAtTestFileName);
+    if (options.startAtTestFileName !== undefined && startIndex < 0) {
+        throw new Error(`${options.suiteName} could not find start test '${options.startAtTestFileName}'.`);
+    }
+    const selectedTestFiles: string[] = orderedTestFiles.slice(startIndex);
     const env: NodeJS.ProcessEnv = {
         ...process.env,
         ...options.env
     };
-    for (const testFilePath of orderedTestFiles) {
-        runBuiltTest(options.suiteName, testFilePath, env);
+    for (let index = 0; index < selectedTestFiles.length; index += 1) {
+        runBuiltTest(options.suiteName, selectedTestFiles[index], env, index + 1, selectedTestFiles.length);
     }
-    process.stdout.write(`${options.suiteName} ok ${orderedTestFiles.length} tests\n`);
+    process.stdout.write(`${options.suiteName} ok ${selectedTestFiles.length} tests\n`);
 }

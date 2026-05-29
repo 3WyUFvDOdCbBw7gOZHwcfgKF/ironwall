@@ -1,0 +1,15 @@
+{program std~eq@v1
+  (export (class <generic Eq T>
+    (property [predicate <to bool from T T>])
+    (constructor ([predicate0 <to bool from T T>]) in
+      (cm_set self predicate predicate0)
+    )
+    (method equals ([left T] [right T]) to bool in
+      ((cm_get self predicate) left right)
+    )
+  ))
+
+  (export (function <generic eq_apply T> ([rule <Eq T>] [left T] [right T]) to bool in
+    ((cm_get rule equals) left right)
+  ))
+}

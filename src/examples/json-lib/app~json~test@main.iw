@@ -1,0 +1,41 @@
+{program app~json~test@main
+  (import app~json~lib)
+  (import std~io)
+  (import std~linux~sys)
+
+  (function read_file_all ([path s3]) to s3 in
+    {
+      (var [fd i5] (sys_fd_open_read_s3 path))
+      (var [stat SysFileStat] (sys_fd_fstat fd))
+      (var [content s3] (sys_fd_pread_s3 fd (sys_stat_size stat) $0^i5))
+      (sys_fd_close fd)
+      content
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (if (lt (array_length args) $2^i5)
+        then
+          {
+            (println_stderr $app_json_lib_error_unexpected_token_s3^s3)
+            $2^i5
+          }
+        else
+          {
+            (var [input_path s3] (array_get args $0^i5))
+            (sys_path_chdir_s3 (array_get args $1^i5))
+            (var [result JsonParseResult] (json_parse (read_file_all input_path) (json_default_parse_options)))
+            (if (cm_get result ok)
+              then $0^i5
+              else
+                {
+                  (println_stderr (json_error_code_name (cm_get (cm_get result error) code)))
+                  $1^i5
+                }
+            )
+          }
+      )
+    }
+  )
+}

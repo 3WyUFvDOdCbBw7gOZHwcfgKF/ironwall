@@ -1,0 +1,1065 @@
+{program app~iw~lex@defs
+  (export (class IwLexResult
+    (public (property [source_bytes i5]))
+    (public (property [line_count i5]))
+    (public (property [token_count i5]))
+    (public (property [identifier_count i5]))
+    (public (property [literal_ref_count i5]))
+    (public (property [number_literal_count i5]))
+    (public (property [open_bracket_count i5]))
+    (public (property [close_bracket_count i5]))
+    (public (property [max_bracket_depth i5]))
+    (public (property [first_token_kind i5]))
+    (public (property [first_token_lexeme s3]))
+    (public (property [first_token_start i5]))
+    (public (property [first_token_end i5]))
+    (public (property [first_token_line i5]))
+    (public (property [first_token_column i5]))
+    (public (property [first_atom_lexeme s3]))
+    (public (property [first_atom_start i5]))
+    (public (property [first_atom_end i5]))
+    (public (property [first_atom_line i5]))
+    (public (property [first_atom_column i5]))
+    (public (property [second_atom_lexeme s3]))
+    (public (property [second_atom_start i5]))
+    (public (property [second_atom_end i5]))
+    (public (property [second_atom_line i5]))
+    (public (property [second_atom_column i5]))
+    (public (property [program_count i5]))
+    (public (property [import_count i5]))
+    (public (property [function_count i5]))
+    (public (property [class_count i5]))
+    (public (property [export_count i5]))
+    (public (property [public_count i5]))
+    (public (property [property_count i5]))
+    (public (property [constructor_count i5]))
+    (public (property [method_count i5]))
+    (public (property [var_count i5]))
+    (public (property [if_count i5]))
+    (public (property [while_count i5]))
+    (public (property [match_count i5]))
+    (public (property [let_count i5]))
+    (public (property [cond_count i5]))
+    (public (property [return_type_count i5]))
+    (public (property [assignment_count i5]))
+    (public (property [program_unit s3]))
+    (public (property [first_import_unit s3]))
+    (public (property [program_start i5]))
+    (public (property [program_end i5]))
+    (public (property [first_import_start i5]))
+    (public (property [first_import_end i5]))
+    (public (property [program_line i5]))
+    (public (property [program_column i5]))
+    (public (property [first_import_line i5]))
+    (public (property [first_import_column i5]))
+    (public (property [first_function_name s3]))
+    (public (property [first_class_name s3]))
+    (public (property [first_function_start i5]))
+    (public (property [first_function_end i5]))
+    (public (property [first_class_start i5]))
+    (public (property [first_class_end i5]))
+    (public (property [first_function_line i5]))
+    (public (property [first_function_column i5]))
+    (public (property [first_class_line i5]))
+    (public (property [first_class_column i5]))
+    (public (property [has_unbalanced_brackets bool]))
+    (constructor
+      ([source_bytes0 i5]
+       [line_count0 i5]
+       [token_count0 i5]
+       [identifier_count0 i5]
+       [literal_ref_count0 i5]
+       [number_literal_count0 i5]
+       [open_bracket_count0 i5]
+       [close_bracket_count0 i5]
+       [max_bracket_depth0 i5]
+       [first_token_kind0 i5]
+       [first_token_lexeme0 s3]
+       [first_token_start0 i5]
+       [first_token_end0 i5]
+       [first_token_line0 i5]
+       [first_token_column0 i5]
+       [first_atom_lexeme0 s3]
+       [first_atom_start0 i5]
+       [first_atom_end0 i5]
+       [first_atom_line0 i5]
+       [first_atom_column0 i5]
+       [second_atom_lexeme0 s3]
+       [second_atom_start0 i5]
+       [second_atom_end0 i5]
+       [second_atom_line0 i5]
+       [second_atom_column0 i5]
+       [program_count0 i5]
+       [import_count0 i5]
+       [function_count0 i5]
+       [class_count0 i5]
+       [export_count0 i5]
+       [public_count0 i5]
+       [property_count0 i5]
+       [constructor_count0 i5]
+       [method_count0 i5]
+       [var_count0 i5]
+       [if_count0 i5]
+       [while_count0 i5]
+       [match_count0 i5]
+       [let_count0 i5]
+       [cond_count0 i5]
+       [return_type_count0 i5]
+       [assignment_count0 i5]
+       [program_unit0 s3]
+       [first_import_unit0 s3]
+       [program_start0 i5]
+       [program_end0 i5]
+       [first_import_start0 i5]
+       [first_import_end0 i5]
+       [program_line0 i5]
+       [program_column0 i5]
+       [first_import_line0 i5]
+       [first_import_column0 i5]
+       [first_function_name0 s3]
+       [first_class_name0 s3]
+       [first_function_start0 i5]
+       [first_function_end0 i5]
+       [first_class_start0 i5]
+       [first_class_end0 i5]
+       [first_function_line0 i5]
+       [first_function_column0 i5]
+       [first_class_line0 i5]
+       [first_class_column0 i5]
+       [has_unbalanced_brackets0 bool]) in
+      {
+        (cm_set self source_bytes source_bytes0)
+        (cm_set self line_count line_count0)
+        (cm_set self token_count token_count0)
+        (cm_set self identifier_count identifier_count0)
+        (cm_set self literal_ref_count literal_ref_count0)
+        (cm_set self number_literal_count number_literal_count0)
+        (cm_set self open_bracket_count open_bracket_count0)
+        (cm_set self close_bracket_count close_bracket_count0)
+        (cm_set self max_bracket_depth max_bracket_depth0)
+        (cm_set self first_token_kind first_token_kind0)
+        (cm_set self first_token_lexeme first_token_lexeme0)
+        (cm_set self first_token_start first_token_start0)
+        (cm_set self first_token_end first_token_end0)
+        (cm_set self first_token_line first_token_line0)
+        (cm_set self first_token_column first_token_column0)
+        (cm_set self first_atom_lexeme first_atom_lexeme0)
+        (cm_set self first_atom_start first_atom_start0)
+        (cm_set self first_atom_end first_atom_end0)
+        (cm_set self first_atom_line first_atom_line0)
+        (cm_set self first_atom_column first_atom_column0)
+        (cm_set self second_atom_lexeme second_atom_lexeme0)
+        (cm_set self second_atom_start second_atom_start0)
+        (cm_set self second_atom_end second_atom_end0)
+        (cm_set self second_atom_line second_atom_line0)
+        (cm_set self second_atom_column second_atom_column0)
+        (cm_set self program_count program_count0)
+        (cm_set self import_count import_count0)
+        (cm_set self function_count function_count0)
+        (cm_set self class_count class_count0)
+        (cm_set self export_count export_count0)
+        (cm_set self public_count public_count0)
+        (cm_set self property_count property_count0)
+        (cm_set self constructor_count constructor_count0)
+        (cm_set self method_count method_count0)
+        (cm_set self var_count var_count0)
+        (cm_set self if_count if_count0)
+        (cm_set self while_count while_count0)
+        (cm_set self match_count match_count0)
+        (cm_set self let_count let_count0)
+        (cm_set self cond_count cond_count0)
+        (cm_set self return_type_count return_type_count0)
+        (cm_set self assignment_count assignment_count0)
+        (cm_set self program_unit program_unit0)
+        (cm_set self first_import_unit first_import_unit0)
+        (cm_set self program_start program_start0)
+        (cm_set self program_end program_end0)
+        (cm_set self first_import_start first_import_start0)
+        (cm_set self first_import_end first_import_end0)
+        (cm_set self program_line program_line0)
+        (cm_set self program_column program_column0)
+        (cm_set self first_import_line first_import_line0)
+        (cm_set self first_import_column first_import_column0)
+        (cm_set self first_function_name first_function_name0)
+        (cm_set self first_class_name first_class_name0)
+        (cm_set self first_function_start first_function_start0)
+        (cm_set self first_function_end first_function_end0)
+        (cm_set self first_class_start first_class_start0)
+        (cm_set self first_class_end first_class_end0)
+        (cm_set self first_function_line first_function_line0)
+        (cm_set self first_function_column first_function_column0)
+        (cm_set self first_class_line first_class_line0)
+        (cm_set self first_class_column first_class_column0)
+        (cm_set self has_unbalanced_brackets has_unbalanced_brackets0)
+      }
+    )
+  ))
+
+  (export (function is_ascii_space ([value c3]) to bool in
+    (or
+      (eq (val_to_i5 value) $32^i5)
+      (or
+        (eq (val_to_i5 value) $9^i5)
+        (or (eq (val_to_i5 value) $10^i5) (eq (val_to_i5 value) $13^i5))
+      )
+    )
+  ))
+
+  (export (function is_open_bracket ([value c3]) to bool in
+    (or
+      (eq (val_to_i5 value) $40^i5)
+      (or
+        (eq (val_to_i5 value) $91^i5)
+        (or (eq (val_to_i5 value) $123^i5) (eq (val_to_i5 value) $60^i5))
+      )
+    )
+  ))
+
+  (export (function is_close_bracket ([value c3]) to bool in
+    (or
+      (eq (val_to_i5 value) $41^i5)
+      (or
+        (eq (val_to_i5 value) $93^i5)
+        (or (eq (val_to_i5 value) $125^i5) (eq (val_to_i5 value) $62^i5))
+      )
+    )
+  ))
+
+  (function s3_span_matches2 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5]) to bool in
+    (if (eq (sub end_exclusive start) $2^i5)
+      then
+      (and
+        (eq (val_to_i5 (s3_get source start)) c0)
+        (eq (val_to_i5 (s3_get source (add start $1^i5))) c1)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches3 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5]) to bool in
+    (if (eq (sub end_exclusive start) $3^i5)
+      then
+      (and
+        (s3_span_matches2 source start (sub end_exclusive $1^i5) c0 c1)
+        (eq (val_to_i5 (s3_get source (add start $2^i5))) c2)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches4 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5]) to bool in
+    (if (eq (sub end_exclusive start) $4^i5)
+      then
+      (and
+        (eq (val_to_i5 (s3_get source start)) c0)
+        (and
+          (eq (val_to_i5 (s3_get source (add start $1^i5))) c1)
+          (and
+            (eq (val_to_i5 (s3_get source (add start $2^i5))) c2)
+            (eq (val_to_i5 (s3_get source (add start $3^i5))) c3_value)
+          )
+        )
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches5 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5]) to bool in
+    (if (eq (sub end_exclusive start) $5^i5)
+      then
+      (and
+        (s3_span_matches4 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value)
+        (eq (val_to_i5 (s3_get source (add start $4^i5))) c4)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches6 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5]) to bool in
+    (if (eq (sub end_exclusive start) $6^i5)
+      then
+      (and
+        (s3_span_matches5 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value c4)
+        (eq (val_to_i5 (s3_get source (add start $5^i5))) c5)
+      )
+      else false
+    )
+  )
+
+  (function is_program_token ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (s3_span_matches7 source start end_exclusive $112^i5 $114^i5 $111^i5 $103^i5 $114^i5 $97^i5 $109^i5)
+  )
+
+  (function is_generic_token ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (s3_span_matches7 source start end_exclusive $103^i5 $101^i5 $110^i5 $101^i5 $114^i5 $105^i5 $99^i5)
+  )
+
+  (function s3_span_matches7 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5]) to bool in
+    (if (eq (sub end_exclusive start) $7^i5)
+      then
+      (and
+        (s3_span_matches6 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value c4 c5)
+        (eq (val_to_i5 (s3_get source (add start $6^i5))) c6)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches8 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5] [c7 i5]) to bool in
+    (if (eq (sub end_exclusive start) $8^i5)
+      then
+      (and
+        (s3_span_matches7 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value c4 c5 c6)
+        (eq (val_to_i5 (s3_get source (add start $7^i5))) c7)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches9 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5] [c7 i5] [c8 i5]) to bool in
+    (if (eq (sub end_exclusive start) $9^i5)
+      then
+      (and
+        (s3_span_matches8 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value c4 c5 c6 c7)
+        (eq (val_to_i5 (s3_get source (add start $8^i5))) c8)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches10 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5] [c7 i5] [c8 i5] [c9 i5]) to bool in
+    (if (eq (sub end_exclusive start) $10^i5)
+      then
+      (and
+        (s3_span_matches9 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value c4 c5 c6 c7 c8)
+        (eq (val_to_i5 (s3_get source (add start $9^i5))) c9)
+      )
+      else false
+    )
+  )
+
+  (function s3_span_matches11 ([source s3] [start i5] [end_exclusive i5] [c0 i5] [c1 i5] [c2 i5] [c3_value i5] [c4 i5] [c5 i5] [c6 i5] [c7 i5] [c8 i5] [c9 i5] [c10 i5]) to bool in
+    (if (eq (sub end_exclusive start) $11^i5)
+      then
+      (and
+        (s3_span_matches10 source start (sub end_exclusive $1^i5) c0 c1 c2 c3_value c4 c5 c6 c7 c8 c9)
+        (eq (val_to_i5 (s3_get source (add start $10^i5))) c10)
+      )
+      else false
+    )
+  )
+
+  (export (function token_starts_with_dollar ([source s3] [start i5]) to bool in
+    (eq (val_to_i5 (s3_get source start)) $36^i5)
+  ))
+
+  (function is_identifier_head_char ([value c3]) to bool in
+    {
+      (var [code i5] (val_to_i5 value))
+      (or
+        (eq code $95^i5)
+        (or
+          (and (ge code $65^i5) (le code $90^i5))
+          (and (ge code $97^i5) (le code $122^i5))
+        )
+      )
+    }
+  )
+
+  (function is_identifier_body_char ([value c3]) to bool in
+    {
+      (var [code i5] (val_to_i5 value))
+      (or
+        (is_identifier_head_char value)
+        (and (ge code $48^i5) (le code $57^i5))
+      )
+    }
+  )
+
+  (function is_identifier_span ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (if (ge start end_exclusive)
+      then false
+      else
+        {
+          (var [index i5] (add start $1^i5))
+          (var [ok bool] (is_identifier_head_char (s3_get source start)))
+          (while (and ok (lt index end_exclusive)) in
+            {
+              (if (is_identifier_body_char (s3_get source index))
+                then unit
+                else (var_set ok false)
+              )
+              (var_set index (add index $1^i5))
+            }
+          )
+          ok
+        }
+    )
+  )
+
+  (function is_numeric_type_span ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (and
+      (eq (sub end_exclusive start) $2^i5)
+      (and
+        (or
+          (eq (val_to_i5 (s3_get source start)) $105^i5)
+          (or
+            (eq (val_to_i5 (s3_get source start)) $117^i5)
+            (or
+              (eq (val_to_i5 (s3_get source start)) $102^i5)
+              (eq (val_to_i5 (s3_get source start)) $122^i5)
+            )
+          )
+        )
+        (or
+          (eq (val_to_i5 (s3_get source (add start $1^i5))) $53^i5)
+          (or
+            (eq (val_to_i5 (s3_get source (add start $1^i5))) $54^i5)
+            (eq (val_to_i5 (s3_get source (add start $1^i5))) $55^i5)
+          )
+        )
+      )
+    )
+  )
+
+  (function is_float_type_span ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (and
+      (eq (sub end_exclusive start) $2^i5)
+      (and
+        (eq (val_to_i5 (s3_get source start)) $102^i5)
+        (or
+          (eq (val_to_i5 (s3_get source (add start $1^i5))) $53^i5)
+          (or
+            (eq (val_to_i5 (s3_get source (add start $1^i5))) $54^i5)
+            (eq (val_to_i5 (s3_get source (add start $1^i5))) $55^i5)
+          )
+        )
+      )
+    )
+  )
+
+  (function is_special_float_payload ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (or
+      (s3_span_matches3 source start end_exclusive $105^i5 $110^i5 $102^i5)
+      (or
+        (s3_span_matches3 source start end_exclusive $110^i5 $97^i5 $110^i5)
+        (s3_span_matches7 source start end_exclusive $48^i5 $110^i5 $101^i5 $103^i5 $105^i5 $110^i5 $102^i5)
+      )
+    )
+  )
+
+  (export (function iw_token_is_number_literal ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (if (not (token_starts_with_dollar source start))
+      then false
+      else
+        {
+          (var [caret_index i5] (add start $1^i5))
+          (var [found_caret bool] false)
+          (while (and (not found_caret) (lt caret_index end_exclusive)) in
+            {
+              (if (eq (val_to_i5 (s3_get source caret_index)) $94^i5)
+                then (var_set found_caret true)
+                else (var_set caret_index (add caret_index $1^i5))
+              )
+            }
+          )
+          (if (not found_caret)
+            then false
+            else
+              {
+                (var [payload_start i5] (add start $1^i5))
+                (var [type_start i5] (add caret_index $1^i5))
+                (and
+                  (and (lt payload_start caret_index) (is_numeric_type_span source type_start end_exclusive))
+                  (or
+                    (and
+                      (is_float_type_span source type_start end_exclusive)
+                      (is_special_float_payload source payload_start caret_index)
+                    )
+                    (not (is_identifier_span source payload_start caret_index))
+                  )
+                )
+              }
+          )
+        }
+    )
+  ))
+
+  (export (function iw_token_is_keyword ([source s3] [start i5] [end_exclusive i5]) to bool in
+    (or
+      (is_program_token source start end_exclusive)
+      (or
+        (s3_span_matches6 source start end_exclusive $105^i5 $109^i5 $112^i5 $111^i5 $114^i5 $116^i5)
+        (or
+          (s3_span_matches8 source start end_exclusive $102^i5 $117^i5 $110^i5 $99^i5 $116^i5 $105^i5 $111^i5 $110^i5)
+          (or
+            (s3_span_matches5 source start end_exclusive $99^i5 $108^i5 $97^i5 $115^i5 $115^i5)
+            (or
+              (s3_span_matches6 source start end_exclusive $101^i5 $120^i5 $112^i5 $111^i5 $114^i5 $116^i5)
+              (or
+                (s3_span_matches6 source start end_exclusive $112^i5 $117^i5 $98^i5 $108^i5 $105^i5 $99^i5)
+                (or
+                  (s3_span_matches8 source start end_exclusive $112^i5 $114^i5 $111^i5 $112^i5 $101^i5 $114^i5 $116^i5 $121^i5)
+                  (or
+                    (s3_span_matches11 source start end_exclusive $99^i5 $111^i5 $110^i5 $115^i5 $116^i5 $114^i5 $117^i5 $99^i5 $116^i5 $111^i5 $114^i5)
+                    (or
+                      (s3_span_matches6 source start end_exclusive $109^i5 $101^i5 $116^i5 $104^i5 $111^i5 $100^i5)
+                      (or
+                        (s3_span_matches3 source start end_exclusive $118^i5 $97^i5 $114^i5)
+                        (or
+                          (s3_span_matches2 source start end_exclusive $105^i5 $102^i5)
+                          (or
+                            (s3_span_matches5 source start end_exclusive $119^i5 $104^i5 $105^i5 $108^i5 $101^i5)
+                            (or
+                              (s3_span_matches5 source start end_exclusive $109^i5 $97^i5 $116^i5 $99^i5 $104^i5)
+                              (or
+                                (s3_span_matches2 source start end_exclusive $116^i5 $111^i5)
+                                (or
+                                  (s3_span_matches3 source start end_exclusive $108^i5 $101^i5 $116^i5)
+                                  (or
+                                    (s3_span_matches4 source start end_exclusive $99^i5 $111^i5 $110^i5 $100^i5)
+                                    (or
+                                      (s3_span_matches4 source start end_exclusive $116^i5 $104^i5 $101^i5 $110^i5)
+                                      (or
+                                        (s3_span_matches4 source start end_exclusive $101^i5 $108^i5 $115^i5 $101^i5)
+                                        (or
+                                          (s3_span_matches2 source start end_exclusive $105^i5 $110^i5)
+                                          (is_generic_token source start end_exclusive)
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function s3_slice_span ([source s3] [start i5] [end_exclusive i5] [fallback_seed s3]) to s3 in
+    {
+      (var [slice_length i5] (sub end_exclusive start))
+      (if (eq slice_length $0^i5)
+        then (s3_new $0^i5 (s3_get fallback_seed $0^i5))
+        else
+          {
+            (var [result s3] (s3_new slice_length (s3_get source start)))
+            (var [index i5] $0^i5)
+            (while (lt index slice_length) in
+              {
+                (s3_set result index (s3_get source (add start index)))
+                (var_set index (add index $1^i5))
+              }
+            )
+            result
+          }
+      )
+    }
+  ))
+
+  (export (function iw_lex_source ([source_path s3] [source s3]) to IwLexResult in
+    {
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length source))
+      (var [line_breaks i5] $0^i5)
+      (var [current_line i5] $1^i5)
+      (var [current_column i5] $1^i5)
+      (var [token_count i5] $0^i5)
+      (var [identifier_count i5] $0^i5)
+      (var [literal_ref_count i5] $0^i5)
+      (var [number_literal_count i5] $0^i5)
+      (var [open_bracket_count i5] $0^i5)
+      (var [close_bracket_count i5] $0^i5)
+      (var [bracket_depth i5] $0^i5)
+      (var [max_bracket_depth i5] $0^i5)
+      (var [first_token_kind i5] $0^i5)
+      (var [first_token_lexeme s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [first_token_start i5] $0^i5)
+      (var [first_token_end i5] $0^i5)
+      (var [first_token_line i5] $0^i5)
+      (var [first_token_column i5] $0^i5)
+      (var [first_atom_lexeme s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [first_atom_start i5] $0^i5)
+      (var [first_atom_end i5] $0^i5)
+      (var [first_atom_line i5] $0^i5)
+      (var [first_atom_column i5] $0^i5)
+      (var [second_atom_lexeme s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [second_atom_start i5] $0^i5)
+      (var [second_atom_end i5] $0^i5)
+      (var [second_atom_line i5] $0^i5)
+      (var [second_atom_column i5] $0^i5)
+      (var [program_count i5] $0^i5)
+      (var [import_count i5] $0^i5)
+      (var [function_count i5] $0^i5)
+      (var [class_count i5] $0^i5)
+      (var [export_count i5] $0^i5)
+      (var [public_count i5] $0^i5)
+      (var [property_count i5] $0^i5)
+      (var [constructor_count i5] $0^i5)
+      (var [method_count i5] $0^i5)
+      (var [var_count i5] $0^i5)
+      (var [if_count i5] $0^i5)
+      (var [while_count i5] $0^i5)
+      (var [match_count i5] $0^i5)
+      (var [let_count i5] $0^i5)
+      (var [cond_count i5] $0^i5)
+      (var [return_type_count i5] $0^i5)
+      (var [assignment_count i5] $0^i5)
+      (var [program_unit s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [first_import_unit s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [program_start i5] $0^i5)
+      (var [program_end i5] $0^i5)
+      (var [first_import_start i5] $0^i5)
+      (var [first_import_end i5] $0^i5)
+      (var [program_line i5] $0^i5)
+      (var [program_column i5] $0^i5)
+      (var [first_import_line i5] $0^i5)
+      (var [first_import_column i5] $0^i5)
+      (var [first_function_name s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [first_class_name s3] (s3_slice_span source_path $0^i5 $0^i5 source_path))
+      (var [first_function_start i5] $0^i5)
+      (var [first_function_end i5] $0^i5)
+      (var [first_class_start i5] $0^i5)
+      (var [first_class_end i5] $0^i5)
+      (var [first_function_line i5] $0^i5)
+      (var [first_function_column i5] $0^i5)
+      (var [first_class_line i5] $0^i5)
+      (var [first_class_column i5] $0^i5)
+      (var [want_program_unit bool] false)
+      (var [want_import_unit bool] false)
+      (var [want_function_name bool] false)
+      (var [want_class_name bool] false)
+      (var [has_unbalanced bool] false)
+      (while (lt index length) in
+        {
+          (var [ch c3] (s3_get source index))
+          (if (is_ascii_space ch)
+            then
+              {
+                (if (eq (val_to_i5 ch) $10^i5)
+                  then
+                    {
+                      (var_set line_breaks (add line_breaks $1^i5))
+                      (var_set current_line (add current_line $1^i5))
+                      (var_set current_column $1^i5)
+                      unit
+                    }
+                  else (var_set current_column (add current_column $1^i5))
+                )
+                (var_set index (add index $1^i5))
+              }
+            else
+              {
+                (if (is_open_bracket ch)
+                  then
+                    {
+                      (if (eq token_count $0^i5)
+                        then
+                          {
+                            (var_set first_token_kind $1^i5)
+                            (var_set first_token_lexeme (s3_slice_span source index (add index $1^i5) source_path))
+                            (var_set first_token_start index)
+                            (var_set first_token_end (add index $1^i5))
+                            (var_set first_token_line current_line)
+                            (var_set first_token_column current_column)
+                            unit
+                          }
+                        else unit
+                      )
+                      (var_set token_count (add token_count $1^i5))
+                      (var_set open_bracket_count (add open_bracket_count $1^i5))
+                      (var_set bracket_depth (add bracket_depth $1^i5))
+                      (if (gt bracket_depth max_bracket_depth)
+                        then (var_set max_bracket_depth bracket_depth)
+                        else unit
+                      )
+                      (var_set index (add index $1^i5))
+                      (var_set current_column (add current_column $1^i5))
+                    }
+                  else
+                    {
+                      (if (is_close_bracket ch)
+                        then
+                          {
+                            (if (eq token_count $0^i5)
+                              then
+                                {
+                                  (var_set first_token_kind $2^i5)
+                                  (var_set first_token_lexeme (s3_slice_span source index (add index $1^i5) source_path))
+                                  (var_set first_token_start index)
+                                  (var_set first_token_end (add index $1^i5))
+                                  (var_set first_token_line current_line)
+                                  (var_set first_token_column current_column)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (var_set token_count (add token_count $1^i5))
+                            (var_set close_bracket_count (add close_bracket_count $1^i5))
+                            (if (eq bracket_depth $0^i5)
+                              then (var_set has_unbalanced true)
+                              else (var_set bracket_depth (sub bracket_depth $1^i5))
+                            )
+                            (var_set index (add index $1^i5))
+                            (var_set current_column (add current_column $1^i5))
+                          }
+                        else
+                          {
+                            (var [token_start i5] index)
+                            (var [token_line i5] current_line)
+                            (var [token_column i5] current_column)
+                            (var [scan_done bool] false)
+                            (while (and (not scan_done) (lt index length)) in
+                              {
+                                (var [scan_ch c3] (s3_get source index))
+                                (if
+                                  (or
+                                    (is_ascii_space scan_ch)
+                                    (or (is_open_bracket scan_ch) (is_close_bracket scan_ch))
+                                  )
+                                  then (var_set scan_done true)
+                                  else
+                                    {
+                                      (var_set index (add index $1^i5))
+                                      (var_set current_column (add current_column $1^i5))
+                                    }
+                                )
+                              }
+                            )
+                            (if (eq token_count $0^i5)
+                              then
+                                {
+                                  (var_set first_token_kind $3^i5)
+                                  (var_set first_token_lexeme (s3_slice_span source token_start index source_path))
+                                  (var_set first_token_start token_start)
+                                  (var_set first_token_end index)
+                                  (var_set first_token_line token_line)
+                                  (var_set first_token_column token_column)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if (eq (s3_length first_atom_lexeme) $0^i5)
+                              then
+                                {
+                                  (var_set first_atom_lexeme (s3_slice_span source token_start index source_path))
+                                  (var_set first_atom_start token_start)
+                                  (var_set first_atom_end index)
+                                  (var_set first_atom_line token_line)
+                                  (var_set first_atom_column token_column)
+                                  unit
+                                }
+                              else
+                                (if (eq (s3_length second_atom_lexeme) $0^i5)
+                                  then
+                                    {
+                                      (var_set second_atom_lexeme (s3_slice_span source token_start index source_path))
+                                      (var_set second_atom_start token_start)
+                                      (var_set second_atom_end index)
+                                      (var_set second_atom_line token_line)
+                                      (var_set second_atom_column token_column)
+                                      unit
+                                    }
+                                  else unit
+                                )
+                            )
+                            (var_set token_count (add token_count $1^i5))
+                            (if (token_starts_with_dollar source token_start)
+                              then
+                                (if (iw_token_is_number_literal source token_start index)
+                                  then (var_set number_literal_count (add number_literal_count $1^i5))
+                                  else (var_set literal_ref_count (add literal_ref_count $1^i5))
+                                )
+                              else (var_set identifier_count (add identifier_count $1^i5))
+                            )
+                            (if want_program_unit
+                              then
+                                {
+                                  (var_set program_unit (s3_slice_span source token_start index source_path))
+                                  (var_set want_program_unit false)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if want_import_unit
+                              then
+                                {
+                                  (if (eq (s3_length first_import_unit) $0^i5)
+                                    then (var_set first_import_unit (s3_slice_span source token_start index source_path))
+                                    else unit
+                                  )
+                                  (var_set want_import_unit false)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if want_function_name
+                              then
+                                {
+                                  (if (is_generic_token source token_start index)
+                                    then unit
+                                    else
+                                      {
+                                        (if (eq (s3_length first_function_name) $0^i5)
+                                          then
+                                            {
+                                              (var_set first_function_name (s3_slice_span source token_start index source_path))
+                                              (var_set first_function_start token_start)
+                                              (var_set first_function_end index)
+                                              unit
+                                            }
+                                          else unit
+                                        )
+                                        (var_set want_function_name false)
+                                        unit
+                                      }
+                                  )
+                                }
+                              else unit
+                            )
+                            (if want_class_name
+                              then
+                                {
+                                  (if (is_generic_token source token_start index)
+                                    then unit
+                                    else
+                                      {
+                                        (if (eq (s3_length first_class_name) $0^i5)
+                                          then
+                                            {
+                                              (var_set first_class_name (s3_slice_span source token_start index source_path))
+                                              (var_set first_class_start token_start)
+                                              (var_set first_class_end index)
+                                              unit
+                                            }
+                                          else unit
+                                        )
+                                        (var_set want_class_name false)
+                                        unit
+                                      }
+                                  )
+                                }
+                              else unit
+                            )
+                            (if (is_program_token source token_start index)
+                              then
+                                {
+                                  (if (eq program_count $0^i5)
+                                    then
+                                      {
+                                        (var_set program_start token_start)
+                                        (var_set program_end index)
+                                        (var_set program_line token_line)
+                                        (var_set program_column token_column)
+                                        unit
+                                      }
+                                    else unit
+                                  )
+                                  (var_set program_count (add program_count $1^i5))
+                                  (var_set want_program_unit true)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if (s3_span_matches6 source token_start index $105^i5 $109^i5 $112^i5 $111^i5 $114^i5 $116^i5)
+                              then
+                                {
+                                  (if (eq import_count $0^i5)
+                                    then
+                                      {
+                                        (var_set first_import_start token_start)
+                                        (var_set first_import_end index)
+                                        (var_set first_import_line token_line)
+                                        (var_set first_import_column token_column)
+                                        unit
+                                      }
+                                    else unit
+                                  )
+                                  (var_set import_count (add import_count $1^i5))
+                                  (var_set want_import_unit true)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if (s3_span_matches8 source token_start index $102^i5 $117^i5 $110^i5 $99^i5 $116^i5 $105^i5 $111^i5 $110^i5)
+                              then
+                                {
+                                  (if (eq function_count $0^i5)
+                                    then
+                                      {
+                                        (var_set first_function_line token_line)
+                                        (var_set first_function_column token_column)
+                                        unit
+                                      }
+                                    else unit
+                                  )
+                                  (var_set function_count (add function_count $1^i5))
+                                  (var_set want_function_name true)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if (s3_span_matches5 source token_start index $99^i5 $108^i5 $97^i5 $115^i5 $115^i5)
+                              then
+                                {
+                                  (if (eq class_count $0^i5)
+                                    then
+                                      {
+                                        (var_set first_class_line token_line)
+                                        (var_set first_class_column token_column)
+                                        unit
+                                      }
+                                    else unit
+                                  )
+                                  (var_set class_count (add class_count $1^i5))
+                                  (var_set want_class_name true)
+                                  unit
+                                }
+                              else unit
+                            )
+                            (if (s3_span_matches6 source token_start index $101^i5 $120^i5 $112^i5 $111^i5 $114^i5 $116^i5)
+                              then (var_set export_count (add export_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches6 source token_start index $112^i5 $117^i5 $98^i5 $108^i5 $105^i5 $99^i5)
+                              then (var_set public_count (add public_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches8 source token_start index $112^i5 $114^i5 $111^i5 $112^i5 $101^i5 $114^i5 $116^i5 $121^i5)
+                              then (var_set property_count (add property_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches7 source token_start index $109^i5 $101^i5 $116^i5 $104^i5 $111^i5 $100^i5 $115^i5)
+                              then (var_set method_count (add method_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches6 source token_start index $109^i5 $101^i5 $116^i5 $104^i5 $111^i5 $100^i5)
+                              then (var_set method_count (add method_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches11 source token_start index $99^i5 $111^i5 $110^i5 $115^i5 $116^i5 $114^i5 $117^i5 $99^i5 $116^i5 $111^i5 $114^i5)
+                              then (var_set constructor_count (add constructor_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches3 source token_start index $118^i5 $97^i5 $114^i5)
+                              then (var_set var_count (add var_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches2 source token_start index $105^i5 $102^i5)
+                              then (var_set if_count (add if_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches5 source token_start index $119^i5 $104^i5 $105^i5 $108^i5 $101^i5)
+                              then (var_set while_count (add while_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches5 source token_start index $109^i5 $97^i5 $116^i5 $99^i5 $104^i5)
+                              then (var_set match_count (add match_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches3 source token_start index $108^i5 $101^i5 $116^i5)
+                              then (var_set let_count (add let_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches4 source token_start index $99^i5 $111^i5 $110^i5 $100^i5)
+                              then (var_set cond_count (add cond_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches2 source token_start index $116^i5 $111^i5)
+                              then (var_set return_type_count (add return_type_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches7 source token_start index $118^i5 $97^i5 $114^i5 $95^i5 $115^i5 $101^i5 $116^i5)
+                              then (var_set assignment_count (add assignment_count $1^i5))
+                              else unit
+                            )
+                            (if (s3_span_matches6 source token_start index $99^i5 $109^i5 $95^i5 $115^i5 $101^i5 $116^i5)
+                              then (var_set assignment_count (add assignment_count $1^i5))
+                              else unit
+                            )
+                          }
+                      )
+                    }
+                )
+              }
+          )
+        }
+      )
+      (class_new IwLexResult
+        length
+        (if (eq length $0^i5) then $0^i5 else (add line_breaks $1^i5))
+        token_count
+        identifier_count
+        literal_ref_count
+        number_literal_count
+        open_bracket_count
+        close_bracket_count
+        max_bracket_depth
+        first_token_kind
+        first_token_lexeme
+        first_token_start
+        first_token_end
+        first_token_line
+        first_token_column
+        first_atom_lexeme
+        first_atom_start
+        first_atom_end
+        first_atom_line
+        first_atom_column
+        second_atom_lexeme
+        second_atom_start
+        second_atom_end
+        second_atom_line
+        second_atom_column
+        program_count
+        import_count
+        function_count
+        class_count
+        export_count
+        public_count
+        property_count
+        constructor_count
+        method_count
+        var_count
+        if_count
+        while_count
+        match_count
+        let_count
+        cond_count
+        return_type_count
+        assignment_count
+        program_unit
+        first_import_unit
+        program_start
+        program_end
+        first_import_start
+        first_import_end
+        program_line
+        program_column
+        first_import_line
+        first_import_column
+        first_function_name
+        first_class_name
+        first_function_start
+        first_function_end
+        first_class_start
+        first_class_end
+        first_function_line
+        first_function_column
+        first_class_line
+        first_class_column
+        (or has_unbalanced (neq bracket_depth $0^i5))
+      )
+    }
+  ))
+}

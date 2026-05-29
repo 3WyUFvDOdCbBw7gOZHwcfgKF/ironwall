@@ -1,0 +1,47 @@
+{program test~cond~semantics@main
+  (function cond_score ([code i5]) to i5 in
+    (cond
+      ((eq code $0^i5) $11^i5)
+      ((eq code $1^i5) $22^i5)
+      ((eq code $2^i5) $33^i5)
+      (else $44^i5)
+    )
+  )
+
+  (function nested_if_score ([code i5]) to i5 in
+    (if (eq code $0^i5)
+      then $11^i5
+      else
+        (if (eq code $1^i5)
+          then $22^i5
+          else
+            (if (eq code $2^i5)
+              then $33^i5
+              else $44^i5
+            )
+        )
+    )
+  )
+
+  (function compare_case ([code i5]) to i5 in
+    {
+      (var [cond_value i5] (cond_score code))
+      (var [if_value i5] (nested_if_score code))
+      (if (eq cond_value if_value)
+        then cond_value
+        else $99^i5
+      )
+    }
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [total i5] (compare_case $0^i5))
+      (var_set total (add total (compare_case $1^i5)))
+      (var_set total (add total (compare_case $2^i5)))
+      (var_set total (add total (compare_case $9^i5)))
+      (var_set total (add total (compare_case $0^i5)))
+      total
+    }
+  )
+}

@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync
 import { tmpdir } from "os";
 import { basename, extname, join, relative, resolve } from "path";
 import { ProgramNode } from "./AstNode";
-import { restoreAstFromJsonText } from "./FrontendJson";
+import { restoreTokensFromJsonText } from "./FrontendJson";
 import { annotateCompilationUnitExpressions, parseCompilationUnitId } from "./ModuleMetadata";
 import { parse } from "./parser";
 import { tokenize } from "./lexer";
@@ -46,11 +46,13 @@ function parseWithExternalFrontend(command: string, source: string): ProgramNode
     try {
         const inputPath: string = join(tempDir, "input.iw");
         writeFileSync(inputPath, source, "utf8");
-        return restoreAstFromJsonText(
-            execFileSync(command, ["--input-file", inputPath], {
-                encoding: "utf8",
-                maxBuffer: 64 * 1024 * 1024
-            })
+        return parse(
+            restoreTokensFromJsonText(
+                execFileSync(command, ["--tokens", "--input-file", inputPath], {
+                    encoding: "utf8",
+                    maxBuffer: 64 * 1024 * 1024
+                })
+            )
         ) as ProgramNode;
     } finally {
         rmSync(tempDir, { recursive: true, force: true });

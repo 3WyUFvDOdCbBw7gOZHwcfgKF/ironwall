@@ -1,0 +1,23 @@
+{
+  "mode": "run",
+  "directories": [
+    {
+      "path": ".",
+      "files": [
+        "app~json~lib@defs.iw",
+        "app~json~lib$lit.json",
+        "app~iw~lex@defs.iw",
+        "app~iw~parse@defs.iw",
+        "app~iw~parse$lit.json",
+        "app~iw~dump@main.iw",
+        "app~iw~dump$lit.json"
+      ]
+    }
+  ],
+  "main": "app~iw~dump@main",
+  "frontendPipeline": "nooptimize",
+  "backendPipeline": "c",
+  "precompiledLibs": [],
+  "noBaseLib": false,
+  "programArgs": []
+}

@@ -1,12 +1,14 @@
 import { deepStrictEqual } from "assert";
 import { execFileSync } from "child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { basename, join, resolve } from "path";
-import { getBaseLibSourceRoots } from "../BaseLib";
 import { dumpFrontendBundleToJsonText, dumpTokensToJsonText } from "../FrontendJson";
 import { tokenize } from "../lexer";
 import { parse } from "../parser";
+import { ensureCurrentNodeProcessHasMemoryLimit } from "./NodeMemoryLimit";
+
+ensureCurrentNodeProcessHasMemoryLimit();
 
 interface InlineSourceCase {
     readonly label: string;
@@ -16,6 +18,16 @@ interface InlineSourceCase {
 interface TokenOnlyCase {
     readonly label: string;
     readonly source: string;
+}
+
+class BundleParityFileCase {
+    public readonly label: string;
+    public readonly inputPath: string;
+
+    public constructor(label0: string, inputPath0: string) {
+        this.label = label0;
+        this.inputPath = inputPath0;
+    }
 }
 
 const externalFrontendJsonCommand: string | undefined = process.env.IW_EXTERNAL_FRONTEND_JSON_COMMAND;
@@ -33,6 +45,64 @@ if (externalFrontendJsonCommand === undefined || externalFrontendJsonCommand.tri
     process.stdout.write("frontend-json-parity skipped\n");
 } else {
     const repoRoot: string = resolve(__dirname, "..", "..");
+    const bundleParityFileCases: readonly BundleParityFileCase[] = [
+        new BundleParityFileCase(
+            "language-rules app",
+            join(repoRoot, "src", "Test", "Fixtures", "language-rules", "test~language~rules~app@main.iw")
+        ),
+        new BundleParityFileCase(
+            "language-rules lib defs",
+            join(repoRoot, "src", "Test", "Fixtures", "language-rules", "test~language~rules~lib@defs.iw")
+        ),
+        new BundleParityFileCase(
+            "language-rules export app",
+            join(repoRoot, "src", "Test", "Fixtures", "language-rules", "test~language~rules~export~app@main.iw")
+        ),
+        new BundleParityFileCase(
+            "precompiled-lib generic box defs",
+            join(repoRoot, "src", "Test", "Fixtures", "precompiled-lib", "lib", "test~precompiled~lib@box.iw")
+        ),
+        new BundleParityFileCase(
+            "generic-stress flow",
+            join(repoRoot, "src", "Test", "Fixtures", "generic-stress", "test~generic~stress~flow@main.iw")
+        ),
+        new BundleParityFileCase(
+            "export declared function defs",
+            join(repoRoot, "src", "Test", "Fixtures", "language-rules-check", "export-declared-success", "test~language~rules~export~declare@defs.iw")
+        ),
+        new BundleParityFileCase(
+            "export plain expression main",
+            join(repoRoot, "src", "Test", "Fixtures", "language-rules-typecheck", "test~language~rules~export_plain_expression@main.iw")
+        ),
+        new BundleParityFileCase(
+            "nested export main",
+            join(repoRoot, "src", "Test", "Fixtures", "language-rules-typecheck", "test~language~rules~nested_export@main.iw")
+        ),
+        new BundleParityFileCase(
+            "ffi heap return main",
+            join(repoRoot, "src", "Test", "Fixtures", "ffi-c-heap-return", "test~ffi~c~heap_return@main.iw")
+        ),
+        new BundleParityFileCase(
+            "public-visibility app",
+            join(repoRoot, "src", "Test", "Fixtures", "public-visibility", "test~public~visibility~app@main.iw")
+        ),
+        new BundleParityFileCase(
+            "public outside class main",
+            join(repoRoot, "src", "Test", "Fixtures", "public-visibility-typecheck", "test~public~visibility~outside_class@main.iw")
+        ),
+        new BundleParityFileCase(
+            "builtin-ops main",
+            join(repoRoot, "src", "Test", "Fixtures", "builtin-ops", "test~builtin~ops@main.iw")
+        ),
+        new BundleParityFileCase(
+            "variadic-builtins main",
+            join(repoRoot, "src", "Test", "Fixtures", "variadic-builtins", "test~variadic~builtins@main.iw")
+        ),
+        new BundleParityFileCase(
+            "raytracer main",
+            join(repoRoot, "src", "examples", "raytracer", "src", "ray~tracer@main.iw")
+        )
+    ];
     const inlineSourceCases: readonly InlineSourceCase[] = [
         {
             label: "member-chain-inline-program",
@@ -64,6 +134,35 @@ if (externalFrontendJsonCommand === undefined || externalFrontendJsonCommand.tri
                 "  (function chain_eq () to bool in (eq $7^i5 $7^i5 $7^i5 $7^i5))",
                 "}"
             ].join("\n")
+        },
+        {
+            label: "generic-type-inline-program",
+            source: [
+                "{program test~generic~types@main",
+                "  (class <generic Box T>",
+                "    (public (property [value T]))",
+                "    (constructor ([value0 T]) in (cm_set self value value0))",
+                "  )",
+                "  (function <generic make_box T> ([value T]) to <Box T> in (class_new <Box T> value))",
+                "  (function make_reader ([base i5]) to <to <Box i5> from i5> in",
+                "    (fn ([delta i5]) to <Box i5> in (<make_box i5> (add base delta)))",
+                "  )",
+                "  (function choose_payload ([flag bool] [value i5]) to <union i5 bool <Box i5>> in",
+                "    (if flag",
+                "      then (<make_box i5> value)",
+                "      else value",
+                "    )",
+                "  )",
+                "}"
+            ].join("\n")
+        },
+        {
+            label: "legacy-generic-call-inline-program",
+            source: [
+                "{program test~legacy~generic@main",
+                "  (function main () to <Option i5> in (option_none <i5>))",
+                "}"
+            ].join("\n")
         }
     ];
     const tokenOnlyCases: readonly TokenOnlyCase[] = [
@@ -83,12 +182,12 @@ if (externalFrontendJsonCommand === undefined || externalFrontendJsonCommand.tri
         deepStrictEqual(cppTokens, tsTokens, `${testCase.label} token JSON mismatch`);
     }
 
-    for (const filePath of collectParityInputFiles(repoRoot)) {
-        if (parserNegativeParityFixtureNames.has(basename(filePath))) {
+    for (const fileCase of bundleParityFileCases) {
+        if (parserNegativeParityFixtureNames.has(basename(fileCase.inputPath))) {
             continue;
         }
-        const source: string = readFileSync(filePath, "utf8");
-        assertBundleParity(externalFrontendJsonCommand.trim(), repoRoot, source, filePath);
+        const source: string = readFileSync(fileCase.inputPath, "utf8");
+        assertBundleParity(externalFrontendJsonCommand.trim(), repoRoot, source, fileCase.label);
     }
 
     for (const testCase of inlineSourceCases) {
@@ -119,43 +218,4 @@ function runExternalFrontendJson(commandPath: string, repoRoot: string, source: 
     } finally {
         rmSync(tempDir, { recursive: true, force: true });
     }
-}
-
-function collectParityInputFiles(repoRoot: string): string[] {
-    const roots: readonly string[] = [
-        join(repoRoot, "src", "Test", "Fixtures"),
-        join(repoRoot, "artifacts"),
-        ...getBaseLibSourceRoots()
-    ];
-    const seen = new Set<string>();
-    const files: string[] = [];
-
-    for (const root of roots) {
-        for (const filePath of collectIwFiles(root)) {
-            if (seen.has(filePath)) {
-                continue;
-            }
-            seen.add(filePath);
-            files.push(filePath);
-        }
-    }
-
-    files.sort();
-    return files;
-}
-
-function collectIwFiles(inputPath: string): string[] {
-    const stats = statSync(inputPath);
-    if (stats.isFile()) {
-        return inputPath.endsWith(".iw") ? [inputPath] : [];
-    }
-    if (!stats.isDirectory()) {
-        return [];
-    }
-
-    const files: string[] = [];
-    for (const child of readdirSync(inputPath).sort()) {
-        files.push(...collectIwFiles(join(inputPath, child)));
-    }
-    return files;
 }

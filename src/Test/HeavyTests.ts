@@ -5,6 +5,7 @@ export const heavyTestFileNames: ReadonlySet<string> = new Set<string>([
     "fft-bigint-memory.test.js",
     "gc-multithread-stw.test.js",
     "generic-stress.test.js",
+    "json-lib-resource-guard.test.js",
     "raytracer-memory.test.js",
     "std-memory-risk.test.js",
     "std-sys-policy.test.js",

@@ -1,0 +1,3560 @@
+{program app~iw~dump@main
+  (import app~iw~lex)
+  (import app~iw~parse)
+  (import app~json~lib)
+  (import std~io)
+  (import std~string)
+  (import std~linux~sys)
+
+  (class IwRawAstState
+    (public (property [source s3]))
+    (public (property [length i5]))
+    (public (property [index i5]))
+    (constructor ([source0 s3] [length0 i5] [index0 i5]) in
+      {
+        (cm_set self source source0)
+        (cm_set self length length0)
+        (cm_set self index index0)
+      }
+    )
+  )
+
+  (class IwFrontendAstState
+    (public (property [source s3]))
+    (public (property [length i5]))
+    (public (property [index i5]))
+    (public (property [has_errors bool]))
+    (public (property [has_unsupported bool]))
+    (constructor ([source0 s3] [length0 i5] [index0 i5] [has_errors0 bool] [has_unsupported0 bool]) in
+      {
+        (cm_set self source source0)
+        (cm_set self length length0)
+        (cm_set self index index0)
+        (cm_set self has_errors has_errors0)
+        (cm_set self has_unsupported has_unsupported0)
+      }
+    )
+  )
+
+  (class IwFrontendNodeJson
+    (public (property [json s3]))
+    (public (property [kind s3]))
+    (public (property [identifier_name s3]))
+    (constructor ([json0 s3] [kind0 s3] [identifier_name0 s3]) in
+      {
+        (cm_set self json json0)
+        (cm_set self kind kind0)
+        (cm_set self identifier_name identifier_name0)
+      }
+    )
+  )
+
+  (class IwFrontendClassMemberJson
+    (public (property [member_json s3]))
+    (public (property [inner_json s3]))
+    (public (property [inner_kind s3]))
+    (constructor ([member_json0 s3] [inner_json0 s3] [inner_kind0 s3]) in
+      {
+        (cm_set self member_json member_json0)
+        (cm_set self inner_json inner_json0)
+        (cm_set self inner_kind inner_kind0)
+      }
+    )
+  )
+
+  (function builder_append_s3 ([builder StringBuilderS3] [value s3]) to unit in
+    {
+      (builder.append (class_new StringS3 value))
+      unit
+    }
+  )
+
+  (function s3_needs_json_escape ([value s3]) to bool in
+    {
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length value))
+      (var [needs_escape bool] false)
+      (while (and (lt index length) (not needs_escape)) in
+        {
+          (var [code i5] (val_to_i5 (s3_get value index)))
+          (if
+            (or
+              (eq code $34^i5)
+              (or
+                (eq code $92^i5)
+                (lt code $32^i5)
+              )
+            )
+            then (var_set needs_escape true)
+            else unit
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      needs_escape
+    }
+  )
+
+  (function builder_append_json_quoted_s3 ([builder StringBuilderS3] [value s3]) to unit in
+    {
+      (if (s3_needs_json_escape value)
+        then (builder_append_s3 builder (json_quote_s3 value))
+        else
+          {
+            (builder_append_s3 builder $app_iw_dump_quote_s3^s3)
+            (builder_append_s3 builder value)
+            (builder_append_s3 builder $app_iw_dump_quote_s3^s3)
+          }
+      )
+      unit
+    }
+  )
+
+  (function read_file_all ([path s3]) to s3 in
+    {
+      (var [fd i5] (sys_fd_open_read_s3 path))
+      (var [stat SysFileStat] (sys_fd_fstat fd))
+      (var [content s3] (sys_fd_pread_s3 fd (sys_stat_size stat) $0^i5))
+      (sys_fd_close fd)
+      content
+    }
+  )
+
+  (function raw_ast_current_code ([state IwRawAstState]) to i5 in
+    (if (lt (cm_get state index) (cm_get state length))
+      then (val_to_i5 (s3_get (cm_get state source) (cm_get state index)))
+      else (sub $0^i5 $1^i5)
+    )
+  )
+
+  (function raw_ast_advance_one ([state IwRawAstState]) to unit in
+    {
+      (if (lt (cm_get state index) (cm_get state length))
+        then (cm_set state index (add (cm_get state index) $1^i5))
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function raw_ast_skip_ws ([state IwRawAstState]) to unit in
+    {
+      (var [done bool] false)
+      (while (and (not done) (lt (cm_get state index) (cm_get state length))) in
+        {
+          (if (is_ascii_space (s3_get (cm_get state source) (cm_get state index)))
+            then (raw_ast_advance_one state)
+            else (var_set done true)
+          )
+        }
+      )
+      unit
+    }
+  )
+
+  (function code_is_ascii_alpha ([code i5]) to bool in
+    (or
+      (and (ge code $65^i5) (le code $90^i5))
+      (and (ge code $97^i5) (le code $122^i5))
+    )
+  )
+
+  (function code_is_ascii_digit ([code i5]) to bool in
+    (and (ge code $48^i5) (le code $57^i5))
+  )
+
+  (function code_is_member_chain_tail_char ([code i5]) to bool in
+    (or
+      (code_is_ascii_alpha code)
+      (or
+        (code_is_ascii_digit code)
+        (or
+          (eq code $95^i5)
+          (or (eq code $126^i5) (eq code $64^i5))
+        )
+      )
+    )
+  )
+
+  (function s3_last_index_of_code ([value s3] [code i5]) to i5 in
+    {
+      (var [result i5] (sub $0^i5 $1^i5))
+      (var [scan i5] $0^i5)
+      (while (lt scan (s3_length value)) in
+        {
+          (if (eq (val_to_i5 (s3_get value scan)) code)
+            then (var_set result scan)
+            else unit
+          )
+          (var_set scan (add scan $1^i5))
+        }
+      )
+      result
+    }
+  )
+
+  (function raw_ast_find_atom_end ([state IwRawAstState]) to i5 in
+    {
+      (var [scan i5] (cm_get state index))
+      (var [done bool] false)
+      (while (and (lt scan (cm_get state length)) (not done)) in
+        {
+          (var [ch c3] (s3_get (cm_get state source) scan))
+          (if
+            (or
+              (is_ascii_space ch)
+              (or (is_open_bracket ch) (is_close_bracket ch))
+            )
+            then (var_set done true)
+            else (var_set scan (add scan $1^i5))
+          )
+        }
+      )
+      scan
+    }
+  )
+
+  (function raw_ast_write_field_name ([builder StringBuilderS3] [field_name s3]) to unit in
+    {
+      (builder_append_json_quoted_s3 builder field_name)
+      (builder_append_s3 builder $app_iw_dump_colon_s3^s3)
+      unit
+    }
+  )
+
+  (function raw_ast_write_identifier_node ([builder StringBuilderS3] [name s3]) to unit in
+    {
+      (builder_append_s3 builder $app_iw_dump_open_curly_s3^s3)
+      (raw_ast_write_field_name builder $app_iw_dump_kind_name_key_s3^s3)
+      (builder_append_s3 builder (json_quote_s3 $app_iw_dump_identifier_node_value_s3^s3))
+      (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+      (raw_ast_write_field_name builder $app_iw_dump_name_key_s3^s3)
+      (builder_append_s3 builder (json_quote_s3 name))
+      (builder_append_s3 builder $app_iw_dump_close_curly_s3^s3)
+      unit
+    }
+  )
+
+  (function raw_ast_write_number_literal_node ([builder StringBuilderS3] [lexeme s3]) to unit in
+    {
+      (builder_append_s3 builder $app_iw_dump_open_curly_s3^s3)
+      (raw_ast_write_field_name builder $app_iw_dump_kind_name_key_s3^s3)
+      (builder_append_s3 builder (json_quote_s3 $app_iw_dump_number_literal_node_value_s3^s3))
+      (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+      (raw_ast_write_field_name builder $app_iw_dump_type_name_key_s3^s3)
+      (builder_append_s3 builder (json_quote_s3 (frontend_number_type_name lexeme)))
+      (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+      (raw_ast_write_field_name builder $app_iw_dump_raw_key_s3^s3)
+      (builder_append_s3 builder (json_quote_s3 lexeme))
+      (builder_append_s3 builder $app_iw_dump_close_curly_s3^s3)
+      unit
+    }
+  )
+
+  (function raw_ast_write_text_reference_or_identifier_node ([builder StringBuilderS3] [lexeme s3]) to unit in
+    {
+      (var [caret_index i5] (s3_last_index_of_code lexeme $94^i5))
+      (var [dollar_index i5] (s3_last_index_of_code lexeme $36^i5))
+      (if
+        (and
+          (ge dollar_index $0^i5)
+          (and
+            (gt caret_index dollar_index)
+            (lt caret_index (sub (s3_length lexeme) $1^i5))
+          )
+        )
+        then
+          {
+            (builder_append_s3 builder $app_iw_dump_open_curly_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_kind_name_key_s3^s3)
+            (builder_append_s3 builder (json_quote_s3 $app_iw_dump_text_db_ref_node_value_s3^s3))
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_type_name_key_s3^s3)
+            (builder_append_s3 builder (json_quote_s3 (s3_slice_span lexeme (add caret_index $1^i5) (s3_length lexeme) lexeme)))
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_entry_name_key_s3^s3)
+            (builder_append_s3 builder (json_quote_s3 (s3_slice_span lexeme (add dollar_index $1^i5) caret_index lexeme)))
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_reference_name_key_s3^s3)
+            (builder_append_s3 builder (json_quote_s3 lexeme))
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_content_key_s3^s3)
+            (builder_append_s3 builder (json_null))
+            (builder_append_s3 builder $app_iw_dump_close_curly_s3^s3)
+          }
+        else (raw_ast_write_identifier_node builder lexeme)
+      )
+      unit
+    }
+  )
+
+  (function raw_ast_is_member_chain ([lexeme s3]) to bool in
+    {
+      (var [length i5] (s3_length lexeme))
+      (if (eq length $0^i5)
+        then false
+        else
+          (if (eq (val_to_i5 (s3_get lexeme $0^i5)) $36^i5)
+            then false
+            else
+              {
+                (var [index i5] $0^i5)
+                (var [has_dot bool] false)
+                (var [need_segment_start bool] true)
+                (var [ok bool] true)
+                (while (and ok (lt index length)) in
+                  {
+                    (var [code i5] (val_to_i5 (s3_get lexeme index)))
+                    (if (eq code $46^i5)
+                      then
+                        (if need_segment_start
+                          then (var_set ok false)
+                          else
+                            {
+                              (var_set has_dot true)
+                              (var_set need_segment_start true)
+                            }
+                        )
+                      else
+                        (if need_segment_start
+                          then
+                            (if (or (code_is_ascii_alpha code) (eq code $95^i5))
+                              then (var_set need_segment_start false)
+                              else (var_set ok false)
+                            )
+                          else
+                            (if (code_is_member_chain_tail_char code)
+                              then unit
+                              else (var_set ok false)
+                            )
+                        )
+                    )
+                    (var_set index (add index $1^i5))
+                  }
+                )
+                (and ok (and has_dot (not need_segment_start)))
+              }
+          )
+      )
+    }
+  )
+
+  (function raw_ast_write_member_chain_node ([builder StringBuilderS3] [lexeme s3]) to unit in
+    {
+      (var [last_dot i5] (s3_last_index_of_code lexeme $46^i5))
+      (if (lt last_dot $0^i5)
+        then (raw_ast_write_identifier_node builder lexeme)
+        else
+          {
+            (builder_append_s3 builder $app_iw_dump_open_curly_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_kind_name_key_s3^s3)
+            (builder_append_s3 builder (json_quote_s3 $app_iw_dump_round_list_node_value_s3^s3))
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_elements_key_s3^s3)
+            (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+            (raw_ast_write_identifier_node builder $app_iw_dump_cm_get_name_s3^s3)
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_member_chain_node builder (s3_slice_span lexeme $0^i5 last_dot lexeme))
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_identifier_node builder (s3_slice_span lexeme (add last_dot $1^i5) (s3_length lexeme) lexeme))
+            (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+            (builder_append_s3 builder $app_iw_dump_close_curly_s3^s3)
+          }
+      )
+      unit
+    }
+  )
+
+  (function raw_ast_list_kind_name ([open_code i5]) to s3 in
+    (if (eq open_code $40^i5)
+      then $app_iw_dump_round_list_node_value_s3^s3
+      else
+        (if (eq open_code $91^i5)
+          then $app_iw_dump_square_list_node_value_s3^s3
+          else
+            (if (eq open_code $123^i5)
+              then $app_iw_dump_curly_list_node_value_s3^s3
+              else $app_iw_dump_angle_list_node_value_s3^s3
+            )
+        )
+    )
+  )
+
+  (function raw_ast_close_code ([open_code i5]) to i5 in
+    (if (eq open_code $40^i5)
+      then $41^i5
+      else
+        (if (eq open_code $91^i5)
+          then $93^i5
+          else
+            (if (eq open_code $123^i5)
+              then $125^i5
+              else $62^i5
+            )
+        )
+    )
+  )
+
+  (function raw_ast_write_atom_node ([builder StringBuilderS3] [source s3] [start i5] [end_exclusive i5]) to unit in
+    {
+      (var [lexeme s3] (s3_slice_span source start end_exclusive source))
+      (if (token_starts_with_dollar source start)
+        then
+          (if (iw_token_is_number_literal source start end_exclusive)
+            then (raw_ast_write_number_literal_node builder lexeme)
+            else (raw_ast_write_text_reference_or_identifier_node builder lexeme)
+          )
+        else
+          (if (raw_ast_is_member_chain lexeme)
+            then (raw_ast_write_member_chain_node builder lexeme)
+            else (raw_ast_write_identifier_node builder lexeme)
+          )
+      )
+      unit
+    }
+  )
+
+  (function raw_ast_write_node ([builder StringBuilderS3] [state IwRawAstState]) to unit in
+    {
+      (raw_ast_skip_ws state)
+      (if (lt (cm_get state index) (cm_get state length))
+        then
+          {
+            (var [code i5] (raw_ast_current_code state))
+            (if (or (eq code $40^i5) (or (eq code $91^i5) (or (eq code $123^i5) (eq code $60^i5))))
+              then
+                {
+                  (var [close_code i5] (raw_ast_close_code code))
+                  (raw_ast_advance_one state)
+                  (builder_append_s3 builder $app_iw_dump_open_curly_s3^s3)
+                  (raw_ast_write_field_name builder $app_iw_dump_kind_name_key_s3^s3)
+                  (builder_append_s3 builder (json_quote_s3 (raw_ast_list_kind_name code)))
+                  (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+                  (raw_ast_write_field_name builder $app_iw_dump_elements_key_s3^s3)
+                  (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+                  (raw_ast_skip_ws state)
+                  (var [first bool] true)
+                  (while
+                    (and
+                      (lt (cm_get state index) (cm_get state length))
+                      (neq (raw_ast_current_code state) close_code)
+                    ) in
+                    {
+                      (if first then unit else (builder_append_s3 builder $app_iw_dump_comma_s3^s3))
+                      (raw_ast_write_node builder state)
+                      (var_set first false)
+                      (raw_ast_skip_ws state)
+                    }
+                  )
+                  (if (eq (raw_ast_current_code state) close_code)
+                    then (raw_ast_advance_one state)
+                    else unit
+                  )
+                  (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+                  (builder_append_s3 builder $app_iw_dump_close_curly_s3^s3)
+                }
+              else
+                {
+                  (var [end_exclusive i5] (raw_ast_find_atom_end state))
+                  (raw_ast_write_atom_node builder (cm_get state source) (cm_get state index) end_exclusive)
+                  (cm_set state index end_exclusive)
+                }
+            )
+          }
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function build_raw_ast_json ([source s3]) to s3 in
+    {
+      (var [state IwRawAstState] (class_new IwRawAstState source (s3_length source) $0^i5))
+      (raw_ast_skip_ws state)
+      (if (ge (cm_get state index) (cm_get state length))
+        then (json_null)
+        else
+          {
+            (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+            (raw_ast_write_node builder state)
+            (cm_get (builder.build) raw)
+          }
+      )
+    }
+  )
+
+  (function s3_equals ([left s3] [right s3]) to bool in
+    {
+      (var [length i5] (s3_length left))
+      (if (neq length (s3_length right))
+        then false
+        else
+          {
+            (var [index i5] $0^i5)
+            (var [same bool] true)
+            (while (and same (lt index length)) in
+              {
+                (if (eq (s3_get left index) (s3_get right index))
+                  then unit
+                  else (var_set same false)
+                )
+                (var_set index (add index $1^i5))
+              }
+            )
+            same
+          }
+      )
+    }
+  )
+
+  (function build_token_json ([kind_code i5] [lexeme s3] [start_offset i5] [end_offset i5] [line i5] [column i5]) to s3 in
+    {
+      (var [lexeme_length i5] (s3_length lexeme))
+      (json_object9_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 (token_kind_name kind_code))
+        (json_pair_i5 $app_iw_dump_kind_code_key_s3^s3 kind_code)
+        (json_pair_s3 $app_iw_dump_lexeme_key_s3^s3 lexeme)
+        (json_pair_i5 $app_iw_dump_length_key_s3^s3 lexeme_length)
+        (json_pair_i5 $app_iw_dump_start_offset_key_s3^s3 start_offset)
+        (json_pair_i5 $app_iw_dump_end_offset_key_s3^s3 end_offset)
+        (json_pair_i5 $app_iw_dump_line_key_s3^s3 line)
+        (json_pair_i5 $app_iw_dump_column_key_s3^s3 column)
+        (json_pair_i5 $app_iw_dump_end_column_key_s3^s3 (add column lexeme_length))
+      )
+    }
+  )
+
+  (function frontend_bracket_kind_name ([lexeme s3]) to s3 in
+    (if (or (s3_equals lexeme $app_iw_dump_open_paren_s3^s3) (s3_equals lexeme $app_iw_dump_close_paren_s3^s3))
+      then $app_iw_dump_frontend_round_bracket_s3^s3
+      else
+        (if (or (s3_equals lexeme $app_iw_dump_open_square_s3^s3) (s3_equals lexeme $app_iw_dump_close_square_s3^s3))
+          then $app_iw_dump_frontend_square_bracket_s3^s3
+          else
+            (if (or (s3_equals lexeme $app_iw_dump_open_curly_s3^s3) (s3_equals lexeme $app_iw_dump_close_curly_s3^s3))
+              then $app_iw_dump_frontend_curly_bracket_s3^s3
+              else $app_iw_dump_frontend_angle_bracket_s3^s3
+            )
+        )
+    )
+  )
+
+  (function frontend_number_type_name ([lexeme s3]) to s3 in
+    {
+      (var [index i5] (sub (s3_length lexeme) $1^i5))
+      (while (and (ge index $0^i5) (neq (val_to_i5 (s3_get lexeme index)) $94^i5)) in
+        {
+          (var_set index (sub index $1^i5))
+        }
+      )
+      (if (lt index $0^i5)
+        then $app_iw_dump_empty_s3^s3
+        else (s3_slice_span lexeme (add index $1^i5) (s3_length lexeme) lexeme)
+      )
+    }
+  )
+
+  (function build_frontend_token_json ([kind_code i5] [lexeme s3]) to s3 in
+    (if (eq kind_code $1^i5)
+      then
+        (json_object2_raw
+          (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_frontend_lparen_token_s3^s3)
+          (json_pair_s3 $app_iw_dump_bracket_kind_key_s3^s3 (frontend_bracket_kind_name lexeme))
+        )
+      else
+        (if (eq kind_code $2^i5)
+          then
+            (json_object2_raw
+              (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_frontend_rparen_token_s3^s3)
+              (json_pair_s3 $app_iw_dump_bracket_kind_key_s3^s3 (frontend_bracket_kind_name lexeme))
+            )
+          else
+            (if (eq kind_code $6^i5)
+              then
+                (json_object3_raw
+                  (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_frontend_number_token_s3^s3)
+                  (json_pair_s3 $app_iw_dump_type_name_key_s3^s3 (frontend_number_type_name lexeme))
+                  (json_pair_s3 $app_iw_dump_raw_key_s3^s3 lexeme)
+                )
+              else
+                (json_object2_raw
+                  (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_frontend_identifier_token_s3^s3)
+                  (json_pair_s3 $app_iw_dump_name_key_s3^s3 lexeme)
+                )
+            )
+        )
+    )
+  )
+
+  (function frontend_write_token_json ([builder StringBuilderS3] [kind_code i5] [lexeme s3] [is_first bool]) to bool in
+    {
+      (if is_first then unit else (builder_append_s3 builder $app_iw_dump_comma_s3^s3))
+      (builder_append_s3 builder $app_iw_dump_open_curly_s3^s3)
+      (raw_ast_write_field_name builder $app_iw_dump_kind_name_key_s3^s3)
+      (if (eq kind_code $1^i5)
+        then
+          {
+            (builder_append_json_quoted_s3 builder $app_iw_dump_frontend_lparen_token_s3^s3)
+            (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+            (raw_ast_write_field_name builder $app_iw_dump_bracket_kind_key_s3^s3)
+            (builder_append_json_quoted_s3 builder (frontend_bracket_kind_name lexeme))
+          }
+        else
+          (if (eq kind_code $2^i5)
+            then
+              {
+                (builder_append_json_quoted_s3 builder $app_iw_dump_frontend_rparen_token_s3^s3)
+                (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+                (raw_ast_write_field_name builder $app_iw_dump_bracket_kind_key_s3^s3)
+                (builder_append_json_quoted_s3 builder (frontend_bracket_kind_name lexeme))
+              }
+            else
+              (if (eq kind_code $6^i5)
+                then
+                  {
+                    (builder_append_json_quoted_s3 builder $app_iw_dump_frontend_number_token_s3^s3)
+                    (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+                    (raw_ast_write_field_name builder $app_iw_dump_type_name_key_s3^s3)
+                    (builder_append_json_quoted_s3 builder (frontend_number_type_name lexeme))
+                    (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+                    (raw_ast_write_field_name builder $app_iw_dump_raw_key_s3^s3)
+                    (builder_append_json_quoted_s3 builder lexeme)
+                  }
+                else
+                  {
+                    (builder_append_json_quoted_s3 builder $app_iw_dump_frontend_identifier_token_s3^s3)
+                    (builder_append_s3 builder $app_iw_dump_comma_s3^s3)
+                    (raw_ast_write_field_name builder $app_iw_dump_name_key_s3^s3)
+                    (builder_append_json_quoted_s3 builder lexeme)
+                  }
+              )
+          )
+      )
+      (builder_append_s3 builder $app_iw_dump_close_curly_s3^s3)
+      false
+    }
+  )
+
+  (function frontend_write_member_chain_tokens ([builder StringBuilderS3] [lexeme s3] [is_first bool]) to bool in
+    {
+      (var [last_dot i5] (s3_last_index_of_code lexeme $46^i5))
+      (if (lt last_dot $0^i5)
+        then (frontend_write_token_json builder $3^i5 lexeme is_first)
+        else
+          {
+            (var [next_first bool] (frontend_write_token_json builder $1^i5 $app_iw_dump_open_paren_s3^s3 is_first))
+            (var_set next_first (frontend_write_token_json builder $3^i5 $app_iw_dump_cm_get_name_s3^s3 next_first))
+            (var_set next_first
+              (frontend_write_member_chain_tokens
+                builder
+                (s3_slice_span lexeme $0^i5 last_dot lexeme)
+                next_first
+              )
+            )
+            (var_set next_first
+              (frontend_write_token_json
+                builder
+                $3^i5
+                (s3_slice_span lexeme (add last_dot $1^i5) (s3_length lexeme) lexeme)
+                next_first
+              )
+            )
+            (frontend_write_token_json builder $2^i5 $app_iw_dump_close_paren_s3^s3 next_first)
+          }
+      )
+    }
+  )
+
+  (function frontend_print_token_json ([kind_code i5] [lexeme s3] [is_first bool]) to bool in
+    {
+      (if is_first then unit else (print $app_iw_dump_comma_s3^s3))
+      (print (build_frontend_token_json kind_code lexeme))
+      false
+    }
+  )
+
+  (function frontend_print_member_chain_tokens ([lexeme s3] [is_first bool]) to bool in
+    {
+      (var [last_dot i5] (s3_last_index_of_code lexeme $46^i5))
+      (if (lt last_dot $0^i5)
+        then (frontend_print_token_json $3^i5 lexeme is_first)
+        else
+          {
+            (var [next_first bool] (frontend_print_token_json $1^i5 $app_iw_dump_open_paren_s3^s3 is_first))
+            (var_set next_first (frontend_print_token_json $3^i5 $app_iw_dump_cm_get_name_s3^s3 next_first))
+            (var_set next_first
+              (frontend_print_member_chain_tokens
+                (s3_slice_span lexeme $0^i5 last_dot lexeme)
+                next_first
+              )
+            )
+            (var_set next_first
+              (frontend_print_token_json
+                $3^i5
+                (s3_slice_span lexeme (add last_dot $1^i5) (s3_length lexeme) lexeme)
+                next_first
+              )
+            )
+            (frontend_print_token_json $2^i5 $app_iw_dump_close_paren_s3^s3 next_first)
+          }
+      )
+    }
+  )
+
+  (function print_frontend_token_stream_json ([source s3]) to unit in
+    {
+      (print $app_iw_dump_open_square_s3^s3)
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length source))
+      (var [is_first bool] true)
+      (while (lt index length) in
+        {
+          (var [ch c3] (s3_get source index))
+          (if (is_ascii_space ch)
+            then (var_set index (add index $1^i5))
+            else
+              {
+                (var [token_start i5] index)
+                (var [kind_code i5] $3^i5)
+                (if (is_open_bracket ch)
+                  then
+                    {
+                      (var_set kind_code $1^i5)
+                      (var_set index (add index $1^i5))
+                    }
+                  else
+                    (if (is_close_bracket ch)
+                      then
+                        {
+                          (var_set kind_code $2^i5)
+                          (var_set index (add index $1^i5))
+                        }
+                      else
+                        {
+                          (var [scan_done bool] false)
+                          (while (and (not scan_done) (lt index length)) in
+                            {
+                              (var [scan_ch c3] (s3_get source index))
+                              (if
+                                (or
+                                  (is_ascii_space scan_ch)
+                                  (or (is_open_bracket scan_ch) (is_close_bracket scan_ch))
+                                )
+                                then (var_set scan_done true)
+                                else (var_set index (add index $1^i5))
+                              )
+                            }
+                          )
+                          (if (token_starts_with_dollar source token_start)
+                            then
+                              (if (iw_token_is_number_literal source token_start index)
+                                then (var_set kind_code $6^i5)
+                                else (var_set kind_code $4^i5)
+                              )
+                            else unit
+                          )
+                        }
+                    )
+                )
+                (var [lexeme s3] (s3_slice_span source token_start index source))
+                (if (and (eq kind_code $3^i5) (raw_ast_is_member_chain lexeme))
+                  then (var_set is_first (frontend_print_member_chain_tokens lexeme is_first))
+                  else (var_set is_first (frontend_print_token_json kind_code lexeme is_first))
+                )
+              }
+          )
+        }
+      )
+      (println $app_iw_dump_close_square_s3^s3)
+      unit
+    }
+  )
+
+  (function build_location_json ([start_offset i5] [end_offset i5] [line i5] [column i5]) to s3 in
+    {
+      (var [span_length i5] (sub end_offset start_offset))
+      (json_object6_raw
+        (json_pair_i5 $app_iw_dump_start_offset_key_s3^s3 start_offset)
+        (json_pair_i5 $app_iw_dump_end_offset_key_s3^s3 end_offset)
+        (json_pair_i5 $app_iw_dump_line_key_s3^s3 line)
+        (json_pair_i5 $app_iw_dump_column_key_s3^s3 column)
+        (json_pair_i5 $app_iw_dump_end_line_key_s3^s3 line)
+        (json_pair_i5 $app_iw_dump_end_column_key_s3^s3 (add column span_length))
+      )
+    }
+  )
+
+  (function build_sample_location_json ([sample IwParseNodeSample]) to s3 in
+    (build_location_json
+      (cm_get sample start)
+      (cm_get sample end_exclusive)
+      (cm_get sample line)
+      (cm_get sample column)
+    )
+  )
+
+  (function build_import_sample_json ([sample IwParseNodeSample]) to s3 in
+    (json_object2_raw
+      (json_pair_s3 $app_iw_dump_name_key_s3^s3 (cm_get sample name))
+      (json_pair_raw $app_iw_dump_location_key_s3^s3 (build_sample_location_json sample))
+    )
+  )
+
+  (function declaration_kind_name ([sample IwParseNodeSample]) to s3 in
+    (if (s3_equals (cm_get sample node_kind) $app_iw_dump_function_keyword_s3^s3)
+      then $app_iw_dump_function_decl_value_s3^s3
+      else $app_iw_dump_class_decl_value_s3^s3
+    )
+  )
+
+  (function member_kind_name ([sample IwParseNodeSample]) to s3 in
+    (if (s3_equals (cm_get sample node_kind) $app_iw_dump_property_keyword_s3^s3)
+      then $app_iw_dump_property_decl_value_s3^s3
+      else
+        (if (s3_equals (cm_get sample node_kind) $app_iw_dump_constructor_keyword_s3^s3)
+          then $app_iw_dump_constructor_decl_value_s3^s3
+          else $app_iw_dump_method_decl_value_s3^s3
+        )
+    )
+  )
+
+  (function form_kind_name ([sample IwParseNodeSample]) to s3 in
+    (if (s3_equals (cm_get sample node_kind) $app_iw_dump_var_keyword_s3^s3)
+      then $app_iw_dump_var_form_value_s3^s3
+      else
+        (if (s3_equals (cm_get sample node_kind) $app_iw_dump_if_keyword_s3^s3)
+          then $app_iw_dump_if_form_value_s3^s3
+          else
+            (if (s3_equals (cm_get sample node_kind) $app_iw_dump_while_keyword_s3^s3)
+              then $app_iw_dump_while_form_value_s3^s3
+              else
+                (if (s3_equals (cm_get sample node_kind) $app_iw_dump_match_keyword_s3^s3)
+                  then $app_iw_dump_match_form_value_s3^s3
+                  else
+                    (if (s3_equals (cm_get sample node_kind) $app_iw_dump_let_keyword_s3^s3)
+                      then $app_iw_dump_let_form_value_s3^s3
+                      else
+                        (if (s3_equals (cm_get sample node_kind) $app_iw_dump_cond_keyword_s3^s3)
+                          then $app_iw_dump_cond_form_value_s3^s3
+                          else
+                            (if (s3_equals (cm_get sample node_kind) $app_iw_dump_var_set_keyword_s3^s3)
+                              then $app_iw_dump_var_set_form_value_s3^s3
+                              else $app_iw_dump_cm_set_form_value_s3^s3
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function build_declaration_sample_json ([sample IwParseNodeSample]) to s3 in
+    (json_object4_raw
+      (json_pair_s3 $app_iw_dump_node_kind_key_s3^s3 (declaration_kind_name sample))
+      (json_pair_s3 $app_iw_dump_name_key_s3^s3 (cm_get sample name))
+      (json_pair_raw $app_iw_dump_location_key_s3^s3 (build_sample_location_json sample))
+      (json_pair_bool $app_iw_dump_is_exported_key_s3^s3 (cm_get sample is_flagged))
+    )
+  )
+
+  (function build_member_sample_json ([sample IwParseNodeSample]) to s3 in
+    (json_object4_raw
+      (json_pair_s3 $app_iw_dump_node_kind_key_s3^s3 (member_kind_name sample))
+      (json_pair_s3 $app_iw_dump_name_key_s3^s3 (cm_get sample name))
+      (json_pair_raw $app_iw_dump_location_key_s3^s3 (build_sample_location_json sample))
+      (json_pair_bool $app_iw_dump_is_public_key_s3^s3 (cm_get sample is_flagged))
+    )
+  )
+
+  (function build_form_sample_json ([sample IwParseNodeSample]) to s3 in
+    (json_object3_raw
+      (json_pair_s3 $app_iw_dump_node_kind_key_s3^s3 (form_kind_name sample))
+      (json_pair_s3 $app_iw_dump_name_key_s3^s3 (cm_get sample name))
+      (json_pair_raw $app_iw_dump_location_key_s3^s3 (build_sample_location_json sample))
+    )
+  )
+
+  (function build_declaration_samples_json ([parse_result IwParseResult]) to s3 in
+    {
+      (var [count i5] (cm_get parse_result declaration_sample_count))
+      (var [items <array s3>] (array_new <array s3> count (json_object0_raw)))
+      (var [index i5] $0^i5)
+      (while (lt index count) in
+        {
+          (array_set items index (build_declaration_sample_json (array_get (cm_get parse_result declaration_samples) index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (json_array_raw items)
+    }
+  )
+
+  (function build_import_samples_json ([parse_result IwParseResult]) to s3 in
+    {
+      (var [count i5] (cm_get parse_result import_sample_count))
+      (var [items <array s3>] (array_new <array s3> count (json_object0_raw)))
+      (var [index i5] $0^i5)
+      (while (lt index count) in
+        {
+          (array_set items index (build_import_sample_json (array_get (cm_get parse_result import_samples) index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (json_array_raw items)
+    }
+  )
+
+  (function build_frontend_identifier_ast_json ([name s3]) to s3 in
+    (json_object2_raw
+      (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_identifier_node_value_s3^s3)
+      (json_pair_s3 $app_iw_dump_name_key_s3^s3 name)
+    )
+  )
+
+  (function build_frontend_import_ast_json ([sample IwParseNodeSample]) to s3 in
+    (json_object2_raw
+      (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_import_node_value_s3^s3)
+      (json_pair_raw $app_iw_dump_package_path_key_s3^s3 (build_frontend_identifier_ast_json (cm_get sample name)))
+    )
+  )
+
+  (function build_frontend_import_ast_array_json ([parse_result IwParseResult]) to s3 in
+    {
+      (var [count i5] (cm_get parse_result import_sample_count))
+      (var [items <array s3>] (array_new <array s3> count (json_object0_raw)))
+      (var [index i5] $0^i5)
+      (while (lt index count) in
+        {
+          (array_set items index (build_frontend_import_ast_json (array_get (cm_get parse_result import_samples) index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (json_array_raw items)
+    }
+  )
+
+    (function frontend_ast_empty_like ([source s3]) to s3 in
+      (s3_slice_span source $0^i5 $0^i5 source)
+    )
+
+    (function frontend_ast_invalid_node ([source s3]) to IwFrontendNodeJson in
+      {
+        (var [empty s3] (frontend_ast_empty_like source))
+        (class_new IwFrontendNodeJson (json_null) empty empty)
+      }
+    )
+
+    (function mark_frontend_ast_error ([state IwFrontendAstState]) to unit in
+      {
+        (cm_set state has_errors true)
+        unit
+      }
+    )
+
+    (function mark_frontend_ast_unsupported ([state IwFrontendAstState]) to unit in
+      {
+        (cm_set state has_unsupported true)
+        unit
+      }
+    )
+
+    (function frontend_ast_current_code ([state IwFrontendAstState]) to i5 in
+      (if (lt (cm_get state index) (cm_get state length))
+        then (val_to_i5 (s3_get (cm_get state source) (cm_get state index)))
+        else (sub $0^i5 $1^i5)
+      )
+    )
+
+    (function frontend_ast_advance_one ([state IwFrontendAstState]) to unit in
+      {
+        (if (lt (cm_get state index) (cm_get state length))
+          then (cm_set state index (add (cm_get state index) $1^i5))
+          else unit
+        )
+        unit
+      }
+    )
+
+    (function frontend_ast_skip_ws ([state IwFrontendAstState]) to unit in
+      {
+        (var [done bool] false)
+        (while (and (not done) (lt (cm_get state index) (cm_get state length))) in
+          {
+            (if (is_ascii_space (s3_get (cm_get state source) (cm_get state index)))
+              then (frontend_ast_advance_one state)
+              else (var_set done true)
+            )
+          }
+        )
+        unit
+      }
+    )
+
+    (function frontend_ast_find_atom_end ([state IwFrontendAstState]) to i5 in
+      {
+        (var [scan i5] (cm_get state index))
+        (var [done bool] false)
+        (while (and (lt scan (cm_get state length)) (not done)) in
+          {
+            (var [ch c3] (s3_get (cm_get state source) scan))
+            (if
+              (or
+                (is_ascii_space ch)
+                (or (is_open_bracket ch) (is_close_bracket ch))
+              )
+              then (var_set done true)
+              else (var_set scan (add scan $1^i5))
+            )
+          }
+        )
+        scan
+      }
+    )
+
+    (function frontend_ast_skip_group_contents ([state IwFrontendAstState] [close_code i5]) to unit in
+      {
+        (while
+          (and
+            (lt (cm_get state index) (cm_get state length))
+            (neq (frontend_ast_current_code state) close_code)
+          ) in
+          {
+            (var [code i5] (frontend_ast_current_code state))
+            (if (or (eq code $40^i5) (or (eq code $91^i5) (or (eq code $123^i5) (eq code $60^i5))))
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (frontend_ast_skip_group_contents state (raw_ast_close_code code))
+                }
+              else (frontend_ast_advance_one state)
+            )
+          }
+        )
+        (if (eq (frontend_ast_current_code state) close_code)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_error state)
+        )
+        unit
+      }
+    )
+
+    (function frontend_ast_skip_current_node ([state IwFrontendAstState]) to unit in
+      {
+        (frontend_ast_skip_ws state)
+        (var [code i5] (frontend_ast_current_code state))
+        (if (or (eq code $40^i5) (or (eq code $91^i5) (or (eq code $123^i5) (eq code $60^i5))))
+          then
+            {
+              (frontend_ast_advance_one state)
+              (frontend_ast_skip_group_contents state (raw_ast_close_code code))
+            }
+          else (cm_set state index (frontend_ast_find_atom_end state))
+        )
+        unit
+      }
+    )
+
+    (function build_frontend_export_ast_json ([inner_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_export_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_inner_key_s3^s3 inner_json)
+      )
+    )
+
+    (function build_frontend_public_ast_json ([inner_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_public_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_inner_key_s3^s3 inner_json)
+      )
+    )
+
+    (function build_frontend_dvar_ast_json ([bind_json s3] [value_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_dvar_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_bind_key_s3^s3 bind_json)
+        (json_pair_raw $app_iw_dump_value_key_s3^s3 value_json)
+      )
+    )
+
+    (function build_frontend_dfun_ast_json ([name_json s3] [params_json s3] [return_type_json s3] [body_json s3]) to s3 in
+      (json_object5_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_dfun_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_name_key_s3^s3 name_json)
+        (json_pair_raw $app_iw_dump_params_key_s3^s3 params_json)
+        (json_pair_raw $app_iw_dump_return_type_key_s3^s3 return_type_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_generic_dfun_ast_json ([generic_name_json s3] [params_json s3] [return_type_json s3] [body_json s3]) to s3 in
+      (json_object5_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_generic_dfun_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_generic_name_key_s3^s3 generic_name_json)
+        (json_pair_raw $app_iw_dump_params_key_s3^s3 params_json)
+        (json_pair_raw $app_iw_dump_return_type_key_s3^s3 return_type_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_declared_dfun_ast_json ([name_json s3] [params_json s3] [return_type_json s3]) to s3 in
+      (json_object4_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_declared_dfun_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_name_key_s3^s3 name_json)
+        (json_pair_raw $app_iw_dump_params_key_s3^s3 params_json)
+        (json_pair_raw $app_iw_dump_return_type_key_s3^s3 return_type_json)
+      )
+    )
+
+    (function build_frontend_set_ast_json ([identifier_json s3] [value_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_set_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_identifier_key_s3^s3 identifier_json)
+        (json_pair_raw $app_iw_dump_value_key_s3^s3 value_json)
+      )
+    )
+
+    (function build_frontend_fn_ast_json ([params_json s3] [return_type_json s3] [body_json s3]) to s3 in
+      (json_object4_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_fn_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_params_key_s3^s3 params_json)
+        (json_pair_raw $app_iw_dump_return_type_key_s3^s3 return_type_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_binding_json ([bind_json s3] [value_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_raw $app_iw_dump_bind_key_s3^s3 bind_json)
+        (json_pair_raw $app_iw_dump_value_key_s3^s3 value_json)
+      )
+    )
+
+    (function build_frontend_let_ast_json ([bindings_json s3] [body_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_let_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_bindings_key_s3^s3 bindings_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_if_ast_json ([cond_json s3] [true_json s3] [false_json s3]) to s3 in
+      (json_object4_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_if_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_cond_expr_key_s3^s3 cond_json)
+        (json_pair_raw $app_iw_dump_true_branch_expr_key_s3^s3 true_json)
+        (json_pair_raw $app_iw_dump_false_branch_expr_key_s3^s3 false_json)
+      )
+    )
+
+    (function build_frontend_while_ast_json ([cond_json s3] [body_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_while_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_cond_expr_key_s3^s3 cond_json)
+        (json_pair_raw $app_iw_dump_body_expr_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_cond_clause_json ([cond_json s3] [body_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_raw $app_iw_dump_cond_key_s3^s3 cond_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_cond_ast_json ([clauses_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_cond_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_clauses_exprs_key_s3^s3 clauses_json)
+      )
+    )
+
+    (function build_frontend_match_branch_json ([bind_json s3] [body_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_raw $app_iw_dump_bind_key_s3^s3 bind_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_match_ast_json ([union_expr_json s3] [branches_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_match_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_union_expr_key_s3^s3 union_expr_json)
+        (json_pair_raw $app_iw_dump_branches_key_s3^s3 branches_json)
+      )
+    )
+
+    (function build_frontend_class_property_ast_json ([bind_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_class_property_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_bind_key_s3^s3 bind_json)
+      )
+    )
+
+    (function build_frontend_class_method_ast_json ([method_name_json s3] [params_json s3] [return_type_json s3] [body_json s3]) to s3 in
+      (json_object5_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_class_method_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_method_name_key_s3^s3 method_name_json)
+        (json_pair_raw $app_iw_dump_params_key_s3^s3 params_json)
+        (json_pair_raw $app_iw_dump_return_type_key_s3^s3 return_type_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_class_constructor_ast_json ([params_json s3] [body_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_class_constructor_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_params_key_s3^s3 params_json)
+        (json_pair_raw $app_iw_dump_body_key_s3^s3 body_json)
+      )
+    )
+
+    (function build_frontend_class_ast_json ([name_json s3] [constructor_node_list_json s3] [method_node_list_json s3] [property_node_list_json s3] [member_node_list_json s3]) to s3 in
+      (json_object6_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_class_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_name_key_s3^s3 name_json)
+        (json_pair_raw $app_iw_dump_constructor_node_list_key_s3^s3 constructor_node_list_json)
+        (json_pair_raw $app_iw_dump_method_node_list_key_s3^s3 method_node_list_json)
+        (json_pair_raw $app_iw_dump_property_node_list_key_s3^s3 property_node_list_json)
+        (json_pair_raw $app_iw_dump_member_node_list_key_s3^s3 member_node_list_json)
+      )
+    )
+
+    (function build_frontend_generic_class_ast_json ([generic_name_json s3] [constructor_node_list_json s3] [method_node_list_json s3] [property_node_list_json s3] [member_node_list_json s3]) to s3 in
+      (json_object6_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_generic_class_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_generic_name_key_s3^s3 generic_name_json)
+        (json_pair_raw $app_iw_dump_constructor_node_list_key_s3^s3 constructor_node_list_json)
+        (json_pair_raw $app_iw_dump_method_node_list_key_s3^s3 method_node_list_json)
+        (json_pair_raw $app_iw_dump_property_node_list_key_s3^s3 property_node_list_json)
+        (json_pair_raw $app_iw_dump_member_node_list_key_s3^s3 member_node_list_json)
+      )
+    )
+
+    (function build_frontend_seq_ast_json ([expressions_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_seq_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_expressions_key_s3^s3 expressions_json)
+      )
+    )
+
+    (function build_frontend_type_var_bind_ast_json ([var_json s3] [type_exp_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_type_var_bind_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_var_key_s3^s3 var_json)
+        (json_pair_raw $app_iw_dump_type_exp_key_s3^s3 type_exp_json)
+      )
+    )
+
+    (function build_frontend_type_to_from_ast_json ([return_type_json s3] [param_types_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_type_to_from_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_return_type_key_s3^s3 return_type_json)
+        (json_pair_raw $app_iw_dump_param_types_key_s3^s3 param_types_json)
+      )
+    )
+
+    (function build_frontend_type_union_ast_json ([types_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_type_union_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_types_key_s3^s3 types_json)
+      )
+    )
+
+    (function build_frontend_generic_name_ast_json ([name_json s3] [generic_type_args_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_generic_name_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_name_key_s3^s3 name_json)
+        (json_pair_raw $app_iw_dump_generic_type_args_key_s3^s3 generic_type_args_json)
+      )
+    )
+
+    (function build_frontend_function_call_ast_json ([callee_json s3] [args_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_function_call_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_callee_key_s3^s3 callee_json)
+        (json_pair_raw $app_iw_dump_args_key_s3^s3 args_json)
+      )
+    )
+
+    (function build_frontend_generic_call_ast_json ([callee_json s3] [type_args_json s3]) to s3 in
+      (json_object3_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_generic_call_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_callee_key_s3^s3 callee_json)
+        (json_pair_raw $app_iw_dump_type_args_key_s3^s3 type_args_json)
+      )
+    )
+
+    (function frontend_ast_json_array1 ([item_json s3]) to s3 in
+      {
+        (var [items <array s3>] (array_new <array s3> $1^i5 (json_null)))
+        (array_set items $0^i5 item_json)
+        (json_array_raw items)
+      }
+    )
+
+    (function frontend_ast_json_array2 ([first_json s3] [second_json s3]) to s3 in
+      {
+        (var [items <array s3>] (array_new <array s3> $2^i5 (json_null)))
+        (array_set items $0^i5 first_json)
+        (array_set items $1^i5 second_json)
+        (json_array_raw items)
+      }
+    )
+
+    (function frontend_ast_build_function_call_node ([source s3] [callee_json s3] [args_json s3]) to IwFrontendNodeJson in
+      (class_new IwFrontendNodeJson
+        (build_frontend_function_call_ast_json callee_json args_json)
+        $app_iw_dump_function_call_node_value_s3^s3
+        (frontend_ast_empty_like source)
+      )
+    )
+
+    (function frontend_ast_build_binary_function_call_node ([source s3] [callee_json s3] [first_arg_json s3] [second_arg_json s3]) to IwFrontendNodeJson in
+      (frontend_ast_build_function_call_node source callee_json (frontend_ast_json_array2 first_arg_json second_arg_json))
+    )
+
+    (function frontend_ast_is_right_associated_variadic_builtin ([name s3]) to bool in
+      (or
+        (s3_equals name $app_iw_dump_add_name_s3^s3)
+        (or
+          (s3_equals name $app_iw_dump_mul_name_s3^s3)
+          (or
+            (s3_equals name $app_iw_dump_and_name_s3^s3)
+            (s3_equals name $app_iw_dump_or_name_s3^s3)
+          )
+        )
+      )
+    )
+
+    (function frontend_ast_is_left_associated_variadic_builtin ([name s3]) to bool in
+      (s3_equals name $app_iw_dump_sub_name_s3^s3)
+    )
+
+    (function frontend_ast_is_array_new_name ([name s3]) to bool in
+      (if (eq (s3_length name) $9^i5)
+        then
+          (and
+            (eq (val_to_i5 (s3_get name $0^i5)) $97^i5)
+            (and
+              (eq (val_to_i5 (s3_get name $1^i5)) $114^i5)
+              (and
+                (eq (val_to_i5 (s3_get name $2^i5)) $114^i5)
+                (and
+                  (eq (val_to_i5 (s3_get name $3^i5)) $97^i5)
+                  (and
+                    (eq (val_to_i5 (s3_get name $4^i5)) $121^i5)
+                    (and
+                      (eq (val_to_i5 (s3_get name $5^i5)) $95^i5)
+                      (and
+                        (eq (val_to_i5 (s3_get name $6^i5)) $110^i5)
+                        (and
+                          (eq (val_to_i5 (s3_get name $7^i5)) $101^i5)
+                          (eq (val_to_i5 (s3_get name $8^i5)) $119^i5)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        else false
+      )
+    )
+
+    (function frontend_ast_is_legacy_generic_callee_keyword ([name s3]) to bool in
+      (or
+        (s3_equals name $app_iw_dump_var_keyword_s3^s3)
+        (or
+          (s3_equals name $app_iw_dump_var_set_keyword_s3^s3)
+          (or
+            (s3_equals name $app_iw_dump_fn_keyword_s3^s3)
+            (or
+              (s3_equals name $app_iw_dump_function_keyword_s3^s3)
+              (or
+                (s3_equals name $app_iw_dump_declare_keyword_s3^s3)
+                (or
+                  (s3_equals name $app_iw_dump_let_keyword_s3^s3)
+                  (or
+                    (s3_equals name $app_iw_dump_if_keyword_s3^s3)
+                    (or
+                      (s3_equals name $app_iw_dump_while_keyword_s3^s3)
+                      (or
+                        (s3_equals name $app_iw_dump_cond_keyword_s3^s3)
+                        (or
+                          (s3_equals name $app_iw_dump_class_keyword_s3^s3)
+                          (or
+                            (s3_equals name $app_iw_dump_match_keyword_s3^s3)
+                            (frontend_ast_is_array_new_name name)
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+
+    (function frontend_ast_has_single_angle_tail ([state IwFrontendAstState]) to bool in
+      {
+        (var [scan_state IwFrontendAstState]
+          (class_new IwFrontendAstState (cm_get state source) (cm_get state length) (cm_get state index) false false)
+        )
+        (if (neq (frontend_ast_current_code scan_state) $60^i5)
+          then false
+          else
+            {
+              (frontend_ast_advance_one scan_state)
+              (frontend_ast_skip_group_contents scan_state $62^i5)
+              (frontend_ast_skip_ws scan_state)
+              (and
+                (not (cm_get scan_state has_errors))
+                (eq (frontend_ast_current_code scan_state) $41^i5)
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_legacy_generic_call_after_head ([state IwFrontendAstState] [head_node IwFrontendNodeJson]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (frontend_ast_advance_one state)
+        (var [type_args_json s3] (frontend_ast_parse_array_until_close state $62^i5 (json_null) false))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_error state)
+        )
+        (class_new IwFrontendNodeJson
+          (build_frontend_generic_call_ast_json (cm_get head_node json) type_args_json)
+          $app_iw_dump_generic_call_node_value_s3^s3
+          (frontend_ast_empty_like source)
+        )
+      }
+    )
+
+    (function frontend_ast_parse_right_fold_tail ([state IwFrontendAstState] [callee_json s3] [first_arg_json s3]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [next_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (frontend_ast_skip_ws state)
+        (if (ge (cm_get state index) (cm_get state length))
+          then
+            {
+              (mark_frontend_ast_error state)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            (if (eq (frontend_ast_current_code state) $41^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (frontend_ast_build_binary_function_call_node source callee_json first_arg_json (cm_get next_node json))
+                }
+              else
+                {
+                  (var [tail_node IwFrontendNodeJson] (frontend_ast_parse_right_fold_tail state callee_json (cm_get next_node json)))
+                  (frontend_ast_build_binary_function_call_node source callee_json first_arg_json (cm_get tail_node json))
+                }
+            )
+        )
+      }
+    )
+
+    (function frontend_ast_parse_variadic_function_call_node ([state IwFrontendAstState] [head_node IwFrontendNodeJson] [left_associated bool]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (frontend_ast_skip_ws state)
+        (if (ge (cm_get state index) (cm_get state length))
+          then
+            {
+              (mark_frontend_ast_error state)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            (if (eq (frontend_ast_current_code state) $41^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (frontend_ast_build_function_call_node source (cm_get head_node json) (json_array0_raw))
+                }
+              else
+                {
+                  (var [first_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (frontend_ast_skip_ws state)
+                  (if (ge (cm_get state index) (cm_get state length))
+                    then
+                      {
+                        (mark_frontend_ast_error state)
+                        (frontend_ast_invalid_node source)
+                      }
+                    else
+                      (if (eq (frontend_ast_current_code state) $41^i5)
+                        then
+                          {
+                            (frontend_ast_advance_one state)
+                            (frontend_ast_build_function_call_node source (cm_get head_node json) (frontend_ast_json_array1 (cm_get first_node json)))
+                          }
+                        else
+                          {
+                            (var [second_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                            (frontend_ast_skip_ws state)
+                            (if (ge (cm_get state index) (cm_get state length))
+                              then
+                                {
+                                  (mark_frontend_ast_error state)
+                                  (frontend_ast_invalid_node source)
+                                }
+                              else
+                                (if (eq (frontend_ast_current_code state) $41^i5)
+                                  then
+                                    {
+                                      (frontend_ast_advance_one state)
+                                      (frontend_ast_build_function_call_node source (cm_get head_node json) (frontend_ast_json_array2 (cm_get first_node json) (cm_get second_node json)))
+                                    }
+                                  else
+                                    (if left_associated
+                                      then
+                                        {
+                                          (var [current_node IwFrontendNodeJson] (frontend_ast_build_binary_function_call_node source (cm_get head_node json) (cm_get first_node json) (cm_get second_node json)))
+                                          (while
+                                            (and
+                                              (lt (cm_get state index) (cm_get state length))
+                                              (neq (frontend_ast_current_code state) $41^i5)
+                                            ) in
+                                            {
+                                              (var [next_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                              (var_set current_node (frontend_ast_build_binary_function_call_node source (cm_get head_node json) (cm_get current_node json) (cm_get next_node json)))
+                                              (frontend_ast_skip_ws state)
+                                            }
+                                          )
+                                          (if (eq (frontend_ast_current_code state) $41^i5)
+                                            then
+                                              {
+                                                (frontend_ast_advance_one state)
+                                                current_node
+                                              }
+                                            else
+                                              {
+                                                (mark_frontend_ast_error state)
+                                                (frontend_ast_invalid_node source)
+                                              }
+                                          )
+                                        }
+                                      else
+                                        {
+                                          (var [tail_node IwFrontendNodeJson] (frontend_ast_parse_right_fold_tail state (cm_get head_node json) (cm_get second_node json)))
+                                          (frontend_ast_build_binary_function_call_node source (cm_get head_node json) (cm_get first_node json) (cm_get tail_node json))
+                                        }
+                                    )
+                                )
+                            )
+                          }
+                      )
+                  )
+                }
+            )
+        )
+      }
+    )
+
+    (function frontend_ast_parse_node ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (frontend_ast_skip_ws state)
+        (var [source s3] (cm_get state source))
+        (if (ge (cm_get state index) (cm_get state length))
+          then
+            {
+              (mark_frontend_ast_error state)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            {
+              (var [code i5] (frontend_ast_current_code state))
+              (if (eq code $40^i5)
+                then
+                  {
+                    (frontend_ast_advance_one state)
+                    (frontend_ast_parse_round_node state)
+                  }
+                else
+                  (if (eq code $91^i5)
+                    then
+                      {
+                        (frontend_ast_advance_one state)
+                        (frontend_ast_parse_square_node state)
+                      }
+                    else
+                      (if (eq code $123^i5)
+                        then
+                          {
+                            (frontend_ast_advance_one state)
+                            (frontend_ast_parse_curly_node state)
+                          }
+                        else
+                          (if (eq code $60^i5)
+                            then
+                              {
+                                (frontend_ast_advance_one state)
+                                (frontend_ast_parse_angle_node state)
+                              }
+                            else
+                              (if (frontend_ast_current_is_close_delimiter state)
+                                then
+                                  {
+                                    (mark_frontend_ast_error state)
+                                    (frontend_ast_advance_one state)
+                                    (frontend_ast_invalid_node source)
+                                  }
+                                else
+                                  {
+                                    (var [start_index i5] (cm_get state index))
+                                    (var [end_exclusive i5] (frontend_ast_find_atom_end state))
+                                    (var [lexeme s3] (s3_slice_span source start_index end_exclusive source))
+                                    (cm_set state index end_exclusive)
+                                    (if (eq start_index end_exclusive)
+                                      then
+                                        {
+                                          (mark_frontend_ast_error state)
+                                          (frontend_ast_advance_one state)
+                                          (frontend_ast_invalid_node source)
+                                        }
+                                      else
+                                        (if (token_starts_with_dollar source start_index)
+                                          then
+                                            (if (iw_token_is_number_literal source start_index end_exclusive)
+                                              then
+                                                (class_new IwFrontendNodeJson
+                                                  (json_object3_raw
+                                                    (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_number_literal_node_value_s3^s3)
+                                                    (json_pair_s3 $app_iw_dump_type_name_key_s3^s3 (frontend_number_type_name lexeme))
+                                                    (json_pair_s3 $app_iw_dump_raw_key_s3^s3 lexeme)
+                                                  )
+                                                  $app_iw_dump_number_literal_node_value_s3^s3
+                                                  (frontend_ast_empty_like source)
+                                                )
+                                              else
+                                                (class_new IwFrontendNodeJson
+                                                  (raw_ast_write_text_reference_or_identifier_node_json lexeme)
+                                                  (raw_ast_text_reference_or_identifier_kind_name lexeme)
+                                                  (if (s3_equals (raw_ast_text_reference_or_identifier_kind_name lexeme) $app_iw_dump_identifier_node_value_s3^s3) then lexeme else (frontend_ast_empty_like source))
+                                                )
+                                            )
+                                          else
+                                            (if (raw_ast_is_member_chain lexeme)
+                                              then (frontend_ast_build_member_chain_node lexeme)
+                                              else
+                                                (class_new IwFrontendNodeJson
+                                                  (build_frontend_identifier_ast_json lexeme)
+                                                  $app_iw_dump_identifier_node_value_s3^s3
+                                                  lexeme
+                                                )
+                                            )
+                                        )
+                                    )
+                                  }
+                              )
+                          )
+                      )
+                  )
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_current_is_close_delimiter ([state IwFrontendAstState]) to bool in
+      {
+        (var [code i5] (frontend_ast_current_code state))
+        (or
+          (eq code $41^i5)
+          (or
+            (eq code $93^i5)
+            (or (eq code $125^i5) (eq code $62^i5))
+          )
+        )
+      }
+    )
+
+    (function raw_ast_write_text_reference_or_identifier_node_json ([lexeme s3]) to s3 in
+      {
+        (var [caret_index i5] (s3_last_index_of_code lexeme $94^i5))
+        (var [dollar_index i5] (s3_last_index_of_code lexeme $36^i5))
+        (if
+          (and
+            (ge dollar_index $0^i5)
+            (and
+              (gt caret_index dollar_index)
+              (lt caret_index (sub (s3_length lexeme) $1^i5))
+            )
+          )
+          then
+            (json_object5_raw
+              (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_text_db_ref_node_value_s3^s3)
+              (json_pair_s3 $app_iw_dump_type_name_key_s3^s3 (s3_slice_span lexeme (add caret_index $1^i5) (s3_length lexeme) lexeme))
+              (json_pair_s3 $app_iw_dump_entry_name_key_s3^s3 (s3_slice_span lexeme (add dollar_index $1^i5) caret_index lexeme))
+              (json_pair_s3 $app_iw_dump_reference_name_key_s3^s3 lexeme)
+              (json_pair_raw $app_iw_dump_content_key_s3^s3 (json_null))
+            )
+          else (build_frontend_identifier_ast_json lexeme)
+        )
+      }
+    )
+
+    (function raw_ast_text_reference_or_identifier_kind_name ([lexeme s3]) to s3 in
+      {
+        (var [caret_index i5] (s3_last_index_of_code lexeme $94^i5))
+        (var [dollar_index i5] (s3_last_index_of_code lexeme $36^i5))
+        (if
+          (and
+            (ge dollar_index $0^i5)
+            (and
+              (gt caret_index dollar_index)
+              (lt caret_index (sub (s3_length lexeme) $1^i5))
+            )
+          )
+          then $app_iw_dump_text_db_ref_node_value_s3^s3
+          else $app_iw_dump_identifier_node_value_s3^s3
+        )
+      }
+    )
+
+    (function frontend_ast_build_member_chain_node ([lexeme s3]) to IwFrontendNodeJson in
+      {
+        (var [last_dot i5] (s3_last_index_of_code lexeme $46^i5))
+        (if (lt last_dot $0^i5)
+          then (class_new IwFrontendNodeJson (build_frontend_identifier_ast_json lexeme) $app_iw_dump_identifier_node_value_s3^s3 lexeme)
+          else
+            {
+              (var [left_node IwFrontendNodeJson] (frontend_ast_build_member_chain_node (s3_slice_span lexeme $0^i5 last_dot lexeme)))
+              (var [right_name s3] (s3_slice_span lexeme (add last_dot $1^i5) (s3_length lexeme) lexeme))
+              (var [args_json s3]
+                {
+                  (var [items <array s3>] (array_new <array s3> $2^i5 (json_null)))
+                  (array_set items $0^i5 (cm_get left_node json))
+                  (array_set items $1^i5 (build_frontend_identifier_ast_json right_name))
+                  (json_array_raw items)
+                }
+              )
+              (class_new IwFrontendNodeJson
+                (build_frontend_function_call_ast_json (build_frontend_identifier_ast_json $app_iw_dump_cm_get_name_s3^s3) args_json)
+                $app_iw_dump_function_call_node_value_s3^s3
+                (frontend_ast_empty_like lexeme)
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_array_until_close ([state IwFrontendAstState] [close_code i5] [first_json s3] [has_first bool]) to s3 in
+      {
+        (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+        (var [is_first bool] true)
+        (if has_first
+          then
+            {
+              (builder_append_s3 builder first_json)
+              (var_set is_first false)
+            }
+          else unit
+        )
+        (frontend_ast_skip_ws state)
+        (while
+          (and
+            (not (cm_get state has_errors))
+            (and
+              (not (cm_get state has_unsupported))
+              (and
+                (lt (cm_get state index) (cm_get state length))
+                (neq (frontend_ast_current_code state) close_code)
+              )
+            )
+          ) in
+          {
+            (if is_first then unit else (builder_append_s3 builder $app_iw_dump_comma_s3^s3))
+            (var [node IwFrontendNodeJson] (frontend_ast_parse_node state))
+            (builder_append_s3 builder (cm_get node json))
+            (var_set is_first false)
+            (frontend_ast_skip_ws state)
+          }
+        )
+        (if (or (cm_get state has_errors) (cm_get state has_unsupported))
+          then unit
+          else
+            (if (eq (frontend_ast_current_code state) close_code)
+              then (frontend_ast_advance_one state)
+              else (mark_frontend_ast_error state)
+            )
+        )
+        (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+        (cm_get (builder.build) raw)
+      }
+    )
+
+    (function frontend_ast_append_array_item ([builder StringBuilderS3] [item_json s3] [is_first bool]) to bool in
+      {
+        (if is_first then unit else (builder_append_s3 builder $app_iw_dump_comma_s3^s3))
+        (builder_append_s3 builder item_json)
+        false
+      }
+    )
+
+    (function frontend_ast_parse_let_bindings_array ([state IwFrontendAstState]) to s3 in
+      {
+        (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+        (var [is_first bool] true)
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $40^i5)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_unsupported state)
+        )
+        (frontend_ast_skip_ws state)
+        (while
+          (and
+            (lt (cm_get state index) (cm_get state length))
+            (neq (frontend_ast_current_code state) $41^i5)
+          ) in
+          {
+            (if (eq (frontend_ast_current_code state) $40^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (var [bind_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (var [value_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (frontend_ast_skip_ws state)
+                  (if (eq (frontend_ast_current_code state) $41^i5)
+                    then (frontend_ast_advance_one state)
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_skip_group_contents state $41^i5)
+                      }
+                  )
+                  (var_set is_first (frontend_ast_append_array_item builder (build_frontend_binding_json (cm_get bind_node json) (cm_get value_node json)) is_first))
+                }
+              else
+                {
+                  (mark_frontend_ast_unsupported state)
+                  (frontend_ast_skip_current_node state)
+                }
+            )
+            (frontend_ast_skip_ws state)
+          }
+        )
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_error state)
+        )
+        (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+        (cm_get (builder.build) raw)
+      }
+    )
+
+    (function frontend_ast_parse_parameter_array ([state IwFrontendAstState]) to s3 in
+      {
+        (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+        (var [is_first bool] true)
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $40^i5)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_unsupported state)
+        )
+        (frontend_ast_skip_ws state)
+        (while
+          (and
+            (lt (cm_get state index) (cm_get state length))
+            (neq (frontend_ast_current_code state) $41^i5)
+          ) in
+          {
+            (var [param_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+            (var_set is_first (frontend_ast_append_array_item builder (cm_get param_node json) is_first))
+            (frontend_ast_skip_ws state)
+          }
+        )
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_error state)
+        )
+        (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+        (cm_get (builder.build) raw)
+      }
+    )
+
+    (function frontend_ast_parse_cond_clauses_array ([state IwFrontendAstState]) to s3 in
+      {
+        (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+        (var [is_first bool] true)
+        (frontend_ast_skip_ws state)
+        (while
+          (and
+            (lt (cm_get state index) (cm_get state length))
+            (neq (frontend_ast_current_code state) $41^i5)
+          ) in
+          {
+            (if (eq (frontend_ast_current_code state) $40^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (var [cond_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (frontend_ast_skip_ws state)
+                  (if (eq (frontend_ast_current_code state) $41^i5)
+                    then (frontend_ast_advance_one state)
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_skip_group_contents state $41^i5)
+                      }
+                  )
+                  (var_set is_first (frontend_ast_append_array_item builder (build_frontend_cond_clause_json (cm_get cond_node json) (cm_get body_node json)) is_first))
+                }
+              else
+                {
+                  (mark_frontend_ast_unsupported state)
+                  (frontend_ast_skip_current_node state)
+                }
+            )
+            (frontend_ast_skip_ws state)
+          }
+        )
+        (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+        (cm_get (builder.build) raw)
+      }
+    )
+
+    (function frontend_ast_parse_match_branches_array ([state IwFrontendAstState]) to s3 in
+      {
+        (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+        (var [is_first bool] true)
+        (frontend_ast_skip_ws state)
+        (while
+          (and
+            (lt (cm_get state index) (cm_get state length))
+            (neq (frontend_ast_current_code state) $41^i5)
+          ) in
+          {
+            (if (eq (frontend_ast_current_code state) $40^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (var [bind_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (frontend_ast_skip_ws state)
+                  (if (eq (frontend_ast_current_code state) $41^i5)
+                    then (frontend_ast_advance_one state)
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_skip_group_contents state $41^i5)
+                      }
+                  )
+                  (var_set is_first (frontend_ast_append_array_item builder (build_frontend_match_branch_json (cm_get bind_node json) (cm_get body_node json)) is_first))
+                }
+              else
+                {
+                  (mark_frontend_ast_unsupported state)
+                  (frontend_ast_skip_current_node state)
+                }
+            )
+            (frontend_ast_skip_ws state)
+          }
+        )
+        (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+        (cm_get (builder.build) raw)
+      }
+    )
+
+    (function frontend_ast_keyword_ok ([node IwFrontendNodeJson] [name s3]) to bool in
+      (and
+        (s3_equals (cm_get node kind) $app_iw_dump_identifier_node_value_s3^s3)
+        (s3_equals (cm_get node identifier_name) name)
+      )
+    )
+
+    (function frontend_ast_parse_class_property_after_head ([state IwFrontendAstState]) to IwFrontendClassMemberJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [bind_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else
+            {
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_skip_group_contents state $41^i5)
+            }
+        )
+        (if (s3_equals (cm_get bind_node kind) $app_iw_dump_type_var_bind_node_value_s3^s3)
+          then
+            {
+              (var [property_json s3] (build_frontend_class_property_ast_json (cm_get bind_node json)))
+              (class_new IwFrontendClassMemberJson property_json property_json $app_iw_dump_class_property_node_value_s3^s3)
+            }
+          else
+            {
+              (mark_frontend_ast_unsupported state)
+              (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_class_method_after_head ([state IwFrontendAstState]) to IwFrontendClassMemberJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [method_name_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [params_json s3] (frontend_ast_parse_parameter_array state))
+        (var [to_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [return_type_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [in_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else
+            {
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_skip_group_contents state $41^i5)
+            }
+        )
+        (if
+          (and
+            (s3_equals (cm_get method_name_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+            (and
+              (frontend_ast_keyword_ok to_node $app_iw_dump_to_keyword_s3^s3)
+              (frontend_ast_keyword_ok in_node $app_iw_dump_in_keyword_s3^s3)
+            )
+          )
+          then
+            {
+              (var [method_json s3] (build_frontend_class_method_ast_json (cm_get method_name_node json) params_json (cm_get return_type_node json) (cm_get body_node json)))
+              (class_new IwFrontendClassMemberJson method_json method_json $app_iw_dump_class_method_node_value_s3^s3)
+            }
+          else
+            {
+              (mark_frontend_ast_unsupported state)
+              (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_class_constructor_after_head ([state IwFrontendAstState]) to IwFrontendClassMemberJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [params_json s3] (frontend_ast_parse_parameter_array state))
+        (var [in_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else
+            {
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_skip_group_contents state $41^i5)
+            }
+        )
+        (if (frontend_ast_keyword_ok in_node $app_iw_dump_in_keyword_s3^s3)
+          then
+            {
+              (var [constructor_json s3] (build_frontend_class_constructor_ast_json params_json (cm_get body_node json)))
+              (class_new IwFrontendClassMemberJson constructor_json constructor_json $app_iw_dump_class_constructor_node_value_s3^s3)
+            }
+          else
+            {
+              (mark_frontend_ast_unsupported state)
+              (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_class_member_after_head ([state IwFrontendAstState] [head_name s3] [allow_public bool] [allow_constructor bool]) to IwFrontendClassMemberJson in
+      {
+        (var [source s3] (cm_get state source))
+        (if (s3_equals head_name $app_iw_dump_property_keyword_s3^s3)
+          then (frontend_ast_parse_class_property_after_head state)
+          else
+            (if (s3_equals head_name $app_iw_dump_method_keyword_s3^s3)
+              then (frontend_ast_parse_class_method_after_head state)
+              else
+                (if (s3_equals head_name $app_iw_dump_constructor_keyword_s3^s3)
+                  then
+                    (if allow_constructor
+                      then (frontend_ast_parse_class_constructor_after_head state)
+                      else
+                        {
+                          (mark_frontend_ast_unsupported state)
+                          (frontend_ast_skip_group_contents state $41^i5)
+                          (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+                        }
+                    )
+                  else
+                    (if (s3_equals head_name $app_iw_dump_public_keyword_s3^s3)
+                      then
+                        (if allow_public
+                          then
+                            {
+                              (frontend_ast_skip_ws state)
+                              (if (eq (frontend_ast_current_code state) $40^i5)
+                                then (frontend_ast_advance_one state)
+                                else (mark_frontend_ast_unsupported state)
+                              )
+                              (var [inner_head_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                              (var [result IwFrontendClassMemberJson]
+                                (if (s3_equals (cm_get inner_head_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+                                  then (frontend_ast_parse_class_member_after_head state (cm_get inner_head_node identifier_name) false false)
+                                  else
+                                    {
+                                      (mark_frontend_ast_unsupported state)
+                                      (frontend_ast_skip_group_contents state $41^i5)
+                                      (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+                                    }
+                                )
+                              )
+                              (frontend_ast_skip_ws state)
+                              (if (eq (frontend_ast_current_code state) $41^i5)
+                                then (frontend_ast_advance_one state)
+                                else
+                                  {
+                                    (mark_frontend_ast_unsupported state)
+                                    (frontend_ast_skip_group_contents state $41^i5)
+                                  }
+                              )
+                              (if
+                                (or
+                                  (s3_equals (cm_get result inner_kind) $app_iw_dump_class_property_node_value_s3^s3)
+                                  (s3_equals (cm_get result inner_kind) $app_iw_dump_class_method_node_value_s3^s3)
+                                )
+                                then
+                                  (class_new IwFrontendClassMemberJson
+                                    (build_frontend_public_ast_json (cm_get result inner_json))
+                                    (cm_get result inner_json)
+                                    (cm_get result inner_kind)
+                                  )
+                                else
+                                  {
+                                    (mark_frontend_ast_unsupported state)
+                                    (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+                                  }
+                              )
+                            }
+                          else
+                            {
+                              (mark_frontend_ast_unsupported state)
+                              (frontend_ast_skip_group_contents state $41^i5)
+                              (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+                            }
+                        )
+                      else
+                        {
+                          (mark_frontend_ast_unsupported state)
+                          (frontend_ast_skip_group_contents state $41^i5)
+                          (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+                        }
+                    )
+                )
+            )
+        )
+      }
+    )
+
+    (function frontend_ast_parse_class_node_after_head ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [name_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [constructor_builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (var [method_builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (var [property_builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (var [member_builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+        (builder_append_s3 constructor_builder $app_iw_dump_open_square_s3^s3)
+        (builder_append_s3 method_builder $app_iw_dump_open_square_s3^s3)
+        (builder_append_s3 property_builder $app_iw_dump_open_square_s3^s3)
+        (builder_append_s3 member_builder $app_iw_dump_open_square_s3^s3)
+        (var [constructor_is_first bool] true)
+        (var [method_is_first bool] true)
+        (var [property_is_first bool] true)
+        (var [member_is_first bool] true)
+        (frontend_ast_skip_ws state)
+        (while
+          (and
+            (lt (cm_get state index) (cm_get state length))
+            (neq (frontend_ast_current_code state) $41^i5)
+          ) in
+          {
+            (if (eq (frontend_ast_current_code state) $40^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (var [head_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (var [member IwFrontendClassMemberJson]
+                    (if (s3_equals (cm_get head_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+                      then (frontend_ast_parse_class_member_after_head state (cm_get head_node identifier_name) true true)
+                      else
+                        {
+                          (mark_frontend_ast_unsupported state)
+                          (frontend_ast_skip_group_contents state $41^i5)
+                          (class_new IwFrontendClassMemberJson (cm_get (frontend_ast_invalid_node source) json) (cm_get (frontend_ast_invalid_node source) json) (frontend_ast_empty_like source))
+                        }
+                    )
+                  )
+                  (var_set member_is_first (frontend_ast_append_array_item member_builder (cm_get member member_json) member_is_first))
+                  (if (s3_equals (cm_get member inner_kind) $app_iw_dump_class_constructor_node_value_s3^s3)
+                    then (var_set constructor_is_first (frontend_ast_append_array_item constructor_builder (cm_get member inner_json) constructor_is_first))
+                    else
+                      (if (s3_equals (cm_get member inner_kind) $app_iw_dump_class_method_node_value_s3^s3)
+                        then (var_set method_is_first (frontend_ast_append_array_item method_builder (cm_get member inner_json) method_is_first))
+                        else
+                          (if (s3_equals (cm_get member inner_kind) $app_iw_dump_class_property_node_value_s3^s3)
+                            then (var_set property_is_first (frontend_ast_append_array_item property_builder (cm_get member inner_json) property_is_first))
+                            else unit
+                          )
+                      )
+                  )
+                }
+              else
+                {
+                  (mark_frontend_ast_unsupported state)
+                  (frontend_ast_skip_current_node state)
+                }
+            )
+            (frontend_ast_skip_ws state)
+          }
+        )
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then (frontend_ast_advance_one state)
+          else (mark_frontend_ast_error state)
+        )
+        (builder_append_s3 constructor_builder $app_iw_dump_close_square_s3^s3)
+        (builder_append_s3 method_builder $app_iw_dump_close_square_s3^s3)
+        (builder_append_s3 property_builder $app_iw_dump_close_square_s3^s3)
+        (builder_append_s3 member_builder $app_iw_dump_close_square_s3^s3)
+        (if (s3_equals (cm_get name_node kind) $app_iw_dump_generic_name_node_value_s3^s3)
+          then
+            (class_new IwFrontendNodeJson
+              (build_frontend_generic_class_ast_json
+                (cm_get name_node json)
+                (cm_get (constructor_builder.build) raw)
+                (cm_get (method_builder.build) raw)
+                (cm_get (property_builder.build) raw)
+                (cm_get (member_builder.build) raw)
+              )
+              $app_iw_dump_generic_class_node_value_s3^s3
+              (frontend_ast_empty_like source)
+            )
+          else
+            (if (s3_equals (cm_get name_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+              then
+                (class_new IwFrontendNodeJson
+                  (build_frontend_class_ast_json
+                    (cm_get name_node json)
+                    (cm_get (constructor_builder.build) raw)
+                    (cm_get (method_builder.build) raw)
+                    (cm_get (property_builder.build) raw)
+                    (cm_get (member_builder.build) raw)
+                  )
+                  $app_iw_dump_class_node_value_s3^s3
+                  (frontend_ast_empty_like source)
+                )
+              else
+                {
+                  (mark_frontend_ast_unsupported state)
+                  (frontend_ast_invalid_node source)
+                }
+            )
+        )
+      }
+    )
+
+    (function frontend_ast_parse_square_node ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $93^i5)
+          then
+            {
+              (frontend_ast_advance_one state)
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            {
+              (var [first_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+              (frontend_ast_skip_ws state)
+              (var [second_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+              (frontend_ast_skip_ws state)
+              (if (eq (frontend_ast_current_code state) $93^i5)
+                then (frontend_ast_advance_one state)
+                else
+                  {
+                    (mark_frontend_ast_unsupported state)
+                    (frontend_ast_skip_group_contents state $93^i5)
+                  }
+              )
+              (if (s3_equals (cm_get first_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+                then
+                  (class_new IwFrontendNodeJson
+                    (build_frontend_type_var_bind_ast_json (cm_get first_node json) (cm_get second_node json))
+                    $app_iw_dump_type_var_bind_node_value_s3^s3
+                    (frontend_ast_empty_like source)
+                  )
+                else
+                  {
+                    (mark_frontend_ast_unsupported state)
+                    (frontend_ast_invalid_node source)
+                  }
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_curly_node ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $125^i5)
+          then
+            {
+              (frontend_ast_advance_one state)
+              (class_new IwFrontendNodeJson (build_frontend_seq_ast_json (json_array0_raw)) $app_iw_dump_seq_node_value_s3^s3 (frontend_ast_empty_like source))
+            }
+          else
+            {
+              (var [first_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+              (frontend_ast_skip_ws state)
+              (if (frontend_ast_keyword_ok first_node $app_iw_dump_program_keyword_s3^s3)
+                then
+                  {
+                    (if (eq (frontend_ast_current_code state) $125^i5)
+                      then
+                        {
+                          (frontend_ast_advance_one state)
+                          (class_new IwFrontendNodeJson
+                            (json_object3_raw
+                              (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_program_node_value_s3^s3)
+                              (json_pair_raw $app_iw_dump_unit_id_key_s3^s3 (json_null))
+                              (json_pair_raw $app_iw_dump_top_level_expressions_key_s3^s3 (json_array0_raw))
+                            )
+                            $app_iw_dump_program_node_value_s3^s3
+                            (frontend_ast_empty_like source)
+                          )
+                        }
+                      else
+                        {
+                          (var [second_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                          (frontend_ast_skip_ws state)
+                          (if (s3_equals (cm_get second_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+                            then
+                              (class_new IwFrontendNodeJson
+                                (json_object3_raw
+                                  (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_program_node_value_s3^s3)
+                                  (json_pair_raw $app_iw_dump_unit_id_key_s3^s3 (cm_get second_node json))
+                                  (json_pair_raw $app_iw_dump_top_level_expressions_key_s3^s3 (frontend_ast_parse_array_until_close state $125^i5 (json_null) false))
+                                )
+                                $app_iw_dump_program_node_value_s3^s3
+                                (frontend_ast_empty_like source)
+                              )
+                            else
+                              (class_new IwFrontendNodeJson
+                                (json_object3_raw
+                                  (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_program_node_value_s3^s3)
+                                  (json_pair_raw $app_iw_dump_unit_id_key_s3^s3 (json_null))
+                                  (json_pair_raw $app_iw_dump_top_level_expressions_key_s3^s3 (frontend_ast_parse_array_until_close state $125^i5 (cm_get second_node json) true))
+                                )
+                                $app_iw_dump_program_node_value_s3^s3
+                                (frontend_ast_empty_like source)
+                              )
+                          )
+                        }
+                    )
+                  }
+                else
+                  (class_new IwFrontendNodeJson
+                    (build_frontend_seq_ast_json (frontend_ast_parse_array_until_close state $125^i5 (cm_get first_node json) true))
+                    $app_iw_dump_seq_node_value_s3^s3
+                    (frontend_ast_empty_like source)
+                  )
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_angle_node ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $62^i5)
+          then
+            {
+              (frontend_ast_advance_one state)
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            {
+              (var [first_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+              (frontend_ast_skip_ws state)
+              (if (frontend_ast_keyword_ok first_node $app_iw_dump_to_keyword_s3^s3)
+                then
+                  {
+                    (var [return_type_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                    (frontend_ast_skip_ws state)
+                    (var [from_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                    (if (frontend_ast_keyword_ok from_node $app_iw_dump_from_keyword_s3^s3)
+                      then
+                        (class_new IwFrontendNodeJson
+                          (build_frontend_type_to_from_ast_json (cm_get return_type_node json) (frontend_ast_parse_array_until_close state $62^i5 (json_null) false))
+                          $app_iw_dump_type_to_from_node_value_s3^s3
+                          (frontend_ast_empty_like source)
+                        )
+                      else
+                        {
+                          (mark_frontend_ast_unsupported state)
+                          (frontend_ast_skip_group_contents state $62^i5)
+                          (frontend_ast_invalid_node source)
+                        }
+                    )
+                  }
+                else
+                  (if (frontend_ast_keyword_ok first_node $app_iw_dump_union_keyword_s3^s3)
+                    then
+                      (class_new IwFrontendNodeJson
+                        (build_frontend_type_union_ast_json (frontend_ast_parse_array_until_close state $62^i5 (json_null) false))
+                        $app_iw_dump_type_union_node_value_s3^s3
+                        (frontend_ast_empty_like source)
+                      )
+                    else
+                      (if (frontend_ast_keyword_ok first_node $app_iw_dump_generic_keyword_s3^s3)
+                        then
+                          {
+                            (var [name_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                            (class_new IwFrontendNodeJson
+                              (build_frontend_generic_name_ast_json (cm_get name_node json) (frontend_ast_parse_array_until_close state $62^i5 (json_null) false))
+                              $app_iw_dump_generic_name_node_value_s3^s3
+                              (frontend_ast_empty_like source)
+                            )
+                          }
+                        else
+                          (class_new IwFrontendNodeJson
+                            (build_frontend_generic_call_ast_json (cm_get first_node json) (frontend_ast_parse_array_until_close state $62^i5 (json_null) false))
+                            $app_iw_dump_generic_call_node_value_s3^s3
+                            (frontend_ast_empty_like source)
+                          )
+                      )
+                  )
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_round_node ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (frontend_ast_skip_ws state)
+        (if (eq (frontend_ast_current_code state) $41^i5)
+          then
+            {
+              (frontend_ast_advance_one state)
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            {
+              (var [head_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+              (frontend_ast_skip_ws state)
+              (if (not (s3_equals (cm_get head_node kind) $app_iw_dump_identifier_node_value_s3^s3))
+                then
+                  (frontend_ast_build_function_call_node source (cm_get head_node json) (frontend_ast_parse_array_until_close state $41^i5 (json_null) false))
+                else
+                  (frontend_ast_parse_round_headed_node state head_node)
+              )
+            }
+        )
+      }
+    )
+
+    (function frontend_ast_parse_round_headed_node ([state IwFrontendAstState] [head_node IwFrontendNodeJson]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [name s3] (cm_get head_node identifier_name))
+        (if
+          (and
+            (not (frontend_ast_is_legacy_generic_callee_keyword name))
+            (and
+              (eq (frontend_ast_current_code state) $60^i5)
+              (frontend_ast_has_single_angle_tail state)
+            )
+          )
+          then (frontend_ast_parse_legacy_generic_call_after_head state head_node)
+          else
+            (if (s3_equals name $app_iw_dump_import_keyword_s3^s3)
+          then
+            {
+              (var [package_path_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+              (frontend_ast_skip_ws state)
+              (if (eq (frontend_ast_current_code state) $41^i5)
+                then (frontend_ast_advance_one state)
+                else
+                  {
+                    (mark_frontend_ast_unsupported state)
+                    (frontend_ast_skip_group_contents state $41^i5)
+                  }
+              )
+              (class_new IwFrontendNodeJson
+                (build_frontend_import_ast_json_from_node_json (cm_get package_path_node json))
+                $app_iw_dump_import_node_value_s3^s3
+                (frontend_ast_empty_like source)
+              )
+            }
+          else
+            (if (s3_equals name $app_iw_dump_export_keyword_s3^s3)
+              then
+                {
+                  (var [inner_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (frontend_ast_skip_ws state)
+                  (if (eq (frontend_ast_current_code state) $41^i5)
+                    then (frontend_ast_advance_one state)
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_skip_group_contents state $41^i5)
+                      }
+                  )
+                  (class_new IwFrontendNodeJson
+                    (build_frontend_export_ast_json (cm_get inner_node json))
+                    $app_iw_dump_export_node_value_s3^s3
+                    (frontend_ast_empty_like source)
+                  )
+                }
+              else
+                (if (s3_equals name $app_iw_dump_public_keyword_s3^s3)
+                  then
+                    {
+                      (var [inner_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                      (frontend_ast_skip_ws state)
+                      (if (eq (frontend_ast_current_code state) $41^i5)
+                        then (frontend_ast_advance_one state)
+                        else
+                          {
+                            (mark_frontend_ast_unsupported state)
+                            (frontend_ast_skip_group_contents state $41^i5)
+                          }
+                      )
+                      (class_new IwFrontendNodeJson
+                        (build_frontend_public_ast_json (cm_get inner_node json))
+                        $app_iw_dump_public_node_value_s3^s3
+                        (frontend_ast_empty_like source)
+                      )
+                    }
+                  else
+                    (if (s3_equals name $app_iw_dump_var_keyword_s3^s3)
+                      then
+                        {
+                          (var [bind_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                          (var [value_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                          (frontend_ast_skip_ws state)
+                          (if (eq (frontend_ast_current_code state) $41^i5)
+                            then (frontend_ast_advance_one state)
+                            else
+                              {
+                                (mark_frontend_ast_unsupported state)
+                                (frontend_ast_skip_group_contents state $41^i5)
+                              }
+                          )
+                          (class_new IwFrontendNodeJson
+                            (build_frontend_dvar_ast_json (cm_get bind_node json) (cm_get value_node json))
+                            $app_iw_dump_dvar_node_value_s3^s3
+                            (frontend_ast_empty_like source)
+                          )
+                        }
+                      else
+                        (if (s3_equals name $app_iw_dump_var_set_keyword_s3^s3)
+                          then
+                            {
+                              (var [identifier_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                              (var [value_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                              (frontend_ast_skip_ws state)
+                              (if (eq (frontend_ast_current_code state) $41^i5)
+                                then (frontend_ast_advance_one state)
+                                else
+                                  {
+                                    (mark_frontend_ast_unsupported state)
+                                    (frontend_ast_skip_group_contents state $41^i5)
+                                  }
+                              )
+                              (class_new IwFrontendNodeJson
+                                (build_frontend_set_ast_json (cm_get identifier_node json) (cm_get value_node json))
+                                $app_iw_dump_set_node_value_s3^s3
+                                (frontend_ast_empty_like source)
+                              )
+                            }
+                          else
+                            (if (s3_equals name $app_iw_dump_fn_keyword_s3^s3)
+                              then
+                                {
+                                  (var [params_json s3] (frontend_ast_parse_parameter_array state))
+                                  (var [to_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                  (var [return_type_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                  (var [in_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                  (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                  (frontend_ast_skip_ws state)
+                                  (if (eq (frontend_ast_current_code state) $41^i5)
+                                    then (frontend_ast_advance_one state)
+                                    else
+                                      {
+                                        (mark_frontend_ast_unsupported state)
+                                        (frontend_ast_skip_group_contents state $41^i5)
+                                      }
+                                  )
+                                  (if (and (frontend_ast_keyword_ok to_node $app_iw_dump_to_keyword_s3^s3) (frontend_ast_keyword_ok in_node $app_iw_dump_in_keyword_s3^s3))
+                                    then
+                                      (class_new IwFrontendNodeJson
+                                        (build_frontend_fn_ast_json params_json (cm_get return_type_node json) (cm_get body_node json))
+                                        $app_iw_dump_fn_node_value_s3^s3
+                                        (frontend_ast_empty_like source)
+                                      )
+                                    else
+                                      {
+                                        (mark_frontend_ast_unsupported state)
+                                        (frontend_ast_invalid_node source)
+                                      }
+                                  )
+                                }
+                              else
+                                (if (s3_equals name $app_iw_dump_function_keyword_s3^s3)
+                                  then (frontend_ast_parse_function_like_node state)
+                                  else
+                                    (if (s3_equals name $app_iw_dump_declare_keyword_s3^s3)
+                                      then
+                                        {
+                                          (var [inner_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                          (frontend_ast_skip_ws state)
+                                          (if (eq (frontend_ast_current_code state) $41^i5)
+                                            then (frontend_ast_advance_one state)
+                                            else
+                                              {
+                                                (mark_frontend_ast_unsupported state)
+                                                (frontend_ast_skip_group_contents state $41^i5)
+                                              }
+                                          )
+                                          (if (s3_equals (cm_get inner_node kind) $app_iw_dump_declared_dfun_node_value_s3^s3)
+                                            then inner_node
+                                            else
+                                              {
+                                                (mark_frontend_ast_unsupported state)
+                                                (frontend_ast_invalid_node source)
+                                              }
+                                          )
+                                        }
+                                      else
+                                        (if (s3_equals name $app_iw_dump_let_keyword_s3^s3)
+                                          then
+                                            {
+                                              (var [bindings_json s3] (frontend_ast_parse_let_bindings_array state))
+                                              (var [in_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                              (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                              (frontend_ast_skip_ws state)
+                                              (if (eq (frontend_ast_current_code state) $41^i5)
+                                                then (frontend_ast_advance_one state)
+                                                else
+                                                  {
+                                                    (mark_frontend_ast_unsupported state)
+                                                    (frontend_ast_skip_group_contents state $41^i5)
+                                                  }
+                                              )
+                                              (if (frontend_ast_keyword_ok in_node $app_iw_dump_in_keyword_s3^s3)
+                                                then
+                                                  (class_new IwFrontendNodeJson
+                                                    (build_frontend_let_ast_json bindings_json (cm_get body_node json))
+                                                    $app_iw_dump_let_node_value_s3^s3
+                                                    (frontend_ast_empty_like source)
+                                                  )
+                                                else
+                                                  {
+                                                    (mark_frontend_ast_unsupported state)
+                                                    (frontend_ast_invalid_node source)
+                                                  }
+                                              )
+                                            }
+                                          else
+                                            (if (s3_equals name $app_iw_dump_if_keyword_s3^s3)
+                                              then
+                                                {
+                                                  (var [cond_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                  (var [then_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                  (var [true_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                  (var [else_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                  (var [false_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                  (frontend_ast_skip_ws state)
+                                                  (if (eq (frontend_ast_current_code state) $41^i5)
+                                                    then (frontend_ast_advance_one state)
+                                                    else
+                                                      {
+                                                        (mark_frontend_ast_unsupported state)
+                                                        (frontend_ast_skip_group_contents state $41^i5)
+                                                      }
+                                                  )
+                                                  (if (and (frontend_ast_keyword_ok then_node $app_iw_dump_then_keyword_s3^s3) (frontend_ast_keyword_ok else_node $app_iw_dump_else_keyword_s3^s3))
+                                                    then
+                                                      (class_new IwFrontendNodeJson
+                                                        (build_frontend_if_ast_json (cm_get cond_node json) (cm_get true_node json) (cm_get false_node json))
+                                                        $app_iw_dump_if_node_value_s3^s3
+                                                        (frontend_ast_empty_like source)
+                                                      )
+                                                    else
+                                                      {
+                                                        (mark_frontend_ast_unsupported state)
+                                                        (frontend_ast_invalid_node source)
+                                                      }
+                                                  )
+                                                }
+                                              else
+                                                (if (s3_equals name $app_iw_dump_while_keyword_s3^s3)
+                                                  then
+                                                    {
+                                                      (var [cond_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                      (var [in_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                      (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                      (frontend_ast_skip_ws state)
+                                                      (if (eq (frontend_ast_current_code state) $41^i5)
+                                                        then (frontend_ast_advance_one state)
+                                                        else
+                                                          {
+                                                            (mark_frontend_ast_unsupported state)
+                                                            (frontend_ast_skip_group_contents state $41^i5)
+                                                          }
+                                                      )
+                                                      (if (frontend_ast_keyword_ok in_node $app_iw_dump_in_keyword_s3^s3)
+                                                        then
+                                                          (class_new IwFrontendNodeJson
+                                                            (build_frontend_while_ast_json (cm_get cond_node json) (cm_get body_node json))
+                                                            $app_iw_dump_while_node_value_s3^s3
+                                                            (frontend_ast_empty_like source)
+                                                          )
+                                                        else
+                                                          {
+                                                            (mark_frontend_ast_unsupported state)
+                                                            (frontend_ast_invalid_node source)
+                                                          }
+                                                      )
+                                                    }
+                                                  else
+                                                    (if (s3_equals name $app_iw_dump_cond_keyword_s3^s3)
+                                                      then
+                                                        {
+                                                          (var [clauses_json s3] (frontend_ast_parse_cond_clauses_array state))
+                                                          (if (eq (frontend_ast_current_code state) $41^i5)
+                                                            then (frontend_ast_advance_one state)
+                                                            else (mark_frontend_ast_error state)
+                                                          )
+                                                          (class_new IwFrontendNodeJson
+                                                            (build_frontend_cond_ast_json clauses_json)
+                                                            $app_iw_dump_cond_node_value_s3^s3
+                                                            (frontend_ast_empty_like source)
+                                                          )
+                                                        }
+                                                      else
+                                                        (if (s3_equals name $app_iw_dump_match_keyword_s3^s3)
+                                                          then
+                                                            {
+                                                              (var [union_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                                                              (var [branches_json s3] (frontend_ast_parse_match_branches_array state))
+                                                              (if (eq (frontend_ast_current_code state) $41^i5)
+                                                                then (frontend_ast_advance_one state)
+                                                                else (mark_frontend_ast_error state)
+                                                              )
+                                                              (class_new IwFrontendNodeJson
+                                                                (build_frontend_match_ast_json (cm_get union_node json) branches_json)
+                                                                $app_iw_dump_match_node_value_s3^s3
+                                                                (frontend_ast_empty_like source)
+                                                              )
+                                                            }
+                                                          else
+                                                            (if (s3_equals name $app_iw_dump_class_keyword_s3^s3)
+                                                              then
+                                                                {
+                                                                      (frontend_ast_parse_class_node_after_head state)
+                                                                }
+                                                              else
+                                                                (if (frontend_ast_is_left_associated_variadic_builtin name)
+                                                                  then (frontend_ast_parse_variadic_function_call_node state head_node true)
+                                                                  else
+                                                                    (if (frontend_ast_is_right_associated_variadic_builtin name)
+                                                                      then (frontend_ast_parse_variadic_function_call_node state head_node false)
+                                                                      else
+                                                                        (frontend_ast_build_function_call_node source (cm_get head_node json) (frontend_ast_parse_array_until_close state $41^i5 (json_null) false))
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+                                      ))
+        )
+      }
+    )
+
+    (function frontend_ast_parse_function_like_node ([state IwFrontendAstState]) to IwFrontendNodeJson in
+      {
+        (var [source s3] (cm_get state source))
+        (var [name_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [params_json s3] (frontend_ast_parse_parameter_array state))
+        (var [to_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (var [return_type_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+        (frontend_ast_skip_ws state)
+        (if (not (frontend_ast_keyword_ok to_node $app_iw_dump_to_keyword_s3^s3))
+          then
+            {
+              (mark_frontend_ast_unsupported state)
+              (frontend_ast_skip_group_contents state $41^i5)
+              (frontend_ast_invalid_node source)
+            }
+          else
+            (if (eq (frontend_ast_current_code state) $41^i5)
+              then
+                {
+                  (frontend_ast_advance_one state)
+                  (if (s3_equals (cm_get name_node kind) $app_iw_dump_identifier_node_value_s3^s3)
+                    then (class_new IwFrontendNodeJson (build_frontend_declared_dfun_ast_json (cm_get name_node json) params_json (cm_get return_type_node json)) $app_iw_dump_declared_dfun_node_value_s3^s3 (frontend_ast_empty_like source))
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_invalid_node source)
+                      }
+                  )
+                }
+              else
+                {
+                  (var [in_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (var [body_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+                  (frontend_ast_skip_ws state)
+                  (if (eq (frontend_ast_current_code state) $41^i5)
+                    then (frontend_ast_advance_one state)
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_skip_group_contents state $41^i5)
+                      }
+                  )
+                  (if (frontend_ast_keyword_ok in_node $app_iw_dump_in_keyword_s3^s3)
+                    then
+                      (if (s3_equals (cm_get name_node kind) $app_iw_dump_generic_name_node_value_s3^s3)
+                        then (class_new IwFrontendNodeJson (build_frontend_generic_dfun_ast_json (cm_get name_node json) params_json (cm_get return_type_node json) (cm_get body_node json)) $app_iw_dump_generic_dfun_node_value_s3^s3 (frontend_ast_empty_like source))
+                        else (class_new IwFrontendNodeJson (build_frontend_dfun_ast_json (cm_get name_node json) params_json (cm_get return_type_node json) (cm_get body_node json)) $app_iw_dump_dfun_node_value_s3^s3 (frontend_ast_empty_like source))
+                      )
+                    else
+                      {
+                        (mark_frontend_ast_unsupported state)
+                        (frontend_ast_invalid_node source)
+                      }
+                  )
+                }
+            )
+        )
+      }
+    )
+
+    (function build_frontend_import_ast_json_from_node_json ([package_path_json s3]) to s3 in
+      (json_object2_raw
+        (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_import_node_value_s3^s3)
+        (json_pair_raw $app_iw_dump_package_path_key_s3^s3 package_path_json)
+      )
+    )
+
+  (function can_build_header_frontend_ast ([lex_result IwLexResult] [parse_result IwParseResult]) to bool in
+    (and
+      (not (cm_get parse_result has_errors))
+      (and
+        (eq (cm_get lex_result program_count) $1^i5)
+        (and
+          (gt (s3_length (cm_get parse_result program_unit)) $0^i5)
+          (and
+            (eq (cm_get parse_result top_level_count) $0^i5)
+            (and
+              (eq (cm_get parse_result member_count) $0^i5)
+              (and
+                (eq (cm_get lex_result var_count) $0^i5)
+                (and
+                  (eq (cm_get lex_result if_count) $0^i5)
+                  (and
+                    (eq (cm_get lex_result while_count) $0^i5)
+                    (and
+                      (eq (cm_get lex_result match_count) $0^i5)
+                      (and
+                        (eq (cm_get lex_result let_count) $0^i5)
+                        (and
+                          (eq (cm_get lex_result cond_count) $0^i5)
+                          (eq (cm_get parse_result import_count) (cm_get parse_result import_sample_count))
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
+  (function build_full_frontend_ast_json_or_null ([source s3]) to s3 in
+    {
+      (var [state IwFrontendAstState] (class_new IwFrontendAstState source (s3_length source) $0^i5 false false))
+      (var [root_node IwFrontendNodeJson] (frontend_ast_parse_node state))
+      (if
+        (or
+          (cm_get state has_errors)
+          (or
+            (cm_get state has_unsupported)
+            (not (s3_equals (cm_get root_node kind) $app_iw_dump_program_node_value_s3^s3))
+          )
+        )
+        then (json_null)
+        else (cm_get root_node json)
+      )
+    }
+  )
+
+  (function build_frontend_ast_json ([source s3] [lex_result IwLexResult] [parse_result IwParseResult]) to s3 in
+    {
+      (var [full_json s3]
+        (if (not (cm_get parse_result has_errors))
+          then (build_full_frontend_ast_json_or_null source)
+          else (json_null)
+        )
+      )
+      (if (not (s3_equals full_json (json_null)))
+        then full_json
+        else
+          (if (can_build_header_frontend_ast lex_result parse_result)
+            then
+              (json_object3_raw
+                (json_pair_s3 $app_iw_dump_kind_name_key_s3^s3 $app_iw_dump_program_node_value_s3^s3)
+                (json_pair_raw $app_iw_dump_unit_id_key_s3^s3 (build_frontend_identifier_ast_json (cm_get parse_result program_unit)))
+                (json_pair_raw $app_iw_dump_top_level_expressions_key_s3^s3 (build_frontend_import_ast_array_json parse_result))
+              )
+            else (json_null)
+          )
+      )
+    }
+  )
+
+  (function build_member_samples_json ([parse_result IwParseResult]) to s3 in
+    {
+      (var [count i5] (cm_get parse_result member_sample_count))
+      (var [items <array s3>] (array_new <array s3> count (json_object0_raw)))
+      (var [index i5] $0^i5)
+      (while (lt index count) in
+        {
+          (array_set items index (build_member_sample_json (array_get (cm_get parse_result member_samples) index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (json_array_raw items)
+    }
+  )
+
+  (function build_form_samples_json ([parse_result IwParseResult]) to s3 in
+    {
+      (var [count i5] (cm_get parse_result form_sample_count))
+      (var [items <array s3>] (array_new <array s3> count (json_object0_raw)))
+      (var [index i5] $0^i5)
+      (while (lt index count) in
+        {
+          (array_set items index (build_form_sample_json (array_get (cm_get parse_result form_samples) index)))
+          (var_set index (add index $1^i5))
+        }
+      )
+      (json_array_raw items)
+    }
+  )
+
+  (function build_token_stream_json ([source_path s3] [source s3] [token_count i5]) to s3 in
+    {
+      (var [tokens <array s3>] (array_new <array s3> token_count (json_object0_raw)))
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length source))
+      (var [current_line i5] $1^i5)
+      (var [current_column i5] $1^i5)
+      (var [token_index i5] $0^i5)
+      (while (lt index length) in
+        {
+          (var [ch c3] (s3_get source index))
+          (if (is_ascii_space ch)
+            then
+              {
+                (if (eq (val_to_i5 ch) $10^i5)
+                  then
+                    {
+                      (var_set current_line (add current_line $1^i5))
+                      (var_set current_column $1^i5)
+                      unit
+                    }
+                  else (var_set current_column (add current_column $1^i5))
+                )
+                (var_set index (add index $1^i5))
+              }
+            else
+              {
+                (var [token_start i5] index)
+                (var [token_line i5] current_line)
+                (var [token_column i5] current_column)
+                (var [kind_code i5] $3^i5)
+                (if (is_open_bracket ch)
+                  then
+                    {
+                      (var_set kind_code $1^i5)
+                      (var_set index (add index $1^i5))
+                      (var_set current_column (add current_column $1^i5))
+                    }
+                  else
+                    (if (is_close_bracket ch)
+                      then
+                        {
+                          (var_set kind_code $2^i5)
+                          (var_set index (add index $1^i5))
+                          (var_set current_column (add current_column $1^i5))
+                        }
+                      else
+                        {
+                          (var [scan_done bool] false)
+                          (while (and (not scan_done) (lt index length)) in
+                            {
+                              (var [scan_ch c3] (s3_get source index))
+                              (if
+                                (or
+                                  (is_ascii_space scan_ch)
+                                  (or (is_open_bracket scan_ch) (is_close_bracket scan_ch))
+                                )
+                                then (var_set scan_done true)
+                                else
+                                  {
+                                    (var_set index (add index $1^i5))
+                                    (var_set current_column (add current_column $1^i5))
+                                  }
+                              )
+                            }
+                          )
+                          (if (token_starts_with_dollar source token_start)
+                            then
+                              (if (iw_token_is_number_literal source token_start index)
+                                then (var_set kind_code $6^i5)
+                                else (var_set kind_code $4^i5)
+                              )
+                            else
+                              (if (iw_token_is_keyword source token_start index)
+                                then (var_set kind_code $5^i5)
+                                else unit
+                              )
+                          )
+                        }
+                    )
+                )
+                (array_set tokens token_index
+                  (build_token_json
+                    kind_code
+                    (s3_slice_span source token_start index source_path)
+                    token_start
+                    index
+                    token_line
+                    token_column
+                  )
+                )
+                (var_set token_index (add token_index $1^i5))
+              }
+          )
+        }
+      )
+      (json_array_raw tokens)
+    }
+  )
+
+  (function build_frontend_token_stream_json ([source s3] [token_count i5]) to s3 in
+    {
+      (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_iw_dump_empty_s3^s3)))
+      (builder_append_s3 builder $app_iw_dump_open_square_s3^s3)
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length source))
+      (var [is_first bool] true)
+      (while (lt index length) in
+        {
+          (var [ch c3] (s3_get source index))
+          (if (is_ascii_space ch)
+            then (var_set index (add index $1^i5))
+            else
+              {
+                (var [token_start i5] index)
+                (var [kind_code i5] $3^i5)
+                (if (is_open_bracket ch)
+                  then
+                    {
+                      (var_set kind_code $1^i5)
+                      (var_set index (add index $1^i5))
+                    }
+                  else
+                    (if (is_close_bracket ch)
+                      then
+                        {
+                          (var_set kind_code $2^i5)
+                          (var_set index (add index $1^i5))
+                        }
+                      else
+                        {
+                          (var [scan_done bool] false)
+                          (while (and (not scan_done) (lt index length)) in
+                            {
+                              (var [scan_ch c3] (s3_get source index))
+                              (if
+                                (or
+                                  (is_ascii_space scan_ch)
+                                  (or (is_open_bracket scan_ch) (is_close_bracket scan_ch))
+                                )
+                                then (var_set scan_done true)
+                                else (var_set index (add index $1^i5))
+                              )
+                            }
+                          )
+                          (if (token_starts_with_dollar source token_start)
+                            then
+                              (if (iw_token_is_number_literal source token_start index)
+                                then (var_set kind_code $6^i5)
+                                else (var_set kind_code $4^i5)
+                              )
+                            else unit
+                          )
+                        }
+                    )
+                )
+                (var [lexeme s3] (s3_slice_span source token_start index source))
+                (if (and (eq kind_code $3^i5) (raw_ast_is_member_chain lexeme))
+                  then (var_set is_first (frontend_write_member_chain_tokens builder lexeme is_first))
+                  else
+                    (var_set is_first
+                      (frontend_write_token_json
+                        builder
+                        kind_code
+                        lexeme
+                        is_first
+                      )
+                    )
+                )
+              }
+          )
+        }
+      )
+      (builder_append_s3 builder $app_iw_dump_close_square_s3^s3)
+      (cm_get (builder.build) raw)
+    }
+  )
+
+  (function build_ast_json ([parse_result IwParseResult] [program_location_json s3] [first_import_location_json s3]) to s3 in
+    {
+      (var [imports_json s3]
+        (json_object4_raw
+          (json_pair_i5 $app_iw_dump_count_key_s3^s3 (cm_get parse_result import_count))
+          (json_pair_s3 $app_iw_dump_first_import_unit_key_s3^s3 (cm_get parse_result first_import_unit))
+          (json_pair_raw $app_iw_dump_first_import_location_key_s3^s3 first_import_location_json)
+          (json_pair_raw $app_iw_dump_samples_key_s3^s3 (build_import_samples_json parse_result))
+        )
+      )
+      (json_object8_raw
+        (json_pair_s3 $app_iw_dump_node_kind_key_s3^s3 $app_iw_dump_program_value_s3^s3)
+        (json_pair_s3 $app_iw_dump_program_unit_key_s3^s3 (cm_get parse_result program_unit))
+        (json_pair_raw $app_iw_dump_location_key_s3^s3 program_location_json)
+        (json_pair_raw $app_iw_dump_imports_key_s3^s3 imports_json)
+        (json_pair_raw $app_iw_dump_declarations_key_s3^s3 (build_declaration_samples_json parse_result))
+        (json_pair_raw $app_iw_dump_members_key_s3^s3 (build_member_samples_json parse_result))
+        (json_pair_raw $app_iw_dump_forms_key_s3^s3 (build_form_samples_json parse_result))
+        (json_pair_bool $app_iw_dump_has_errors_key_s3^s3 (cm_get parse_result has_errors))
+      )
+    }
+  )
+
+  (function build_output_json ([input_path s3] [source s3] [lex_result IwLexResult] [parse_result IwParseResult] [include_raw_ast bool]) to s3 in
+    {
+      (var [input_json s3]
+        (json_object3_raw
+          (json_pair_s3 $app_iw_dump_path_key_s3^s3 input_path)
+          (json_pair_i5 $app_iw_dump_bytes_key_s3^s3 (cm_get lex_result source_bytes))
+          (json_pair_i5 $app_iw_dump_lines_key_s3^s3 (cm_get lex_result line_count))
+        )
+      )
+      (var [first_token_json s3]
+        (build_token_json
+          (cm_get lex_result first_token_kind)
+          (cm_get lex_result first_token_lexeme)
+          (cm_get lex_result first_token_start)
+          (cm_get lex_result first_token_end)
+          (cm_get lex_result first_token_line)
+          (cm_get lex_result first_token_column)
+        )
+      )
+      (var [first_atom_json s3]
+        (build_token_json
+          $3^i5
+          (cm_get lex_result first_atom_lexeme)
+          (cm_get lex_result first_atom_start)
+          (cm_get lex_result first_atom_end)
+          (cm_get lex_result first_atom_line)
+          (cm_get lex_result first_atom_column)
+        )
+      )
+      (var [second_atom_json s3]
+        (build_token_json
+          $3^i5
+          (cm_get lex_result second_atom_lexeme)
+          (cm_get lex_result second_atom_start)
+          (cm_get lex_result second_atom_end)
+          (cm_get lex_result second_atom_line)
+          (cm_get lex_result second_atom_column)
+        )
+      )
+      (var [sample_tokens_json s3]
+        (json_array3_raw first_token_json first_atom_json second_atom_json)
+      )
+      (var [tokens_json s3] (build_token_stream_json input_path source (cm_get lex_result token_count)))
+      (var [frontend_tokens_json s3] (build_frontend_token_stream_json source (cm_get lex_result token_count)))
+      (var [lexer_json s3]
+        (json_object9_raw
+          (json_pair_i5 $app_iw_dump_token_count_key_s3^s3 (cm_get lex_result token_count))
+          (json_pair_i5 $app_iw_dump_identifier_count_key_s3^s3 (cm_get lex_result identifier_count))
+          (json_pair_i5 $app_iw_dump_literal_ref_count_key_s3^s3 (cm_get lex_result literal_ref_count))
+          (json_pair_i5 $app_iw_dump_number_literal_count_key_s3^s3 (cm_get lex_result number_literal_count))
+          (json_pair_i5 $app_iw_dump_max_bracket_depth_key_s3^s3 (cm_get lex_result max_bracket_depth))
+          (json_pair_raw $app_iw_dump_sample_tokens_key_s3^s3 sample_tokens_json)
+          (json_pair_raw $app_iw_dump_tokens_key_s3^s3 tokens_json)
+          (json_pair_raw $app_iw_dump_frontend_tokens_key_s3^s3 frontend_tokens_json)
+          (json_pair_bool $app_iw_dump_has_unbalanced_key_s3^s3 (cm_get lex_result has_unbalanced_brackets))
+        )
+      )
+      (var [program_location_json s3]
+        (build_location_json
+          (cm_get lex_result program_start)
+          (cm_get lex_result program_end)
+          (cm_get lex_result program_line)
+          (cm_get lex_result program_column)
+        )
+      )
+      (var [first_import_location_json s3]
+        (build_location_json
+          (cm_get parse_result first_import_start)
+          (cm_get parse_result first_import_end)
+          (cm_get parse_result first_import_line)
+          (cm_get parse_result first_import_column)
+        )
+      )
+      (var [headers_json s3]
+        (json_object6_raw
+          (json_pair_s3 $app_iw_dump_program_unit_key_s3^s3 (cm_get parse_result program_unit))
+          (json_pair_raw $app_iw_dump_program_location_key_s3^s3 program_location_json)
+          (json_pair_s3 $app_iw_dump_first_import_unit_key_s3^s3 (cm_get parse_result first_import_unit))
+          (json_pair_raw $app_iw_dump_first_import_location_key_s3^s3 first_import_location_json)
+          (json_pair_i5 $app_iw_dump_import_count_key_s3^s3 (cm_get parse_result import_count))
+          (json_pair_raw $app_iw_dump_samples_key_s3^s3 (build_import_samples_json parse_result))
+        )
+      )
+      (var [first_function_location_json s3]
+        (build_location_json
+          (cm_get parse_result first_function_start)
+          (cm_get parse_result first_function_end)
+          (cm_get parse_result first_function_line)
+          (cm_get parse_result first_function_column)
+        )
+      )
+      (var [first_class_location_json s3]
+        (build_location_json
+          (cm_get parse_result first_class_start)
+          (cm_get parse_result first_class_end)
+          (cm_get parse_result first_class_line)
+          (cm_get parse_result first_class_column)
+        )
+      )
+      (var [declarations_json s3]
+        (json_object8_raw
+          (json_pair_i5 $app_iw_dump_count_key_s3^s3 (cm_get parse_result top_level_count))
+          (json_pair_i5 $app_iw_dump_function_count_key_s3^s3 (cm_get parse_result function_count))
+          (json_pair_i5 $app_iw_dump_class_count_key_s3^s3 (cm_get parse_result class_count))
+          (json_pair_s3 $app_iw_dump_first_function_name_key_s3^s3 (cm_get parse_result first_function_name))
+          (json_pair_raw $app_iw_dump_first_function_location_key_s3^s3 first_function_location_json)
+          (json_pair_s3 $app_iw_dump_first_class_name_key_s3^s3 (cm_get parse_result first_class_name))
+          (json_pair_raw $app_iw_dump_first_class_location_key_s3^s3 first_class_location_json)
+          (json_pair_raw $app_iw_dump_samples_key_s3^s3 (build_declaration_samples_json parse_result))
+        )
+      )
+      (var [members_json s3]
+        (json_object6_raw
+          (json_pair_i5 $app_iw_dump_count_key_s3^s3 (cm_get parse_result member_count))
+          (json_pair_i5 $app_iw_dump_public_count_key_s3^s3 (cm_get parse_result public_count))
+          (json_pair_i5 $app_iw_dump_property_count_key_s3^s3 (cm_get parse_result property_count))
+          (json_pair_i5 $app_iw_dump_constructor_count_key_s3^s3 (cm_get parse_result constructor_count))
+          (json_pair_i5 $app_iw_dump_method_count_key_s3^s3 (cm_get parse_result method_count))
+          (json_pair_raw $app_iw_dump_samples_key_s3^s3 (build_member_samples_json parse_result))
+        )
+      )
+      (var [forms_json s3]
+        (json_object9_raw
+          (json_pair_i5 $app_iw_dump_var_count_key_s3^s3 (cm_get lex_result var_count))
+          (json_pair_i5 $app_iw_dump_if_count_key_s3^s3 (cm_get lex_result if_count))
+          (json_pair_i5 $app_iw_dump_while_count_key_s3^s3 (cm_get lex_result while_count))
+          (json_pair_i5 $app_iw_dump_match_count_key_s3^s3 (cm_get lex_result match_count))
+          (json_pair_i5 $app_iw_dump_let_count_key_s3^s3 (cm_get lex_result let_count))
+          (json_pair_i5 $app_iw_dump_cond_count_key_s3^s3 (cm_get lex_result cond_count))
+          (json_pair_i5 $app_iw_dump_return_type_count_key_s3^s3 (cm_get parse_result return_type_count))
+          (json_pair_i5 $app_iw_dump_assignment_count_key_s3^s3 (cm_get parse_result assignment_count))
+          (json_pair_raw $app_iw_dump_samples_key_s3^s3 (build_form_samples_json parse_result))
+        )
+      )
+      (var [ast_json s3]
+        (build_ast_json
+          parse_result
+          program_location_json
+          first_import_location_json
+        )
+      )
+      (var [frontend_ast_json s3] (build_frontend_ast_json source lex_result parse_result))
+      (var [parser_json s3]
+        (if include_raw_ast
+          then
+            {
+              (var [raw_ast_json s3] (build_raw_ast_json source))
+              (var [pairs <array s3>] (array_new <array s3> $12^i5 (json_pair_raw $app_iw_dump_kind_key_s3^s3 $app_iw_dump_empty_s3^s3)))
+              (array_set pairs $0^i5 (json_pair_i5 $app_iw_dump_program_count_key_s3^s3 (cm_get lex_result program_count)))
+              (array_set pairs $1^i5 (json_pair_raw $app_iw_dump_headers_key_s3^s3 headers_json))
+              (array_set pairs $2^i5 (json_pair_i5 $app_iw_dump_top_level_count_key_s3^s3 (cm_get parse_result top_level_count)))
+              (array_set pairs $3^i5 (json_pair_i5 $app_iw_dump_export_count_key_s3^s3 (cm_get parse_result export_count)))
+              (array_set pairs $4^i5 (json_pair_raw $app_iw_dump_declarations_key_s3^s3 declarations_json))
+              (array_set pairs $5^i5 (json_pair_raw $app_iw_dump_members_key_s3^s3 members_json))
+              (array_set pairs $6^i5 (json_pair_raw $app_iw_dump_forms_key_s3^s3 forms_json))
+              (array_set pairs $7^i5 (json_pair_raw $app_iw_dump_ast_key_s3^s3 ast_json))
+              (array_set pairs $8^i5 (json_pair_raw $app_iw_dump_frontend_ast_key_s3^s3 frontend_ast_json))
+              (array_set pairs $9^i5 (json_pair_raw $app_iw_dump_raw_ast_key_s3^s3 raw_ast_json))
+              (array_set pairs $10^i5 (json_pair_bool $app_iw_dump_has_errors_key_s3^s3 (cm_get parse_result has_errors)))
+              (array_set pairs $11^i5 (json_pair_s3 $app_iw_dump_diagnostic_message_key_s3^s3 (cm_get parse_result diagnostic_message)))
+              (json_object_raw pairs)
+            }
+          else
+            {
+              (var [pairs <array s3>] (array_new <array s3> $11^i5 (json_pair_raw $app_iw_dump_kind_key_s3^s3 $app_iw_dump_empty_s3^s3)))
+              (array_set pairs $0^i5 (json_pair_i5 $app_iw_dump_program_count_key_s3^s3 (cm_get lex_result program_count)))
+              (array_set pairs $1^i5 (json_pair_raw $app_iw_dump_headers_key_s3^s3 headers_json))
+              (array_set pairs $2^i5 (json_pair_i5 $app_iw_dump_top_level_count_key_s3^s3 (cm_get parse_result top_level_count)))
+              (array_set pairs $3^i5 (json_pair_i5 $app_iw_dump_export_count_key_s3^s3 (cm_get parse_result export_count)))
+              (array_set pairs $4^i5 (json_pair_raw $app_iw_dump_declarations_key_s3^s3 declarations_json))
+              (array_set pairs $5^i5 (json_pair_raw $app_iw_dump_members_key_s3^s3 members_json))
+              (array_set pairs $6^i5 (json_pair_raw $app_iw_dump_forms_key_s3^s3 forms_json))
+              (array_set pairs $7^i5 (json_pair_raw $app_iw_dump_ast_key_s3^s3 ast_json))
+              (array_set pairs $8^i5 (json_pair_raw $app_iw_dump_frontend_ast_key_s3^s3 frontend_ast_json))
+              (array_set pairs $9^i5 (json_pair_bool $app_iw_dump_has_errors_key_s3^s3 (cm_get parse_result has_errors)))
+              (array_set pairs $10^i5 (json_pair_s3 $app_iw_dump_diagnostic_message_key_s3^s3 (cm_get parse_result diagnostic_message)))
+              (json_object_raw pairs)
+            }
+        )
+      )
+      (var [smoke_array_json s3]
+        {
+          (var [items <array s3>] (array_new <array s3> $4^i5 (json_null)))
+          (array_set items $1^i5 (json_bool true))
+          (array_set items $2^i5 (json_bool false))
+          (array_set items $3^i5 (i5_to_s3 $123^i5))
+          (json_array_raw items)
+        }
+      )
+      (var [smoke_object_json s3]
+        {
+          (var [pairs <array s3>] (array_new <array s3> $2^i5 (json_pair_bool $app_iw_dump_stable_key_s3^s3 true)))
+          (array_set pairs $1^i5 (json_pair_s3 $app_iw_dump_note_key_s3^s3 $app_iw_dump_note_value_s3^s3))
+          (json_object_raw pairs)
+        }
+      )
+      (var [writer_smoke_json s3]
+        (json_object4_raw
+          (json_pair_raw $app_iw_dump_array_key_s3^s3 smoke_array_json)
+          (json_pair_raw $app_iw_dump_object_key_s3^s3 smoke_object_json)
+          (json_pair_raw $app_iw_dump_empty_array_key_s3^s3 (json_array0_raw))
+          (json_pair_raw $app_iw_dump_empty_object_key_s3^s3 (json_object0_raw))
+        )
+      )
+      (json_object5_raw
+        (json_pair_s3 $app_iw_dump_kind_key_s3^s3 $app_iw_dump_kind_value_s3^s3)
+        (json_pair_raw $app_iw_dump_input_key_s3^s3 input_json)
+        (json_pair_raw $app_iw_dump_lexer_key_s3^s3 lexer_json)
+        (json_pair_raw $app_iw_dump_parser_key_s3^s3 parser_json)
+        (json_pair_raw $app_iw_dump_writer_smoke_key_s3^s3 writer_smoke_json)
+      )
+    }
+  )
+
+  (function build_frontend_ast_only_output_json ([source s3] [lex_result IwLexResult] [parse_result IwParseResult]) to s3 in
+    {
+      (var [frontend_ast_json s3] (build_frontend_ast_json source lex_result parse_result))
+      (var [parser_json s3]
+        (json_object3_raw
+          (json_pair_raw $app_iw_dump_frontend_ast_key_s3^s3 frontend_ast_json)
+          (json_pair_bool $app_iw_dump_has_errors_key_s3^s3 (cm_get parse_result has_errors))
+          (json_pair_s3 $app_iw_dump_diagnostic_message_key_s3^s3 (cm_get parse_result diagnostic_message))
+        )
+      )
+      {
+        (var [pairs <array s3>] (array_new <array s3> $1^i5 (json_pair_raw $app_iw_dump_parser_key_s3^s3 parser_json)))
+        (json_object_raw pairs)
+      }
+    }
+  )
+
+  (function build_frontend_tokens_only_output_json ([source s3] [lex_result IwLexResult]) to s3 in
+    {
+      (var [frontend_tokens_json s3] (build_frontend_token_stream_json source (cm_get lex_result token_count)))
+      (var [lexer_json s3]
+        {
+          (var [pairs <array s3>] (array_new <array s3> $1^i5 (json_pair_raw $app_iw_dump_frontend_tokens_key_s3^s3 frontend_tokens_json)))
+          (json_object_raw pairs)
+        }
+      )
+      {
+        (var [pairs <array s3>] (array_new <array s3> $1^i5 (json_pair_raw $app_iw_dump_lexer_key_s3^s3 lexer_json)))
+        (json_object_raw pairs)
+      }
+    }
+  )
+
+  (function build_frontend_bundle_only_output_json ([source s3] [lex_result IwLexResult] [parse_result IwParseResult]) to s3 in
+    {
+      (var [frontend_tokens_json s3] (build_frontend_token_stream_json source (cm_get lex_result token_count)))
+      (var [frontend_ast_json s3] (build_frontend_ast_json source lex_result parse_result))
+      (var [lexer_json s3]
+        {
+          (var [pairs <array s3>] (array_new <array s3> $1^i5 (json_pair_raw $app_iw_dump_frontend_tokens_key_s3^s3 frontend_tokens_json)))
+          (json_object_raw pairs)
+        }
+      )
+      (var [parser_json s3]
+        (json_object3_raw
+          (json_pair_raw $app_iw_dump_frontend_ast_key_s3^s3 frontend_ast_json)
+          (json_pair_bool $app_iw_dump_has_errors_key_s3^s3 (cm_get parse_result has_errors))
+          (json_pair_s3 $app_iw_dump_diagnostic_message_key_s3^s3 (cm_get parse_result diagnostic_message))
+        )
+      )
+      {
+        (var [pairs <array s3>] (array_new <array s3> $2^i5 (json_pair_raw $app_iw_dump_lexer_key_s3^s3 lexer_json)))
+        (array_set pairs $1^i5 (json_pair_raw $app_iw_dump_parser_key_s3^s3 parser_json))
+        (json_object_raw pairs)
+      }
+    }
+  )
+
+  (function token_kind_name ([kind_code i5]) to s3 in
+    (if (eq kind_code $1^i5)
+      then $app_iw_dump_token_kind_open_bracket_s3^s3
+      else
+        (if (eq kind_code $2^i5)
+          then $app_iw_dump_token_kind_close_bracket_s3^s3
+          else
+            (if (eq kind_code $3^i5)
+              then $app_iw_dump_token_kind_atom_s3^s3
+              else
+                (if (eq kind_code $4^i5)
+                  then $app_iw_dump_token_kind_literal_ref_s3^s3
+                  else
+                    (if (eq kind_code $5^i5)
+                      then $app_iw_dump_token_kind_keyword_s3^s3
+                      else
+                        (if (eq kind_code $6^i5)
+                          then $app_iw_dump_token_kind_number_literal_s3^s3
+                          else $app_iw_dump_token_kind_none_s3^s3
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function is_open_bracket_lexeme ([lexeme s3]) to bool in
+    (or
+      (s3_equals lexeme $app_iw_dump_open_paren_s3^s3)
+      (or
+        (s3_equals lexeme $app_iw_dump_open_square_s3^s3)
+        (or
+          (s3_equals lexeme $app_iw_dump_open_curly_s3^s3)
+          (s3_equals lexeme $app_iw_dump_open_angle_s3^s3)
+        )
+      )
+    )
+  )
+
+  (function is_close_bracket_lexeme ([lexeme s3]) to bool in
+    (or
+      (s3_equals lexeme $app_iw_dump_close_paren_s3^s3)
+      (or
+        (s3_equals lexeme $app_iw_dump_close_square_s3^s3)
+        (or
+          (s3_equals lexeme $app_iw_dump_close_curly_s3^s3)
+          (s3_equals lexeme $app_iw_dump_close_angle_s3^s3)
+        )
+      )
+    )
+  )
+
+  (function main ([args <array s3>]) to i5 in
+    {
+      (var [arg_count i5] (array_length args))
+      (var [input_path s3] (if (ge arg_count $1^i5) then (array_get args $0^i5) else $app_iw_dump_default_input_path_s3^s3))
+      (var [mode_arg s3] (if (ge arg_count $2^i5) then (array_get args $1^i5) else $app_iw_dump_empty_s3^s3))
+      (var [include_raw_ast bool] (s3_equals mode_arg $app_iw_dump_enable_raw_ast_arg_s3^s3))
+      (var [frontend_ast_only bool] (s3_equals mode_arg $app_iw_dump_frontend_ast_only_arg_s3^s3))
+      (var [frontend_bundle_only bool] (s3_equals mode_arg $app_iw_dump_frontend_bundle_only_arg_s3^s3))
+      (var [frontend_tokens_only bool] (s3_equals mode_arg $app_iw_dump_frontend_tokens_only_arg_s3^s3))
+      (var [source s3] (if (sys_path_exists_s3 input_path) then (read_file_all input_path) else $app_iw_dump_empty_s3^s3))
+      (var [lex_result IwLexResult] (iw_lex_source input_path source))
+      (if frontend_tokens_only
+        then
+          {
+            (print_frontend_token_stream_json source)
+            $0^i5
+          }
+        else
+          {
+      (var [parse_result IwParseResult] (iw_parse_source lex_result input_path source))
+      (println
+        (if frontend_tokens_only
+          then (build_frontend_tokens_only_output_json source lex_result)
+          else
+            (if frontend_bundle_only
+              then (build_frontend_bundle_only_output_json source lex_result parse_result)
+              else
+                (if frontend_ast_only
+                  then (build_frontend_ast_only_output_json source lex_result parse_result)
+                  else (build_output_json input_path source lex_result parse_result include_raw_ast)
+                )
+            )
+        )
+      )
+            $0^i5
+          }
+      )
+    }
+  )
+}

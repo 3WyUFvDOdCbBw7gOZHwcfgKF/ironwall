@@ -1,43 +1,21 @@
 import { execFileSync } from "child_process";
 import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
-import { basename, join, resolve } from "path";
+import { join, resolve } from "path";
 import { loadIronwallVersionJson } from "./VersionJson";
 
 const repoRoot = resolve(__dirname, "..");
 const artifactsRoot = join(repoRoot, "artifacts");
 const iwSpecSourceRoot = join(repoRoot, "src", "iw-spec");
 const versionJsonPath = join(repoRoot, "src", "version.json");
-const fftExampleSourceRoot = join(repoRoot, "src", "Test-Linux", "Fixtures", "fft-bigint");
+const fftExampleSourceRoot = join(repoRoot, "src", "Test", "Fixtures", "fft-bigint");
 const simpleRaytracerExampleSourceRoot = join(repoRoot, "src", "examples", "raytracer-simple");
 const seaFuse = "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2";
 const npxCommand = process.platform === "win32" ? "cmd.exe" : "npx";
-const bundledSpecFiles = [
-    "iw-lex.md",
-    "iw-syntax.md",
-    "iw-type.md",
-    "iw-builtin.md",
-    "iw-module.md",
-    "iw-semantics.md",
-    "iw-cffi.md",
-    "iw-base-lib.md",
-    "iw-runtime.md",
-    "iw-thesis.md",
-];
-const localizedSpecDirectories = ["zh-TC", "zh-SC", "en"] as const;
-
-interface BundledSpecOptions {
-    readonly sourceRoot: string;
-    readonly title: string;
-    readonly intro: string;
-    readonly bundledSourceFilesLabel: string;
-    readonly version: string;
-}
-
 interface ReleasePackageDefinition {
     readonly name: "release-pkg-linux" | "release-pkg-windows";
     readonly target: "linux-x64" | "windows-x64";
-    readonly stdSourceRoot: string;
+    readonly platformStdSourceRoot: string;
     readonly assetRoot: string;
     readonly validationScriptName: "validate-examples.sh" | "validate-examples.ps1";
     readonly executableName: "ironwall" | "ironwall.exe";
@@ -51,7 +29,7 @@ const releasePackages: readonly ReleasePackageDefinition[] = [
     {
         name: "release-pkg-linux",
         target: "linux-x64",
-        stdSourceRoot: join(repoRoot, "src", "std-linux"),
+        platformStdSourceRoot: join(repoRoot, "src", "std-linux"),
         assetRoot: join(repoRoot, "release-package-linux"),
         validationScriptName: "validate-examples.sh",
         executableName: "ironwall",
@@ -61,7 +39,7 @@ const releasePackages: readonly ReleasePackageDefinition[] = [
     {
         name: "release-pkg-windows",
         target: "windows-x64",
-        stdSourceRoot: join(repoRoot, "src", "std-windows"),
+        platformStdSourceRoot: join(repoRoot, "src", "std-windows"),
         assetRoot: join(repoRoot, "release-package-windows"),
         validationScriptName: "validate-examples.ps1",
         executableName: "ironwall.exe",
@@ -205,114 +183,8 @@ function buildReleaseCompiler(outputPath: string, version: string, compilerEntry
     }
 }
 
-function buildBundledSpec(options: BundledSpecOptions): string {
-    const sections = bundledSpecFiles.map((fileName) => {
-        const content = readFileSync(join(options.sourceRoot, fileName), "utf8").trim();
-        return [
-            `<!-- BEGIN ${fileName} -->`,
-            "",
-            content,
-            "",
-            `<!-- END ${fileName} -->`
-        ].join("\n");
-    });
-
-    return [
-        options.title,
-        "",
-        `Version: ${options.version}`,
-        "",
-        options.intro,
-        "",
-        options.bundledSourceFilesLabel,
-        ...bundledSpecFiles.map((fileName) => `- ${fileName}`),
-        "",
-        ...sections.flatMap((section, index) => index === 0 ? [section] : ["---", "", section])
-    ].join("\n");
-}
-
-function escapeHtml(value: string): string {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
-
-function writeSpecHtml(outputHtmlRoot: string, directoryName: typeof localizedSpecDirectories[number], specMarkdown: string, version: string): void {
-    const targetRoot = join(outputHtmlRoot, directoryName);
-    mkdirSync(targetRoot, { recursive: true });
-    const titleByDirectory: Record<typeof localizedSpecDirectories[number], string> = {
-        "zh-TC": "Ironwall 語言規格",
-        "zh-SC": "Ironwall 语言规格",
-        en: "Ironwall Language Specification"
-    };
-    const langByDirectory: Record<typeof localizedSpecDirectories[number], string> = {
-        "zh-TC": "zh-Hant",
-        "zh-SC": "zh-Hans",
-        en: "en"
-    };
-    const title = titleByDirectory[directoryName];
-    const html = [
-        "<!doctype html>",
-        `<html lang="${langByDirectory[directoryName]}">`,
-        "<head>",
-        "  <meta charset=\"utf-8\">",
-        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
-        `  <title>${escapeHtml(title)} ${escapeHtml(version)}</title>`,
-        "  <style>",
-        "    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; color: #161616; background: #fafafa; }",
-        "    main { max-width: 980px; margin: 0 auto; padding: 32px 20px 56px; }",
-        "    h1 { margin: 0 0 8px; font-size: 32px; }",
-        "    .version { margin: 0 0 24px; color: #555; }",
-        "    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 6px; line-height: 1.5; }",
-        "  </style>",
-        "</head>",
-        "<body>",
-        "  <main>",
-        `    <h1>${escapeHtml(title)}</h1>`,
-        `    <p class=\"version\">Version: ${escapeHtml(version)}</p>`,
-        `    <pre>${escapeHtml(specMarkdown)}</pre>`,
-        "  </main>",
-        "</body>",
-        "</html>",
-        ""
-    ].join("\n");
-    writeFileSync(join(targetRoot, "ironwall-spec.html"), html, "utf8");
-}
-
-function writeLocalizedSpecDirectory(outputSpecRoot: string, outputHtmlRoot: string, directoryName: typeof localizedSpecDirectories[number], version: string): void {
-    const sourceRoot = join(iwSpecSourceRoot, directoryName);
-    const targetRoot = join(outputSpecRoot, directoryName);
-    cpSync(sourceRoot, targetRoot, { recursive: true });
-
-    const bundledSpecByDirectory: Record<typeof localizedSpecDirectories[number], BundledSpecOptions> = {
-        "zh-TC": {
-            sourceRoot,
-            title: "# Ironwall 語言規格",
-            intro: "本文件合併此 release package 內附帶的語言、C FFI、base-lib、runtime 與 thesis markdown 原始文檔。",
-            bundledSourceFilesLabel: "合併來源文件：",
-            version
-        },
-        "zh-SC": {
-            sourceRoot,
-            title: "# Ironwall 语言规格",
-            intro: "本文档合并此 release package 内附带的语言、C FFI、base-lib、runtime 与 thesis markdown 原始文档。",
-            bundledSourceFilesLabel: "合并来源文件：",
-            version
-        },
-        en: {
-            sourceRoot,
-            title: "# Ironwall Language Specification",
-            intro: "This file bundles the language, C FFI, base-lib, runtime, and thesis markdown sources that ship with this release package.",
-            bundledSourceFilesLabel: "Bundled source files:",
-            version
-        }
-    };
-
-    const bundledSpec = `${buildBundledSpec(bundledSpecByDirectory[directoryName])}\n`;
-    writeFileSync(join(targetRoot, "ironwall-spec.md"), bundledSpec, "utf8");
-    writeSpecHtml(outputHtmlRoot, directoryName, bundledSpec, version);
+function copyEnglishSpecDirectory(outputSpecRoot: string): void {
+    cpSync(join(iwSpecSourceRoot, "en"), join(outputSpecRoot, "en"), { recursive: true });
 }
 
 function removeGeneratedExampleArtifacts(rootPath: string, relativePath = ""): void {
@@ -472,7 +344,9 @@ function buildReleasePackage(packageDef: ReleasePackageDefinition, version: stri
     mkdirSync(outputRoot, { recursive: true });
 
     buildReleaseCompiler(join(outputRoot, packageDef.executableName), version, packageDef.compilerEntryBuildPath);
-    cpSync(packageDef.stdSourceRoot, join(outputRoot, basename(packageDef.stdSourceRoot)), { recursive: true });
+    const outputStdRoot = join(outputRoot, "std");
+    cpSync(join(repoRoot, "src", "std"), outputStdRoot, { recursive: true });
+    cpSync(packageDef.platformStdSourceRoot, outputStdRoot, { recursive: true });
     cpSync(join(packageDef.assetRoot, "runtime"), join(outputRoot, "runtime"), { recursive: true });
     copyFileSync(versionJsonPath, join(outputRoot, "version.json"));
     copyFileSync(join(packageDef.assetRoot, packageDef.compilerManualFileName), join(outputRoot, packageDef.compilerManualFileName));
@@ -487,18 +361,8 @@ function buildReleasePackage(packageDef: ReleasePackageDefinition, version: stri
     removeGeneratedExampleArtifacts(join(outputRoot, "examples"));
 
     const outputSpecRoot = join(outputRoot, "iw-spec");
-    const outputHtmlRoot = join(outputRoot, "html");
     mkdirSync(outputSpecRoot, { recursive: true });
-    const rootBundledSpec = `${buildBundledSpec({
-        sourceRoot: iwSpecSourceRoot,
-        title: "# Ironwall 語言規格",
-        intro: "本文件合併此 release package 內附帶的語言、C FFI、base-lib、runtime 與 thesis markdown 原始文檔。",
-        bundledSourceFilesLabel: "合併來源文件：",
-        version
-    })}\n`;
-    writeFileSync(join(outputSpecRoot, "ironwall-spec.md"), rootBundledSpec, "utf8");
-    writeSpecHtml(outputHtmlRoot, "zh-TC", rootBundledSpec, version);
-    localizedSpecDirectories.forEach((directoryName) => writeLocalizedSpecDirectory(outputSpecRoot, outputHtmlRoot, directoryName, version));
+    copyEnglishSpecDirectory(outputSpecRoot);
 
     if (existsSync(join(outputRoot, "examples", "ffi-static-lib", "native", "build-native.sh"))) {
         chmodSync(join(outputRoot, "examples", "ffi-static-lib", "native", "build-native.sh"), 0o755);

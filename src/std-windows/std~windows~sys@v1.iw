@@ -1,70 +1,70 @@
-{program std~windows~sys@v1
-  (declare (function _00000000000000000000000000000023_clang_iw_sys_platform_name_e893378d () to s3))
-  (declare (function _2b11a3af885b640500754685880f54b5_clang_iw_sys_process_getpid_de7c16f6 () to i5))
-  (declare (function _83689e5ddea8dfc0ee7998ab95819984_clang_iw_sys_thread_gettid_9e1c50c3 () to i5))
-  (declare (function _2f6f7535830b5e28ab30d0fb83230b51_clang_iw_sys_process_exit_3a5b7632 ([code i5]) to unit))
-  (declare (function _00000000000000000000000000000001_clang_iw_sys_process_abort_1431782e () to unit))
-  (declare (function _00000000000000000000000000000002_clang_iw_sys_process_argc_80098dc0 () to i5))
-  (declare (function _00000000000000000000000000000003_clang_iw_sys_process_argv_s3_53b4fa8b ([index i5]) to s3))
-  (declare (function _00000000000000000000000000000004_clang_iw_sys_env_get_s3_eb23bd9e ([name s3]) to s3))
-  (declare (function _00000000000000000000000000000005_clang_iw_sys_env_set_s3_3ee28181 ([name s3] [value s3]) to unit))
-  (declare (function _00000000000000000000000000000006_clang_iw_sys_env_unset_s3_c51a9d17 ([name s3]) to unit))
-  (declare (function _1c11bc3b8e154be8e0f7eeadc1b74513_clang_iw_sys_path_getcwd_s3_48a0c477 () to s3))
-  (declare (function _a74d55a3cd532d71ab7b21be4a685aba_clang_iw_sys_path_chdir_s3_06ea7ccf ([path s3]) to unit))
-  (declare (function _00000000000000000000000000000007_clang_iw_sys_path_exists_s3_54f2832f ([path s3]) to bool))
-  (declare (function _00000000000000000000000000000008_clang_iw_sys_path_is_file_s3_ddc3a021 ([path s3]) to bool))
-  (declare (function _00000000000000000000000000000009_clang_iw_sys_path_is_dir_s3_14810049 ([path s3]) to bool))
-  (declare (function _a88fab1e48409b3b0d17a4e18108da29_clang_iw_sys_path_mkdir_s3_872e42fb ([path s3]) to unit))
-  (declare (function _6ef96960eb2fd3e78175896a8dfe8ccd_clang_iw_sys_path_rmdir_s3_066385f5 ([path s3]) to unit))
-  (declare (function _dfd36b64cdce2875eb5d4a44b9d483bd_clang_iw_sys_path_unlink_s3_f10443fc ([path s3]) to unit))
-  (declare (function _8a0c96c468bc5b0abd77b8b5265e0a86_clang_iw_sys_path_rename_s3_af374547 ([source_path s3] [target_path s3]) to unit))
-  (declare (function _e2f5b201a54d215645722906e632d8ac_clang_iw_sys_fd_open_read_s3_5ad8877a ([path s3]) to i5))
-  (declare (function _32b6cad62de91502f57bf54b0086f087_clang_iw_sys_fd_open_write_s3_58780d0e ([path s3]) to i5))
-  (declare (function _0000000000000000000000000000000a_clang_iw_sys_fd_open_append_s3_e99f04bd ([path s3]) to i5))
-  (declare (function _8bf70349cf24108f14b0760bc947b61f_clang_iw_sys_fd_creat_s3_e1e678ab ([path s3]) to i5))
-  (declare (function _6d9c59f80dbd559bd0382261d37cc256_clang_iw_sys_fd_close_034b474a ([fd i5]) to unit))
-  (declare (function _6b787030f1f9868b2c30df6009589960_clang_iw_sys_fd_read_s3_c6dd19e6 ([fd i5] [size i5]) to s3))
-  (declare (function _ed23b32546f345f1c8bc9a15ce8af57d_clang_iw_sys_fd_write_s3_05021e00 ([fd i5] [value s3]) to i5))
-  (declare (function _250bb832c98969203e8403fd295bf4fe_clang_iw_sys_fd_pread_s3_03dc1a15 ([fd i5] [size i5] [offset i5]) to s3))
-  (declare (function _6df5ef68d16e8dbeb7afaf74a2041d5c_clang_iw_sys_fd_pwrite_s3_5e2dd289 ([fd i5] [value s3] [offset i5]) to i5))
-  (declare (function _83f990ba26baecff762c5eed91672d41_clang_iw_sys_fd_lseek_803f482c ([fd i5] [offset i5] [whence i5]) to i5))
-  (declare (function _0d8772a68e63d14600a2db3344ab1582_clang_iw_sys_fd_fsync_94ccd79b ([fd i5]) to unit))
-  (declare (function _f87495a34d93e392f973660a937cf479_clang_iw_sys_fd_fstat_e27c5eb8 ([fd i5]) to <array i5>))
-  (declare (function _0000000000000000000000000000000b_clang_iw_sys_path_stat_s3_e35a357e ([path s3]) to <array i5>))
-  (declare (function _737564d02de88557209a13da2cd51bf2_clang_iw_sys_fd_pipe2_c920392a () to <array i5>))
-  (declare (function _0000000000000000000000000000000c_clang_iw_sys_process_spawn_s3_d2e213ec ([path s3] [argv <array s3>] [envp <array s3>]) to <array i5>))
-  (declare (function _00000000000000000000000000000026_clang_iw_sys_process_spawn_stdio_s3_aeb8bd1f ([path s3] [argv <array s3>] [envp <array s3>] [stdin_fd i5] [stdout_fd i5] [stderr_fd i5]) to <array i5>))
-  (declare (function _0000000000000000000000000000000d_clang_iw_sys_process_wait_dfde99da ([process_handle i5]) to i5))
-  (declare (function _0000000000000000000000000000000e_clang_iw_sys_process_kill_3d29cd00 ([process_handle i5]) to unit))
-  (declare (function _0000000000000000000000000000000f_clang_iw_sys_time_unix_ms_e32873a2 () to i5))
-  (declare (function _00000000000000000000000000000010_clang_iw_sys_time_monotonic_ms_a432d8b7 () to i5))
-  (declare (function _0408ff57b3d37fd846e3a60c9008c32e_clang_iw_sleep_ms_0d1507e2 ([duration_ms i5]) to unit))
-  (declare (function _00000000000000000000000000000011_clang_iw_sys_net_startup_44d6b930 () to unit))
-  (declare (function _00000000000000000000000000000012_clang_iw_sys_net_cleanup_232e1102 () to unit))
-  (declare (function _ccf0997f223e6d727cf06c9aed78f0bd_clang_iw_sys_net_socket_tcp4_73b1bd4d () to i5))
-  (declare (function _00000000000000000000000000000013_clang_iw_sys_net_close_50dcddbb ([fd i5]) to unit))
-  (declare (function _97de01644f578b78721d6c6f807d5760_clang_iw_sys_net_bind_ipv4_any_10938894 ([fd i5] [port i5]) to unit))
-  (declare (function _7094dbbe042276a8e4b69bd018fd30e4_clang_iw_sys_net_bind_ipv4_loopback_9f205802 ([fd i5] [port i5]) to unit))
-  (declare (function _27098860d4928373cb8f9e0f78fedd2f_clang_iw_sys_net_getsockname_ipv4_port_e9b097d5 ([fd i5]) to i5))
-  (declare (function _213e1ec04b246c7cc4f66b46f1aa3116_clang_iw_sys_net_listen_cf1a6636 ([fd i5] [backlog i5]) to unit))
-  (declare (function _7766131a5dfd0a2f89932f6846dad826_clang_iw_sys_net_accept_bbd0c405 ([fd i5]) to i5))
-  (declare (function _689a8bec6a0690b8fbbb5eadcd386c5b_clang_iw_sys_net_connect_ipv4_loopback_40e73680 ([fd i5] [port i5]) to unit))
-  (declare (function _3cd9bb88e37fb1dcda345c8936aa38b8_clang_iw_sys_net_send_s3_1bec9d45 ([fd i5] [value s3]) to i5))
-  (declare (function _1a83a64e2fef6fd8ad6e2b4600147f2a_clang_iw_sys_net_recv_s3_9ceec74d ([fd i5] [size i5]) to s3))
-  (declare (function _1180ab8d4d5750d83a7714aab612d9f0_clang_iw_sys_net_shutdown_e6afcd8c ([fd i5] [how i5]) to unit))
-  (declare (function _00000000000000000000000000000014_clang_iw_sys_net_set_nonblocking_a5ff9793 ([fd i5] [enabled bool]) to unit))
-  (declare (function _105c51452a1bfbd028f916a70fa32651_clang_iw_sys_net_setsockopt_reuseaddr_0698716a ([fd i5]) to unit))
-  (declare (function _9b1d6a4e9ae3137013b9751d4388fa82_clang_iw_sys_net_setsockopt_tcp_nodelay_47f29dd2 ([fd i5]) to unit))
-  (declare (function _00000000000000000000000000000015_clang_iw_sys_event_create_041ec446 ([manual_reset bool] [initial_state bool]) to i5))
-  (declare (function _00000000000000000000000000000024_clang_iw_sys_event_set_796b635a ([handle i5]) to unit))
-  (declare (function _00000000000000000000000000000025_clang_iw_sys_event_reset_d61e3afc ([handle i5]) to unit))
-  (declare (function _00000000000000000000000000000016_clang_iw_sys_wait_one_d0a7241c ([handle i5] [timeout_ms i5]) to i5))
-  (declare (function _00000000000000000000000000000017_clang_iw_sys_wait_many_fde29c46 ([handles <array i5>] [wait_all bool] [timeout_ms i5]) to i5))
-  (declare (function _00000000000000000000000000000018_clang_iw_sys_handle_close_9c23c169 ([handle i5]) to unit))
-  (declare (function _00000000000000000000000000000027_clang_iw_sys_dir_open_s3_cede603d ([path s3]) to i5))
-  (declare (function _00000000000000000000000000000028_clang_iw_sys_dir_read_s3_78dfdece ([handle i5]) to s3))
+﻿{program std~windows~sys@v1
+  (export (declare (function _00000000000000000000000000000023_clang_iw_sys_platform_name_e893378d () to s3)))
+  (export (declare (function _2b11a3af885b640500754685880f54b5_clang_iw_sys_process_getpid_de7c16f6 () to i5)))
+  (export (declare (function _83689e5ddea8dfc0ee7998ab95819984_clang_iw_sys_thread_gettid_9e1c50c3 () to i5)))
+  (export (declare (function _2f6f7535830b5e28ab30d0fb83230b51_clang_iw_sys_process_exit_3a5b7632 ([code i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000001_clang_iw_sys_process_abort_1431782e () to unit)))
+  (export (declare (function _00000000000000000000000000000002_clang_iw_sys_process_argc_80098dc0 () to i5)))
+  (export (declare (function _00000000000000000000000000000003_clang_iw_sys_process_argv_s3_53b4fa8b ([index i5]) to s3)))
+  (export (declare (function _00000000000000000000000000000004_clang_iw_sys_env_get_s3_eb23bd9e ([name s3]) to s3)))
+  (export (declare (function _00000000000000000000000000000005_clang_iw_sys_env_set_s3_3ee28181 ([name s3] [value s3]) to unit)))
+  (export (declare (function _00000000000000000000000000000006_clang_iw_sys_env_unset_s3_c51a9d17 ([name s3]) to unit)))
+  (export (declare (function _1c11bc3b8e154be8e0f7eeadc1b74513_clang_iw_sys_path_getcwd_s3_48a0c477 () to s3)))
+  (export (declare (function _a74d55a3cd532d71ab7b21be4a685aba_clang_iw_sys_path_chdir_s3_06ea7ccf ([path s3]) to unit)))
+  (export (declare (function _00000000000000000000000000000007_clang_iw_sys_path_exists_s3_54f2832f ([path s3]) to bool)))
+  (export (declare (function _00000000000000000000000000000008_clang_iw_sys_path_is_file_s3_ddc3a021 ([path s3]) to bool)))
+  (export (declare (function _00000000000000000000000000000009_clang_iw_sys_path_is_dir_s3_14810049 ([path s3]) to bool)))
+  (export (declare (function _a88fab1e48409b3b0d17a4e18108da29_clang_iw_sys_path_mkdir_s3_872e42fb ([path s3]) to unit)))
+  (export (declare (function _6ef96960eb2fd3e78175896a8dfe8ccd_clang_iw_sys_path_rmdir_s3_066385f5 ([path s3]) to unit)))
+  (export (declare (function _dfd36b64cdce2875eb5d4a44b9d483bd_clang_iw_sys_path_unlink_s3_f10443fc ([path s3]) to unit)))
+  (export (declare (function _8a0c96c468bc5b0abd77b8b5265e0a86_clang_iw_sys_path_rename_s3_af374547 ([source_path s3] [target_path s3]) to unit)))
+  (export (declare (function _e2f5b201a54d215645722906e632d8ac_clang_iw_sys_fd_open_read_s3_5ad8877a ([path s3]) to i5)))
+  (export (declare (function _32b6cad62de91502f57bf54b0086f087_clang_iw_sys_fd_open_write_s3_58780d0e ([path s3]) to i5)))
+  (export (declare (function _0000000000000000000000000000000a_clang_iw_sys_fd_open_append_s3_e99f04bd ([path s3]) to i5)))
+  (export (declare (function _8bf70349cf24108f14b0760bc947b61f_clang_iw_sys_fd_creat_s3_e1e678ab ([path s3]) to i5)))
+  (export (declare (function _6d9c59f80dbd559bd0382261d37cc256_clang_iw_sys_fd_close_034b474a ([fd i5]) to unit)))
+  (export (declare (function _6b787030f1f9868b2c30df6009589960_clang_iw_sys_fd_read_s3_c6dd19e6 ([fd i5] [size i5]) to s3)))
+  (export (declare (function _ed23b32546f345f1c8bc9a15ce8af57d_clang_iw_sys_fd_write_s3_05021e00 ([fd i5] [value s3]) to i5)))
+  (export (declare (function _250bb832c98969203e8403fd295bf4fe_clang_iw_sys_fd_pread_s3_03dc1a15 ([fd i5] [size i5] [offset i5]) to s3)))
+  (export (declare (function _6df5ef68d16e8dbeb7afaf74a2041d5c_clang_iw_sys_fd_pwrite_s3_5e2dd289 ([fd i5] [value s3] [offset i5]) to i5)))
+  (export (declare (function _83f990ba26baecff762c5eed91672d41_clang_iw_sys_fd_lseek_803f482c ([fd i5] [offset i5] [whence i5]) to i5)))
+  (export (declare (function _0d8772a68e63d14600a2db3344ab1582_clang_iw_sys_fd_fsync_94ccd79b ([fd i5]) to unit)))
+  (export (declare (function _f87495a34d93e392f973660a937cf479_clang_iw_sys_fd_fstat_e27c5eb8 ([fd i5]) to <array i5>)))
+  (export (declare (function _0000000000000000000000000000000b_clang_iw_sys_path_stat_s3_e35a357e ([path s3]) to <array i5>)))
+  (export (declare (function _737564d02de88557209a13da2cd51bf2_clang_iw_sys_fd_pipe2_c920392a () to <array i5>)))
+  (export (declare (function _0000000000000000000000000000000c_clang_iw_sys_process_spawn_s3_d2e213ec ([path s3] [argv <array s3>] [envp <array s3>]) to <array i5>)))
+  (export (declare (function _00000000000000000000000000000026_clang_iw_sys_process_spawn_stdio_s3_aeb8bd1f ([path s3] [argv <array s3>] [envp <array s3>] [stdin_fd i5] [stdout_fd i5] [stderr_fd i5]) to <array i5>)))
+  (export (declare (function _0000000000000000000000000000000d_clang_iw_sys_process_wait_dfde99da ([process_handle i5]) to i5)))
+  (export (declare (function _0000000000000000000000000000000e_clang_iw_sys_process_kill_3d29cd00 ([process_handle i5]) to unit)))
+  (export (declare (function _0000000000000000000000000000000f_clang_iw_sys_time_unix_ms_e32873a2 () to i5)))
+  (export (declare (function _00000000000000000000000000000010_clang_iw_sys_time_monotonic_ms_a432d8b7 () to i5)))
+  (export (declare (function _0408ff57b3d37fd846e3a60c9008c32e_clang_iw_sleep_ms_0d1507e2 ([duration_ms i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000011_clang_iw_sys_net_startup_44d6b930 () to unit)))
+  (export (declare (function _00000000000000000000000000000012_clang_iw_sys_net_cleanup_232e1102 () to unit)))
+  (export (declare (function _ccf0997f223e6d727cf06c9aed78f0bd_clang_iw_sys_net_socket_tcp4_73b1bd4d () to i5)))
+  (export (declare (function _00000000000000000000000000000013_clang_iw_sys_net_close_50dcddbb ([fd i5]) to unit)))
+  (export (declare (function _97de01644f578b78721d6c6f807d5760_clang_iw_sys_net_bind_ipv4_any_10938894 ([fd i5] [port i5]) to unit)))
+  (export (declare (function _7094dbbe042276a8e4b69bd018fd30e4_clang_iw_sys_net_bind_ipv4_loopback_9f205802 ([fd i5] [port i5]) to unit)))
+  (export (declare (function _27098860d4928373cb8f9e0f78fedd2f_clang_iw_sys_net_getsockname_ipv4_port_e9b097d5 ([fd i5]) to i5)))
+  (export (declare (function _213e1ec04b246c7cc4f66b46f1aa3116_clang_iw_sys_net_listen_cf1a6636 ([fd i5] [backlog i5]) to unit)))
+  (export (declare (function _7766131a5dfd0a2f89932f6846dad826_clang_iw_sys_net_accept_bbd0c405 ([fd i5]) to i5)))
+  (export (declare (function _689a8bec6a0690b8fbbb5eadcd386c5b_clang_iw_sys_net_connect_ipv4_loopback_40e73680 ([fd i5] [port i5]) to unit)))
+  (export (declare (function _3cd9bb88e37fb1dcda345c8936aa38b8_clang_iw_sys_net_send_s3_1bec9d45 ([fd i5] [value s3]) to i5)))
+  (export (declare (function _1a83a64e2fef6fd8ad6e2b4600147f2a_clang_iw_sys_net_recv_s3_9ceec74d ([fd i5] [size i5]) to s3)))
+  (export (declare (function _1180ab8d4d5750d83a7714aab612d9f0_clang_iw_sys_net_shutdown_e6afcd8c ([fd i5] [how i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000014_clang_iw_sys_net_set_nonblocking_a5ff9793 ([fd i5] [enabled bool]) to unit)))
+  (export (declare (function _105c51452a1bfbd028f916a70fa32651_clang_iw_sys_net_setsockopt_reuseaddr_0698716a ([fd i5]) to unit)))
+  (export (declare (function _9b1d6a4e9ae3137013b9751d4388fa82_clang_iw_sys_net_setsockopt_tcp_nodelay_47f29dd2 ([fd i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000015_clang_iw_sys_event_create_041ec446 ([manual_reset bool] [initial_state bool]) to i5)))
+  (export (declare (function _00000000000000000000000000000024_clang_iw_sys_event_set_796b635a ([handle i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000025_clang_iw_sys_event_reset_d61e3afc ([handle i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000016_clang_iw_sys_wait_one_d0a7241c ([handle i5] [timeout_ms i5]) to i5)))
+  (export (declare (function _00000000000000000000000000000017_clang_iw_sys_wait_many_fde29c46 ([handles <array i5>] [wait_all bool] [timeout_ms i5]) to i5)))
+  (export (declare (function _00000000000000000000000000000018_clang_iw_sys_handle_close_9c23c169 ([handle i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000027_clang_iw_sys_dir_open_s3_cede603d ([path s3]) to i5)))
+  (export (declare (function _00000000000000000000000000000028_clang_iw_sys_dir_read_s3_78dfdece ([handle i5]) to s3)))
 
-  (class SysFileStat
+  (export (class SysFileStat
     (property [device i5])
     (property [inode i5])
     (property [mode i5])
@@ -87,9 +87,9 @@
         (cm_set self is_dir is_dir0)
       }
     )
-  )
+  ))
 
-  (class SysProcess
+  (export (class SysProcess
     (property [process_handle i5])
     (property [thread_handle i5])
     (property [pid i5])
@@ -100,9 +100,9 @@
         (cm_set self pid pid0)
       }
     )
-  )
+  ))
 
-  (function sys_file_stat_from_raw ([raw <array i5>]) to SysFileStat in
+  (export (function sys_file_stat_from_raw ([raw <array i5>]) to SysFileStat in
     (class_new SysFileStat
       (array_get raw $0^i5)
       (array_get raw $1^i5)
@@ -114,272 +114,272 @@
       (neq (array_get raw $7^i5) $0^i5)
       (neq (array_get raw $8^i5) $0^i5)
     )
-  )
+  ))
 
-  (function sys_process_from_raw ([raw <array i5>]) to SysProcess in
+  (export (function sys_process_from_raw ([raw <array i5>]) to SysProcess in
     (class_new SysProcess
       (array_get raw $0^i5)
       (array_get raw $1^i5)
       (array_get raw $2^i5)
     )
-  )
+  ))
 
-  (function sys_platform_name () to s3 in
+  (export (function sys_platform_name () to s3 in
     (_00000000000000000000000000000023_clang_iw_sys_platform_name_e893378d)
-  )
+  ))
 
-  (function sys_process_getpid () to i5 in
+  (export (function sys_process_getpid () to i5 in
     (_2b11a3af885b640500754685880f54b5_clang_iw_sys_process_getpid_de7c16f6)
-  )
+  ))
 
-  (function sys_thread_gettid () to i5 in
+  (export (function sys_thread_gettid () to i5 in
     (_83689e5ddea8dfc0ee7998ab95819984_clang_iw_sys_thread_gettid_9e1c50c3)
-  )
+  ))
 
-  (function sys_process_exit ([code i5]) to unit in
+  (export (function sys_process_exit ([code i5]) to unit in
     (_2f6f7535830b5e28ab30d0fb83230b51_clang_iw_sys_process_exit_3a5b7632 code)
-  )
+  ))
 
-  (function sys_process_abort () to unit in
+  (export (function sys_process_abort () to unit in
     (_00000000000000000000000000000001_clang_iw_sys_process_abort_1431782e)
-  )
+  ))
 
-  (function sys_process_argc () to i5 in
+  (export (function sys_process_argc () to i5 in
     (_00000000000000000000000000000002_clang_iw_sys_process_argc_80098dc0)
-  )
+  ))
 
-  (function sys_process_argv_s3 ([index i5]) to s3 in
+  (export (function sys_process_argv_s3 ([index i5]) to s3 in
     (_00000000000000000000000000000003_clang_iw_sys_process_argv_s3_53b4fa8b index)
-  )
+  ))
 
-  (function sys_env_get_s3 ([name s3]) to s3 in
+  (export (function sys_env_get_s3 ([name s3]) to s3 in
     (_00000000000000000000000000000004_clang_iw_sys_env_get_s3_eb23bd9e name)
-  )
+  ))
 
-  (function sys_env_set_s3 ([name s3] [value s3]) to unit in
+  (export (function sys_env_set_s3 ([name s3] [value s3]) to unit in
     {
       (_00000000000000000000000000000005_clang_iw_sys_env_set_s3_3ee28181 name value)
       unit
     }
-  )
+  ))
 
-  (function sys_env_unset_s3 ([name s3]) to unit in
+  (export (function sys_env_unset_s3 ([name s3]) to unit in
     {
       (_00000000000000000000000000000006_clang_iw_sys_env_unset_s3_c51a9d17 name)
       unit
     }
-  )
+  ))
 
-  (function sys_path_getcwd_s3 () to s3 in
+  (export (function sys_path_getcwd_s3 () to s3 in
     (_1c11bc3b8e154be8e0f7eeadc1b74513_clang_iw_sys_path_getcwd_s3_48a0c477)
-  )
+  ))
 
-  (function sys_path_chdir_s3 ([path s3]) to unit in
+  (export (function sys_path_chdir_s3 ([path s3]) to unit in
     {
       (_a74d55a3cd532d71ab7b21be4a685aba_clang_iw_sys_path_chdir_s3_06ea7ccf path)
       unit
     }
-  )
+  ))
 
-  (function sys_path_exists_s3 ([path s3]) to bool in
+  (export (function sys_path_exists_s3 ([path s3]) to bool in
     (_00000000000000000000000000000007_clang_iw_sys_path_exists_s3_54f2832f path)
-  )
+  ))
 
-  (function sys_path_is_file_s3 ([path s3]) to bool in
+  (export (function sys_path_is_file_s3 ([path s3]) to bool in
     (_00000000000000000000000000000008_clang_iw_sys_path_is_file_s3_ddc3a021 path)
-  )
+  ))
 
-  (function sys_path_is_dir_s3 ([path s3]) to bool in
+  (export (function sys_path_is_dir_s3 ([path s3]) to bool in
     (_00000000000000000000000000000009_clang_iw_sys_path_is_dir_s3_14810049 path)
-  )
+  ))
 
-  (function sys_path_mkdir_s3 ([path s3]) to unit in
+  (export (function sys_path_mkdir_s3 ([path s3]) to unit in
     {
       (_a88fab1e48409b3b0d17a4e18108da29_clang_iw_sys_path_mkdir_s3_872e42fb path)
       unit
     }
-  )
+  ))
 
-  (function sys_path_rmdir_s3 ([path s3]) to unit in
+  (export (function sys_path_rmdir_s3 ([path s3]) to unit in
     {
       (_6ef96960eb2fd3e78175896a8dfe8ccd_clang_iw_sys_path_rmdir_s3_066385f5 path)
       unit
     }
-  )
+  ))
 
-  (function sys_path_unlink_s3 ([path s3]) to unit in
+  (export (function sys_path_unlink_s3 ([path s3]) to unit in
     {
       (_dfd36b64cdce2875eb5d4a44b9d483bd_clang_iw_sys_path_unlink_s3_f10443fc path)
       unit
     }
-  )
+  ))
 
-  (function sys_path_rename_s3 ([source_path s3] [target_path s3]) to unit in
+  (export (function sys_path_rename_s3 ([source_path s3] [target_path s3]) to unit in
     {
       (_8a0c96c468bc5b0abd77b8b5265e0a86_clang_iw_sys_path_rename_s3_af374547 source_path target_path)
       unit
     }
-  )
+  ))
 
-  (function sys_file_open_read_s3 ([path s3]) to i5 in
+  (export (function sys_file_open_read_s3 ([path s3]) to i5 in
     (_e2f5b201a54d215645722906e632d8ac_clang_iw_sys_fd_open_read_s3_5ad8877a path)
-  )
+  ))
 
-  (function sys_file_open_write_s3 ([path s3]) to i5 in
+  (export (function sys_file_open_write_s3 ([path s3]) to i5 in
     (_32b6cad62de91502f57bf54b0086f087_clang_iw_sys_fd_open_write_s3_58780d0e path)
-  )
+  ))
 
-  (function sys_file_open_append_s3 ([path s3]) to i5 in
+  (export (function sys_file_open_append_s3 ([path s3]) to i5 in
     (_0000000000000000000000000000000a_clang_iw_sys_fd_open_append_s3_e99f04bd path)
-  )
+  ))
 
-  (function sys_file_create_s3 ([path s3]) to i5 in
+  (export (function sys_file_create_s3 ([path s3]) to i5 in
     (_8bf70349cf24108f14b0760bc947b61f_clang_iw_sys_fd_creat_s3_e1e678ab path)
-  )
+  ))
 
-  (function sys_file_close ([fd i5]) to unit in
+  (export (function sys_file_close ([fd i5]) to unit in
     {
       (_6d9c59f80dbd559bd0382261d37cc256_clang_iw_sys_fd_close_034b474a fd)
       unit
     }
-  )
+  ))
 
-  (function sys_file_read_s3 ([fd i5] [size i5]) to s3 in
+  (export (function sys_file_read_s3 ([fd i5] [size i5]) to s3 in
     (_6b787030f1f9868b2c30df6009589960_clang_iw_sys_fd_read_s3_c6dd19e6 fd size)
-  )
+  ))
 
-  (function sys_file_write_s3 ([fd i5] [value s3]) to i5 in
+  (export (function sys_file_write_s3 ([fd i5] [value s3]) to i5 in
     (_ed23b32546f345f1c8bc9a15ce8af57d_clang_iw_sys_fd_write_s3_05021e00 fd value)
-  )
+  ))
 
-  (function sys_file_pread_s3 ([fd i5] [size i5] [offset i5]) to s3 in
+  (export (function sys_file_pread_s3 ([fd i5] [size i5] [offset i5]) to s3 in
     (_250bb832c98969203e8403fd295bf4fe_clang_iw_sys_fd_pread_s3_03dc1a15 fd size offset)
-  )
+  ))
 
-  (function sys_file_pwrite_s3 ([fd i5] [value s3] [offset i5]) to i5 in
+  (export (function sys_file_pwrite_s3 ([fd i5] [value s3] [offset i5]) to i5 in
     (_6df5ef68d16e8dbeb7afaf74a2041d5c_clang_iw_sys_fd_pwrite_s3_5e2dd289 fd value offset)
-  )
+  ))
 
-  (function sys_file_seek_set ([fd i5] [offset i5]) to i5 in
+  (export (function sys_file_seek_set ([fd i5] [offset i5]) to i5 in
     (_83f990ba26baecff762c5eed91672d41_clang_iw_sys_fd_lseek_803f482c fd offset $0^i5)
-  )
+  ))
 
-  (function sys_file_seek_cur ([fd i5] [offset i5]) to i5 in
+  (export (function sys_file_seek_cur ([fd i5] [offset i5]) to i5 in
     (_83f990ba26baecff762c5eed91672d41_clang_iw_sys_fd_lseek_803f482c fd offset $1^i5)
-  )
+  ))
 
-  (function sys_file_seek_end ([fd i5] [offset i5]) to i5 in
+  (export (function sys_file_seek_end ([fd i5] [offset i5]) to i5 in
     (_83f990ba26baecff762c5eed91672d41_clang_iw_sys_fd_lseek_803f482c fd offset $2^i5)
-  )
+  ))
 
-  (function sys_file_flush ([fd i5]) to unit in
+  (export (function sys_file_flush ([fd i5]) to unit in
     {
       (_0d8772a68e63d14600a2db3344ab1582_clang_iw_sys_fd_fsync_94ccd79b fd)
       unit
     }
-  )
+  ))
 
-  (function sys_file_stat ([fd i5]) to SysFileStat in
+  (export (function sys_file_stat ([fd i5]) to SysFileStat in
     (sys_file_stat_from_raw (_f87495a34d93e392f973660a937cf479_clang_iw_sys_fd_fstat_e27c5eb8 fd))
-  )
+  ))
 
-  (function sys_path_stat_s3 ([path s3]) to SysFileStat in
+  (export (function sys_path_stat_s3 ([path s3]) to SysFileStat in
     (sys_file_stat_from_raw (_0000000000000000000000000000000b_clang_iw_sys_path_stat_s3_e35a357e path))
-  )
+  ))
 
-  (function sys_fd_open_read_s3 ([path s3]) to i5 in
+  (export (function sys_fd_open_read_s3 ([path s3]) to i5 in
     (sys_file_open_read_s3 path)
-  )
+  ))
 
-  (function sys_fd_open_write_s3 ([path s3]) to i5 in
+  (export (function sys_fd_open_write_s3 ([path s3]) to i5 in
     (sys_file_open_write_s3 path)
-  )
+  ))
 
-  (function sys_fd_open_append_s3 ([path s3]) to i5 in
+  (export (function sys_fd_open_append_s3 ([path s3]) to i5 in
     (sys_file_open_append_s3 path)
-  )
+  ))
 
-  (function sys_fd_creat_s3 ([path s3]) to i5 in
+  (export (function sys_fd_creat_s3 ([path s3]) to i5 in
     (sys_file_create_s3 path)
-  )
+  ))
 
-  (function sys_fd_close ([fd i5]) to unit in
+  (export (function sys_fd_close ([fd i5]) to unit in
     (sys_file_close fd)
-  )
+  ))
 
-  (function sys_fd_read_s3 ([fd i5] [size i5]) to s3 in
+  (export (function sys_fd_read_s3 ([fd i5] [size i5]) to s3 in
     (sys_file_read_s3 fd size)
-  )
+  ))
 
-  (function sys_fd_write_s3 ([fd i5] [value s3]) to i5 in
+  (export (function sys_fd_write_s3 ([fd i5] [value s3]) to i5 in
     (sys_file_write_s3 fd value)
-  )
+  ))
 
-  (function sys_fd_pread_s3 ([fd i5] [size i5] [offset i5]) to s3 in
+  (export (function sys_fd_pread_s3 ([fd i5] [size i5] [offset i5]) to s3 in
     (sys_file_pread_s3 fd size offset)
-  )
+  ))
 
-  (function sys_fd_pwrite_s3 ([fd i5] [value s3] [offset i5]) to i5 in
+  (export (function sys_fd_pwrite_s3 ([fd i5] [value s3] [offset i5]) to i5 in
     (sys_file_pwrite_s3 fd value offset)
-  )
+  ))
 
-  (function sys_fd_seek_set ([fd i5] [offset i5]) to i5 in
+  (export (function sys_fd_seek_set ([fd i5] [offset i5]) to i5 in
     (sys_file_seek_set fd offset)
-  )
+  ))
 
-  (function sys_fd_seek_cur ([fd i5] [offset i5]) to i5 in
+  (export (function sys_fd_seek_cur ([fd i5] [offset i5]) to i5 in
     (sys_file_seek_cur fd offset)
-  )
+  ))
 
-  (function sys_fd_seek_end ([fd i5] [offset i5]) to i5 in
+  (export (function sys_fd_seek_end ([fd i5] [offset i5]) to i5 in
     (sys_file_seek_end fd offset)
-  )
+  ))
 
-  (function sys_fd_fsync ([fd i5]) to unit in
+  (export (function sys_fd_fsync ([fd i5]) to unit in
     (sys_file_flush fd)
-  )
+  ))
 
-  (function sys_fd_fstat ([fd i5]) to SysFileStat in
+  (export (function sys_fd_fstat ([fd i5]) to SysFileStat in
     (sys_file_stat fd)
-  )
+  ))
 
-  (function sys_fd_fdatasync ([fd i5]) to unit in
+  (export (function sys_fd_fdatasync ([fd i5]) to unit in
     (sys_fd_fsync fd)
-  )
+  ))
 
-  (function sys_stat_size ([stat SysFileStat]) to i5 in
+  (export (function sys_stat_size ([stat SysFileStat]) to i5 in
     (cm_get stat size)
-  )
+  ))
 
-  (function sys_stat_is_regular ([stat SysFileStat]) to bool in
+  (export (function sys_stat_is_regular ([stat SysFileStat]) to bool in
     (cm_get stat is_file)
-  )
+  ))
 
-  (function sys_stat_is_dir ([stat SysFileStat]) to bool in
+  (export (function sys_stat_is_dir ([stat SysFileStat]) to bool in
     (cm_get stat is_dir)
-  )
+  ))
 
-  (function sys_stdin_handle () to i5 in
+  (export (function sys_stdin_handle () to i5 in
     $0^i5
-  )
+  ))
 
-  (function sys_stdout_handle () to i5 in
+  (export (function sys_stdout_handle () to i5 in
     $1^i5
-  )
+  ))
 
-  (function sys_stderr_handle () to i5 in
+  (export (function sys_stderr_handle () to i5 in
     $2^i5
-  )
+  ))
 
-  (function sys_pipe_create () to <array i5> in
+  (export (function sys_pipe_create () to <array i5> in
     (_737564d02de88557209a13da2cd51bf2_clang_iw_sys_fd_pipe2_c920392a)
-  )
+  ))
 
-  (function sys_fd_pipe2 () to <array i5> in
+  (export (function sys_fd_pipe2 () to <array i5> in
     (sys_pipe_create)
-  )
+  ))
 
-  (function sys_process_spawn_s3 ([path s3] [argv <array s3>] [envp <array s3>]) to SysProcess in
+  (export (function sys_process_spawn_s3 ([path s3] [argv <array s3>] [envp <array s3>]) to SysProcess in
     {
       (var [raw <array i5>] (_0000000000000000000000000000000c_clang_iw_sys_process_spawn_s3_d2e213ec path argv envp))
       (var [process_handle i5] (array_get raw $0^i5))
@@ -387,9 +387,9 @@
       (var [pid i5] (array_get raw $2^i5))
       (class_new SysProcess process_handle thread_handle pid)
     }
-  )
+  ))
 
-  (function sys_process_spawn_stdio_s3 ([path s3] [argv <array s3>] [envp <array s3>] [stdin_fd i5] [stdout_fd i5] [stderr_fd i5]) to SysProcess in
+  (export (function sys_process_spawn_stdio_s3 ([path s3] [argv <array s3>] [envp <array s3>] [stdin_fd i5] [stdout_fd i5] [stderr_fd i5]) to SysProcess in
     {
       (var [raw <array i5>] (_00000000000000000000000000000026_clang_iw_sys_process_spawn_stdio_s3_aeb8bd1f path argv envp stdin_fd stdout_fd stderr_fd))
       (var [process_handle i5] (array_get raw $0^i5))
@@ -397,211 +397,211 @@
       (var [pid i5] (array_get raw $2^i5))
       (class_new SysProcess process_handle thread_handle pid)
     }
-  )
+  ))
 
-  (function sys_process_wait ([process SysProcess]) to i5 in
+  (export (function sys_process_wait ([process SysProcess]) to i5 in
     (_0000000000000000000000000000000d_clang_iw_sys_process_wait_dfde99da process.process_handle)
-  )
+  ))
 
-  (function sys_process_kill ([process SysProcess]) to unit in
+  (export (function sys_process_kill ([process SysProcess]) to unit in
     {
       (_0000000000000000000000000000000e_clang_iw_sys_process_kill_3d29cd00 process.process_handle)
       unit
     }
-  )
+  ))
 
-  (function sys_process_id ([process SysProcess]) to i5 in
+  (export (function sys_process_id ([process SysProcess]) to i5 in
     process.pid
-  )
+  ))
 
-  (function sys_process_close ([process SysProcess]) to unit in
+  (export (function sys_process_close ([process SysProcess]) to unit in
     {
       (_00000000000000000000000000000018_clang_iw_sys_handle_close_9c23c169 process.process_handle)
       (_00000000000000000000000000000018_clang_iw_sys_handle_close_9c23c169 process.thread_handle)
       unit
     }
-  )
+  ))
 
-  (function sys_time_unix_ms () to i5 in
+  (export (function sys_time_unix_ms () to i5 in
     (_0000000000000000000000000000000f_clang_iw_sys_time_unix_ms_e32873a2)
-  )
+  ))
 
-  (function sys_time_monotonic_ms () to i5 in
+  (export (function sys_time_monotonic_ms () to i5 in
     (_00000000000000000000000000000010_clang_iw_sys_time_monotonic_ms_a432d8b7)
-  )
+  ))
 
-  (function sys_sleep_ms ([duration_ms i5]) to unit in
+  (export (function sys_sleep_ms ([duration_ms i5]) to unit in
     {
       (_0408ff57b3d37fd846e3a60c9008c32e_clang_iw_sleep_ms_0d1507e2 duration_ms)
       unit
     }
-  )
+  ))
 
-  (function sys_net_startup () to unit in
+  (export (function sys_net_startup () to unit in
     {
       (_00000000000000000000000000000011_clang_iw_sys_net_startup_44d6b930)
       unit
     }
-  )
+  ))
 
-  (function sys_net_cleanup () to unit in
+  (export (function sys_net_cleanup () to unit in
     {
       (_00000000000000000000000000000012_clang_iw_sys_net_cleanup_232e1102)
       unit
     }
-  )
+  ))
 
-  (function sys_net_tcp4_socket () to i5 in
+  (export (function sys_net_tcp4_socket () to i5 in
     (_ccf0997f223e6d727cf06c9aed78f0bd_clang_iw_sys_net_socket_tcp4_73b1bd4d)
-  )
+  ))
 
-  (function sys_net_close ([fd i5]) to unit in
+  (export (function sys_net_close ([fd i5]) to unit in
     {
       (_00000000000000000000000000000013_clang_iw_sys_net_close_50dcddbb fd)
       unit
     }
-  )
+  ))
 
-  (function sys_net_bind_ipv4_any ([fd i5] [port i5]) to unit in
+  (export (function sys_net_bind_ipv4_any ([fd i5] [port i5]) to unit in
     {
       (_97de01644f578b78721d6c6f807d5760_clang_iw_sys_net_bind_ipv4_any_10938894 fd port)
       unit
     }
-  )
+  ))
 
-  (function sys_net_bind_ipv4_loopback ([fd i5] [port i5]) to unit in
+  (export (function sys_net_bind_ipv4_loopback ([fd i5] [port i5]) to unit in
     {
       (_7094dbbe042276a8e4b69bd018fd30e4_clang_iw_sys_net_bind_ipv4_loopback_9f205802 fd port)
       unit
     }
-  )
+  ))
 
-  (function sys_net_getsockname_ipv4_port ([fd i5]) to i5 in
+  (export (function sys_net_getsockname_ipv4_port ([fd i5]) to i5 in
     (_27098860d4928373cb8f9e0f78fedd2f_clang_iw_sys_net_getsockname_ipv4_port_e9b097d5 fd)
-  )
+  ))
 
-  (function sys_net_listen ([fd i5] [backlog i5]) to unit in
+  (export (function sys_net_listen ([fd i5] [backlog i5]) to unit in
     {
       (_213e1ec04b246c7cc4f66b46f1aa3116_clang_iw_sys_net_listen_cf1a6636 fd backlog)
       unit
     }
-  )
+  ))
 
-  (function sys_net_accept ([fd i5]) to i5 in
+  (export (function sys_net_accept ([fd i5]) to i5 in
     (_7766131a5dfd0a2f89932f6846dad826_clang_iw_sys_net_accept_bbd0c405 fd)
-  )
+  ))
 
-  (function sys_net_connect_ipv4_loopback ([fd i5] [port i5]) to unit in
+  (export (function sys_net_connect_ipv4_loopback ([fd i5] [port i5]) to unit in
     {
       (_689a8bec6a0690b8fbbb5eadcd386c5b_clang_iw_sys_net_connect_ipv4_loopback_40e73680 fd port)
       unit
     }
-  )
+  ))
 
-  (function sys_net_send_s3 ([fd i5] [value s3]) to i5 in
+  (export (function sys_net_send_s3 ([fd i5] [value s3]) to i5 in
     (_3cd9bb88e37fb1dcda345c8936aa38b8_clang_iw_sys_net_send_s3_1bec9d45 fd value)
-  )
+  ))
 
-  (function sys_net_recv_s3 ([fd i5] [size i5]) to s3 in
+  (export (function sys_net_recv_s3 ([fd i5] [size i5]) to s3 in
     (_1a83a64e2fef6fd8ad6e2b4600147f2a_clang_iw_sys_net_recv_s3_9ceec74d fd size)
-  )
+  ))
 
-  (function sys_net_shutdown_read ([fd i5]) to unit in
+  (export (function sys_net_shutdown_read ([fd i5]) to unit in
     {
       (_1180ab8d4d5750d83a7714aab612d9f0_clang_iw_sys_net_shutdown_e6afcd8c fd $0^i5)
       unit
     }
-  )
+  ))
 
-  (function sys_net_shutdown_write ([fd i5]) to unit in
+  (export (function sys_net_shutdown_write ([fd i5]) to unit in
     {
       (_1180ab8d4d5750d83a7714aab612d9f0_clang_iw_sys_net_shutdown_e6afcd8c fd $1^i5)
       unit
     }
-  )
+  ))
 
-  (function sys_net_shutdown_read_write ([fd i5]) to unit in
+  (export (function sys_net_shutdown_read_write ([fd i5]) to unit in
     {
       (_1180ab8d4d5750d83a7714aab612d9f0_clang_iw_sys_net_shutdown_e6afcd8c fd $2^i5)
       unit
     }
-  )
+  ))
 
-  (function sys_net_set_nonblocking ([fd i5] [enabled bool]) to unit in
+  (export (function sys_net_set_nonblocking ([fd i5] [enabled bool]) to unit in
     {
       (_00000000000000000000000000000014_clang_iw_sys_net_set_nonblocking_a5ff9793 fd enabled)
       unit
     }
-  )
+  ))
 
-  (function sys_net_set_reuseaddr ([fd i5]) to unit in
+  (export (function sys_net_set_reuseaddr ([fd i5]) to unit in
     {
       (_105c51452a1bfbd028f916a70fa32651_clang_iw_sys_net_setsockopt_reuseaddr_0698716a fd)
       unit
     }
-  )
+  ))
 
-  (function sys_net_set_tcp_nodelay ([fd i5]) to unit in
+  (export (function sys_net_set_tcp_nodelay ([fd i5]) to unit in
     {
       (_9b1d6a4e9ae3137013b9751d4388fa82_clang_iw_sys_net_setsockopt_tcp_nodelay_47f29dd2 fd)
       unit
     }
-  )
+  ))
 
-  (function sys_event_create_manual ([initial_state bool]) to i5 in
+  (export (function sys_event_create_manual ([initial_state bool]) to i5 in
     (_00000000000000000000000000000015_clang_iw_sys_event_create_041ec446 true initial_state)
-  )
+  ))
 
-  (function sys_event_create_auto ([initial_state bool]) to i5 in
+  (export (function sys_event_create_auto ([initial_state bool]) to i5 in
     (_00000000000000000000000000000015_clang_iw_sys_event_create_041ec446 false initial_state)
-  )
+  ))
 
-  (function sys_event_set ([handle i5]) to unit in
+  (export (function sys_event_set ([handle i5]) to unit in
     {
       (_00000000000000000000000000000024_clang_iw_sys_event_set_796b635a handle)
       unit
     }
-  )
+  ))
 
-  (function sys_event_reset ([handle i5]) to unit in
+  (export (function sys_event_reset ([handle i5]) to unit in
     {
       (_00000000000000000000000000000025_clang_iw_sys_event_reset_d61e3afc handle)
       unit
     }
-  )
+  ))
 
-  (function sys_event_close ([handle i5]) to unit in
+  (export (function sys_event_close ([handle i5]) to unit in
     {
       (_00000000000000000000000000000018_clang_iw_sys_handle_close_9c23c169 handle)
       unit
     }
-  )
+  ))
 
-  (function sys_wait_one ([handle i5] [timeout_ms i5]) to i5 in
+  (export (function sys_wait_one ([handle i5] [timeout_ms i5]) to i5 in
     (_00000000000000000000000000000016_clang_iw_sys_wait_one_d0a7241c handle timeout_ms)
-  )
+  ))
 
-  (function sys_wait_many ([handles <array i5>] [wait_all bool] [timeout_ms i5]) to i5 in
+  (export (function sys_wait_many ([handles <array i5>] [wait_all bool] [timeout_ms i5]) to i5 in
     (_00000000000000000000000000000017_clang_iw_sys_wait_many_fde29c46 handles wait_all timeout_ms)
-  )
+  ))
 
-  (function sys_wait_timeout_code () to i5 in
+  (export (function sys_wait_timeout_code () to i5 in
     $258^i5
-  )
+  ))
 
-  (function sys_dir_open_s3 ([path s3]) to i5 in
+  (export (function sys_dir_open_s3 ([path s3]) to i5 in
     (_00000000000000000000000000000027_clang_iw_sys_dir_open_s3_cede603d path)
-  )
+  ))
 
-  (function sys_dir_read_s3 ([handle i5]) to s3 in
+  (export (function sys_dir_read_s3 ([handle i5]) to s3 in
     (_00000000000000000000000000000028_clang_iw_sys_dir_read_s3_78dfdece handle)
-  )
+  ))
 
-  (function sys_dir_close ([handle i5]) to unit in
+  (export (function sys_dir_close ([handle i5]) to unit in
     {
       (_00000000000000000000000000000018_clang_iw_sys_handle_close_9c23c169 handle)
       unit
     }
-  )
+  ))
 
 }

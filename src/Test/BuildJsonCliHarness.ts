@@ -4,6 +4,7 @@ import { mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { basename, dirname, join, resolve } from "path";
 import type { BackendPipelineName, BuildConfig, FrontendPipelineName } from "../BuildConfig";
+import { buildNodeScriptInvocation } from "./NodeMemoryLimit";
 
 type LegacyFrontendProfile = "optimized" | "no-optimized";
 type LegacyBackendProfile = "c-backend" | "optimized-x64-backend" | "no-optimized-backend";
@@ -252,7 +253,8 @@ function prepareBuildJsonCliInvocation(legacyArgs: readonly string[]): PreparedB
 export function execBuildJsonCliSync(cliPath: string, legacyArgs: readonly string[], options: ExecFileSyncOptionsWithStringEncoding): string {
     const prepared = prepareBuildJsonCliInvocation(legacyArgs);
     try {
-        return execFileSync(process.execPath, [cliPath, prepared.configPath], options);
+        const invocation = buildNodeScriptInvocation(cliPath, [prepared.configPath]);
+        return execFileSync(invocation.command, invocation.args, options);
     } finally {
         prepared.cleanup();
     }
@@ -261,7 +263,8 @@ export function execBuildJsonCliSync(cliPath: string, legacyArgs: readonly strin
 export function spawnBuildJsonCliSync(cliPath: string, legacyArgs: readonly string[], options: SpawnSyncOptionsWithStringEncoding): SpawnSyncReturns<string> {
     const prepared = prepareBuildJsonCliInvocation(legacyArgs);
     try {
-        const result = spawnSync(process.execPath, [cliPath, prepared.configPath], options);
+        const invocation = buildNodeScriptInvocation(cliPath, [prepared.configPath]);
+        const result = spawnSync(invocation.command, invocation.args, options);
         if (result.error !== undefined) {
             throw result.error;
         }
@@ -273,7 +276,8 @@ export function spawnBuildJsonCliSync(cliPath: string, legacyArgs: readonly stri
 
 export function spawnBuildJsonCli(cliPath: string, legacyArgs: readonly string[], options: SpawnOptionsWithoutStdio): ChildProcessWithoutNullStreams {
     const prepared = prepareBuildJsonCliInvocation(legacyArgs);
-    const child = spawn(process.execPath, [cliPath, prepared.configPath], options) as ChildProcessWithoutNullStreams;
+    const invocation = buildNodeScriptInvocation(cliPath, [prepared.configPath]);
+    const child = spawn(invocation.command, invocation.args, options) as ChildProcessWithoutNullStreams;
     const cleanup = (): void => {
         prepared.cleanup();
     };

@@ -1,0 +1,15 @@
+{program std~box@v1
+  (export (class <generic Box T>
+    (property [value T])
+    (constructor ([value0 T]) in
+      (cm_set self value value0)
+    )
+    (method unwrap () to T in
+      (cm_get self value)
+    )
+  ))
+
+  (export (function <generic box_unwrap T> ([box <Box T>]) to T in
+    ((cm_get box unwrap))
+  ))
+}

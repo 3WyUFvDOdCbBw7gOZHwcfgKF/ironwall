@@ -8,12 +8,20 @@ interface BackendRun {
     readonly runArgs: readonly string[];
 }
 
-const TEST_TIMEOUT_MS: number = 15000;
+const TEST_TIMEOUT_MS: number =
+    process.env.IW_EXTERNAL_FRONTEND_JSON_COMMAND !== undefined && process.env.IW_EXTERNAL_FRONTEND_JSON_COMMAND.trim().length > 0
+        ? 120000
+        : 15000;
 const MAX_BUFFER_BYTES: number = 16 * 1024 * 1024;
 const repoRoot: string = resolve(__dirname, "..", "..");
 const cliPath: string = join(repoRoot, "build", "main.js");
-const appDir: string = join(repoRoot, "src", "examples", "log-audit");
-const artifactDir: string = join(repoRoot, "src", "examples", "log-audit", "runtime");
+const isWindowsTarget: boolean = process.env.IW_TEST_TARGET === "windows-x64";
+const appDir: string = isWindowsTarget
+    ? join(repoRoot, "src", "Test", "Fixtures", "app-log-audit")
+    : join(repoRoot, "src", "examples", "log-audit");
+const artifactDir: string = isWindowsTarget
+    ? join(repoRoot, "artifacts", "app-log-audit")
+    : join(appDir, "runtime");
 const inputPath: string = join(artifactDir, "input.log");
 const reportsDir: string = join(artifactDir, "reports");
 const scratchDir: string = join(reportsDir, "staging");

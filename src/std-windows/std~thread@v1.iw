@@ -1,224 +1,224 @@
 {program std~thread@v1
   (import std~windows~sys)
-  (declare (function _9332ae8585f24284a248395f163f8b48_clang_iw_thread_spawn_i5_a59bb63d ([fn <to i5 from unit>]) to i5))
-  (declare (function _fa6a00a828784897f072176226466da6_clang_iw_thread_join_i5_1d1029db ([thread_handle i5]) to i5))
-  (declare (function _7fc0db057bfcac0ba51e33cc796ba992_clang_iw_thread_detach_63bac07d ([thread_handle i5]) to unit))
-  (declare (function _0000000000000000000000000000001c_clang_iw_thread_request_cancel_f31b9d2c ([thread_handle i5]) to unit))
-  (declare (function _0000000000000000000000000000001d_clang_iw_thread_cancel_requested_9c869566 () to bool))
-  (declare (function _d1f36372eb988e8808cf7dd83ca016b4_clang_iw_thread_exit_i5_3d26b928 ([value i5]) to i5))
-  (declare (function _714a71ed8f36258351150a335340ab77_clang_iw_thread_self_a305cd49 () to i5))
-  (declare (function _9cea94805419dda7e3e326527804e325_clang_iw_thread_yield_7216f99c () to unit))
-  (declare (function _6f28fdd54bb78277d66c0d5f059c2952_clang_iw_mutex_new_4b94eb44 () to i5))
-  (declare (function _c9316c81a670a4084d244bca9d8e373f_clang_iw_mutex_lock_59884770 ([mutex_handle i5]) to unit))
-  (declare (function _eb80167493bdae201ab8bb74ec075ca1_clang_iw_mutex_unlock_8df33862 ([mutex_handle i5]) to unit))
-  (declare (function _3cf6d6c6056b83e164b03328d777fa95_clang_iw_mutex_try_lock_bedb3ddb ([mutex_handle i5]) to bool))
-  (declare (function _e48171ad12e3796750eda8220ce3d844_clang_iw_mutex_destroy_52c25052 ([mutex_handle i5]) to unit))
-  (declare (function _eec78e460180f07f8a23fbe3b82a5634_clang_iw_cond_new_2410e928 () to i5))
-  (declare (function _3050b67c836a213dba63a8079545cef9_clang_iw_cond_wait_d6f2a0d5 ([cond_handle i5] [mutex_handle i5]) to unit))
-  (declare (function _8080184abaea0a2048d09d0e329c3e54_clang_iw_cond_timed_wait_ms_a20b977c ([cond_handle i5] [mutex_handle i5] [timeout_ms i5]) to bool))
-  (declare (function _56846fd0c24ba3aeb5532a75fbf0dbf5_clang_iw_cond_signal_6f7585f1 ([cond_handle i5]) to unit))
-  (declare (function _941fdea79b69592ccb80202727dba6ba_clang_iw_cond_broadcast_af36951a ([cond_handle i5]) to unit))
-  (declare (function _4c9995ec67fb40df302f2ea61151588d_clang_iw_cond_destroy_1759e37a ([cond_handle i5]) to unit))
-  (declare (function _8a37e63f0c04e6f5d0953a2e0c8d60b8_clang_iw_tls_key_new_7f7b8d23 () to i5))
-  (declare (function _7998c5d6804735b3c5d59e487442c4b7_clang_iw_tls_set_i5_ee97312f ([key_handle i5] [value i5]) to unit))
-  (declare (function _f9a66e358e7a5ff7192d09b89867036f_clang_iw_tls_get_i5_5b67d4f8 ([key_handle i5]) to i5))
-  (declare (function _7b918ab55c9a821a42307429580a7adf_clang_iw_tls_delete_d7d28072 ([key_handle i5]) to unit))
-  (declare (function _0000000000000000000000000000001e_clang_iw_sem_new_c9e151a1 ([initial_count i5]) to i5))
-  (declare (function _0000000000000000000000000000001f_clang_iw_sem_post_a8d2fe26 ([sem_handle i5]) to unit))
-  (declare (function _00000000000000000000000000000020_clang_iw_sem_wait_27c30e64 ([sem_handle i5]) to unit))
-  (declare (function _00000000000000000000000000000021_clang_iw_sem_timed_wait_ms_0886bf4c ([sem_handle i5] [timeout_ms i5]) to bool))
-  (declare (function _00000000000000000000000000000022_clang_iw_sem_destroy_50c50183 ([sem_handle i5]) to unit))
+  (export (declare (function _9332ae8585f24284a248395f163f8b48_clang_iw_thread_spawn_i5_a59bb63d ([fn <to i5 from unit>]) to i5)))
+  (export (declare (function _fa6a00a828784897f072176226466da6_clang_iw_thread_join_i5_1d1029db ([thread_handle i5]) to i5)))
+  (export (declare (function _7fc0db057bfcac0ba51e33cc796ba992_clang_iw_thread_detach_63bac07d ([thread_handle i5]) to unit)))
+  (export (declare (function _0000000000000000000000000000001c_clang_iw_thread_request_cancel_f31b9d2c ([thread_handle i5]) to unit)))
+  (export (declare (function _0000000000000000000000000000001d_clang_iw_thread_cancel_requested_9c869566 () to bool)))
+  (export (declare (function _d1f36372eb988e8808cf7dd83ca016b4_clang_iw_thread_exit_i5_3d26b928 ([value i5]) to i5)))
+  (export (declare (function _714a71ed8f36258351150a335340ab77_clang_iw_thread_self_a305cd49 () to i5)))
+  (export (declare (function _9cea94805419dda7e3e326527804e325_clang_iw_thread_yield_7216f99c () to unit)))
+  (export (declare (function _6f28fdd54bb78277d66c0d5f059c2952_clang_iw_mutex_new_4b94eb44 () to i5)))
+  (export (declare (function _c9316c81a670a4084d244bca9d8e373f_clang_iw_mutex_lock_59884770 ([mutex_handle i5]) to unit)))
+  (export (declare (function _eb80167493bdae201ab8bb74ec075ca1_clang_iw_mutex_unlock_8df33862 ([mutex_handle i5]) to unit)))
+  (export (declare (function _3cf6d6c6056b83e164b03328d777fa95_clang_iw_mutex_try_lock_bedb3ddb ([mutex_handle i5]) to bool)))
+  (export (declare (function _e48171ad12e3796750eda8220ce3d844_clang_iw_mutex_destroy_52c25052 ([mutex_handle i5]) to unit)))
+  (export (declare (function _eec78e460180f07f8a23fbe3b82a5634_clang_iw_cond_new_2410e928 () to i5)))
+  (export (declare (function _3050b67c836a213dba63a8079545cef9_clang_iw_cond_wait_d6f2a0d5 ([cond_handle i5] [mutex_handle i5]) to unit)))
+  (export (declare (function _8080184abaea0a2048d09d0e329c3e54_clang_iw_cond_timed_wait_ms_a20b977c ([cond_handle i5] [mutex_handle i5] [timeout_ms i5]) to bool)))
+  (export (declare (function _56846fd0c24ba3aeb5532a75fbf0dbf5_clang_iw_cond_signal_6f7585f1 ([cond_handle i5]) to unit)))
+  (export (declare (function _941fdea79b69592ccb80202727dba6ba_clang_iw_cond_broadcast_af36951a ([cond_handle i5]) to unit)))
+  (export (declare (function _4c9995ec67fb40df302f2ea61151588d_clang_iw_cond_destroy_1759e37a ([cond_handle i5]) to unit)))
+  (export (declare (function _8a37e63f0c04e6f5d0953a2e0c8d60b8_clang_iw_tls_key_new_7f7b8d23 () to i5)))
+  (export (declare (function _7998c5d6804735b3c5d59e487442c4b7_clang_iw_tls_set_i5_ee97312f ([key_handle i5] [value i5]) to unit)))
+  (export (declare (function _f9a66e358e7a5ff7192d09b89867036f_clang_iw_tls_get_i5_5b67d4f8 ([key_handle i5]) to i5)))
+  (export (declare (function _7b918ab55c9a821a42307429580a7adf_clang_iw_tls_delete_d7d28072 ([key_handle i5]) to unit)))
+  (export (declare (function _0000000000000000000000000000001e_clang_iw_sem_new_c9e151a1 ([initial_count i5]) to i5)))
+  (export (declare (function _0000000000000000000000000000001f_clang_iw_sem_post_a8d2fe26 ([sem_handle i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000020_clang_iw_sem_wait_27c30e64 ([sem_handle i5]) to unit)))
+  (export (declare (function _00000000000000000000000000000021_clang_iw_sem_timed_wait_ms_0886bf4c ([sem_handle i5] [timeout_ms i5]) to bool)))
+  (export (declare (function _00000000000000000000000000000022_clang_iw_sem_destroy_50c50183 ([sem_handle i5]) to unit)))
 
-  (class Thread
+  (export (class Thread
     (property [handle i5])
     (constructor ([handle0 i5]) in
       (cm_set self handle handle0)
     )
-  )
+  ))
 
-  (class Mutex
+  (export (class Mutex
     (property [handle i5])
     (constructor ([handle0 i5]) in
       (cm_set self handle handle0)
     )
-  )
+  ))
 
-  (class Cond
+  (export (class Cond
     (property [handle i5])
     (constructor ([handle0 i5]) in
       (cm_set self handle handle0)
     )
-  )
+  ))
 
-  (class TlsKey
+  (export (class TlsKey
     (property [handle i5])
     (constructor ([handle0 i5]) in
       (cm_set self handle handle0)
     )
-  )
+  ))
 
-  (class Semaphore
+  (export (class Semaphore
     (property [handle i5])
     (constructor ([handle0 i5]) in
       (cm_set self handle handle0)
     )
-  )
+  ))
 
-  (function spawn ([fn <to i5 from unit>]) to Thread in
+  (export (function spawn ([fn <to i5 from unit>]) to Thread in
     (class_new Thread (_9332ae8585f24284a248395f163f8b48_clang_iw_thread_spawn_i5_a59bb63d fn))
-  )
+  ))
 
-  (function join ([thread Thread]) to i5 in
+  (export (function join ([thread Thread]) to i5 in
     (_fa6a00a828784897f072176226466da6_clang_iw_thread_join_i5_1d1029db thread.handle)
-  )
+  ))
 
-  (function detach ([thread Thread]) to unit in
+  (export (function detach ([thread Thread]) to unit in
     {
       (_7fc0db057bfcac0ba51e33cc796ba992_clang_iw_thread_detach_63bac07d thread.handle)
       unit
     }
-  )
+  ))
 
-  (function request_cancel ([thread Thread]) to unit in
+  (export (function request_cancel ([thread Thread]) to unit in
     {
       (_0000000000000000000000000000001c_clang_iw_thread_request_cancel_f31b9d2c thread.handle)
       unit
     }
-  )
+  ))
 
-  (function cancel_requested () to bool in
+  (export (function cancel_requested () to bool in
     (_0000000000000000000000000000001d_clang_iw_thread_cancel_requested_9c869566)
-  )
+  ))
 
-  (function exit_thread ([value i5]) to i5 in
+  (export (function exit_thread ([value i5]) to i5 in
     (_d1f36372eb988e8808cf7dd83ca016b4_clang_iw_thread_exit_i5_3d26b928 value)
-  )
+  ))
 
-  (function self_thread () to i5 in
+  (export (function self_thread () to i5 in
     (_714a71ed8f36258351150a335340ab77_clang_iw_thread_self_a305cd49)
-  )
+  ))
 
-  (function yield () to unit in
+  (export (function yield () to unit in
     (_9cea94805419dda7e3e326527804e325_clang_iw_thread_yield_7216f99c)
-  )
+  ))
 
-  (function sleep ([duration_ms i5]) to unit in
+  (export (function sleep ([duration_ms i5]) to unit in
     (sys_sleep_ms duration_ms)
-  )
+  ))
 
-  (function mutex () to Mutex in
+  (export (function mutex () to Mutex in
     (class_new Mutex (_6f28fdd54bb78277d66c0d5f059c2952_clang_iw_mutex_new_4b94eb44))
-  )
+  ))
 
-  (function lock ([value Mutex]) to unit in
+  (export (function lock ([value Mutex]) to unit in
     {
       (_c9316c81a670a4084d244bca9d8e373f_clang_iw_mutex_lock_59884770 value.handle)
       unit
     }
-  )
+  ))
 
-  (function unlock ([value Mutex]) to unit in
+  (export (function unlock ([value Mutex]) to unit in
     {
       (_eb80167493bdae201ab8bb74ec075ca1_clang_iw_mutex_unlock_8df33862 value.handle)
       unit
     }
-  )
+  ))
 
-  (function try_lock ([value Mutex]) to bool in
+  (export (function try_lock ([value Mutex]) to bool in
     (_3cf6d6c6056b83e164b03328d777fa95_clang_iw_mutex_try_lock_bedb3ddb value.handle)
-  )
+  ))
 
-  (function destroy_mutex ([value Mutex]) to unit in
+  (export (function destroy_mutex ([value Mutex]) to unit in
     {
       (_e48171ad12e3796750eda8220ce3d844_clang_iw_mutex_destroy_52c25052 value.handle)
       unit
     }
-  )
+  ))
 
-  (function cond_var () to Cond in
+  (export (function cond_var () to Cond in
     (class_new Cond (_eec78e460180f07f8a23fbe3b82a5634_clang_iw_cond_new_2410e928))
-  )
+  ))
 
-  (function wait ([signal Cond] [value Mutex]) to unit in
+  (export (function wait ([signal Cond] [value Mutex]) to unit in
     {
       (_3050b67c836a213dba63a8079545cef9_clang_iw_cond_wait_d6f2a0d5 signal.handle value.handle)
       unit
     }
-  )
+  ))
 
-  (function timed_wait ([signal Cond] [value Mutex] [timeout_ms i5]) to bool in
+  (export (function timed_wait ([signal Cond] [value Mutex] [timeout_ms i5]) to bool in
     (_8080184abaea0a2048d09d0e329c3e54_clang_iw_cond_timed_wait_ms_a20b977c signal.handle value.handle timeout_ms)
-  )
+  ))
 
-  (function signal ([value Cond]) to unit in
+  (export (function signal ([value Cond]) to unit in
     {
       (_56846fd0c24ba3aeb5532a75fbf0dbf5_clang_iw_cond_signal_6f7585f1 value.handle)
       unit
     }
-  )
+  ))
 
-  (function broadcast ([value Cond]) to unit in
+  (export (function broadcast ([value Cond]) to unit in
     {
       (_941fdea79b69592ccb80202727dba6ba_clang_iw_cond_broadcast_af36951a value.handle)
       unit
     }
-  )
+  ))
 
-  (function destroy_cond ([value Cond]) to unit in
+  (export (function destroy_cond ([value Cond]) to unit in
     {
       (_4c9995ec67fb40df302f2ea61151588d_clang_iw_cond_destroy_1759e37a value.handle)
       unit
     }
-  )
+  ))
 
-  (function tls_key () to TlsKey in
+  (export (function tls_key () to TlsKey in
     (class_new TlsKey (_8a37e63f0c04e6f5d0953a2e0c8d60b8_clang_iw_tls_key_new_7f7b8d23))
-  )
+  ))
 
-  (function set_tls ([key TlsKey] [value i5]) to unit in
+  (export (function set_tls ([key TlsKey] [value i5]) to unit in
     {
       (_7998c5d6804735b3c5d59e487442c4b7_clang_iw_tls_set_i5_ee97312f key.handle value)
       unit
     }
-  )
+  ))
 
-  (function get_tls ([key TlsKey]) to i5 in
+  (export (function get_tls ([key TlsKey]) to i5 in
     (_f9a66e358e7a5ff7192d09b89867036f_clang_iw_tls_get_i5_5b67d4f8 key.handle)
-  )
+  ))
 
-  (function delete_tls ([key TlsKey]) to unit in
+  (export (function delete_tls ([key TlsKey]) to unit in
     {
       (_7b918ab55c9a821a42307429580a7adf_clang_iw_tls_delete_d7d28072 key.handle)
       unit
     }
-  )
+  ))
 
-  (function semaphore ([initial_count i5]) to Semaphore in
+  (export (function semaphore ([initial_count i5]) to Semaphore in
     (class_new Semaphore (_0000000000000000000000000000001e_clang_iw_sem_new_c9e151a1 initial_count))
-  )
+  ))
 
-  (function sem_post ([value Semaphore]) to unit in
+  (export (function sem_post ([value Semaphore]) to unit in
     {
       (_0000000000000000000000000000001f_clang_iw_sem_post_a8d2fe26 value.handle)
       unit
     }
-  )
+  ))
 
-  (function sem_wait ([value Semaphore]) to unit in
+  (export (function sem_wait ([value Semaphore]) to unit in
     {
       (_00000000000000000000000000000020_clang_iw_sem_wait_27c30e64 value.handle)
       unit
     }
-  )
+  ))
 
-  (function sem_timed_wait ([value Semaphore] [timeout_ms i5]) to bool in
+  (export (function sem_timed_wait ([value Semaphore] [timeout_ms i5]) to bool in
     (_00000000000000000000000000000021_clang_iw_sem_timed_wait_ms_0886bf4c value.handle timeout_ms)
-  )
+  ))
 
-  (function destroy_semaphore ([value Semaphore]) to unit in
+  (export (function destroy_semaphore ([value Semaphore]) to unit in
     {
       (_00000000000000000000000000000022_clang_iw_sem_destroy_50c50183 value.handle)
       unit
     }
-  )
+  ))
 }

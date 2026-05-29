@@ -1,0 +1,1543 @@
+{program app~json~lib@defs
+  (import std~string)
+
+  (function char_to_s3 ([value c3]) to s3 in
+    {
+      (var [result s3] (s3_new $1^i5 value))
+      result
+    }
+  )
+
+  (function builder_append_s3 ([builder StringBuilderS3] [value s3]) to unit in
+    {
+      (builder.append (class_new StringS3 value))
+      unit
+    }
+  )
+
+  (function escape_with_backslash ([value s3]) to s3 in
+    (s3_concat_raw $app_json_lib_backslash_s3^s3 value)
+  )
+
+  (function digit_char ([value i5]) to c3 in
+    (if (eq value $0^i5)
+      then (s3_get $app_json_lib_digit0_s3^s3 $0^i5)
+      else
+        (if (eq value $1^i5)
+          then (s3_get $app_json_lib_digit1_s3^s3 $0^i5)
+          else
+            (if (eq value $2^i5)
+              then (s3_get $app_json_lib_digit2_s3^s3 $0^i5)
+              else
+                (if (eq value $3^i5)
+                  then (s3_get $app_json_lib_digit3_s3^s3 $0^i5)
+                  else
+                    (if (eq value $4^i5)
+                      then (s3_get $app_json_lib_digit4_s3^s3 $0^i5)
+                      else
+                        (if (eq value $5^i5)
+                          then (s3_get $app_json_lib_digit5_s3^s3 $0^i5)
+                          else
+                            (if (eq value $6^i5)
+                              then (s3_get $app_json_lib_digit6_s3^s3 $0^i5)
+                              else
+                                (if (eq value $7^i5)
+                                  then (s3_get $app_json_lib_digit7_s3^s3 $0^i5)
+                                  else
+                                    (if (eq value $8^i5)
+                                      then (s3_get $app_json_lib_digit8_s3^s3 $0^i5)
+                                      else (s3_get $app_json_lib_digit9_s3^s3 $0^i5)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function hex_digit ([value i5]) to c3 in
+    (if (lt value $10^i5)
+      then (digit_char value)
+      else
+        (if (eq value $10^i5)
+          then (s3_get $app_json_lib_lower_a_s3^s3 $0^i5)
+          else
+            (if (eq value $11^i5)
+              then (s3_get $app_json_lib_lower_b_s3^s3 $0^i5)
+              else
+                (if (eq value $12^i5)
+                  then (s3_get $app_json_lib_lower_c_s3^s3 $0^i5)
+                  else
+                    (if (eq value $13^i5)
+                      then (s3_get $app_json_lib_lower_d_s3^s3 $0^i5)
+                      else
+                        (if (eq value $14^i5)
+                          then (s3_get $app_json_lib_lower_e_s3^s3 $0^i5)
+                          else (s3_get $app_json_lib_lower_f_s3^s3 $0^i5)
+                        )
+                    )
+                )
+            )
+        )
+    )
+  )
+
+  (function count_decimal_digits_nonnegative ([value i5]) to i5 in
+    (if (lt value $10^i5)
+      then $1^i5
+      else (add $1^i5 (count_decimal_digits_nonnegative (div value $10^i5)))
+    )
+  )
+
+  (function fill_decimal_digits ([result s3] [slot i5] [value i5]) to s3 in
+    {
+      (if (lt value $10^i5)
+        then
+          {
+            (s3_set result slot (digit_char value))
+          }
+        else
+          {
+            (var [prefix_value i5] (div value $10^i5))
+            (fill_decimal_digits result (sub slot $1^i5) prefix_value)
+            (s3_set result slot (digit_char (mod value $10^i5)))
+          }
+      )
+      result
+    }
+  )
+
+  (export (function i5_to_s3 ([value i5]) to s3 in
+    (if (lt value $0^i5)
+      then
+        {
+          (var [abs_value i5] (sub $0^i5 value))
+          (var [digits i5] (count_decimal_digits_nonnegative abs_value))
+          (var [result s3] (s3_new (add digits $1^i5) (s3_get $app_json_lib_digit0_s3^s3 $0^i5)))
+          (s3_set result $0^i5 (s3_get $app_json_lib_minus_s3^s3 $0^i5))
+          (fill_decimal_digits result digits abs_value)
+        }
+      else
+        {
+          (var [digits i5] (count_decimal_digits_nonnegative value))
+          (var [result s3] (s3_new digits (s3_get $app_json_lib_digit0_s3^s3 $0^i5)))
+          (fill_decimal_digits result (sub digits $1^i5) value)
+        }
+    )
+  ))
+
+  (function unicode_escape_byte ([value c3]) to s3 in
+    {
+      (var [result s3] (s3_new $6^i5 (s3_get $app_json_lib_backslash_s3^s3 $0^i5)))
+      (var [numeric i5] (val_to_i5 value))
+      (s3_set result $1^i5 (s3_get $app_json_lib_lower_u_s3^s3 $0^i5))
+      (s3_set result $2^i5 (s3_get $app_json_lib_digit0_s3^s3 $0^i5))
+      (s3_set result $3^i5 (s3_get $app_json_lib_digit0_s3^s3 $0^i5))
+      (s3_set result $4^i5 (hex_digit (div numeric $16^i5)))
+      (s3_set result $5^i5 (hex_digit (mod numeric $16^i5)))
+      result
+    }
+  )
+
+  (export (function json_bool ([value bool]) to s3 in
+    (if value then $app_json_lib_true_s3^s3 else $app_json_lib_false_s3^s3)
+  ))
+
+  (export (function json_null () to s3 in
+    $app_json_lib_null_s3^s3
+  ))
+
+  (export (function json_quote_s3 ([value s3]) to s3 in
+    {
+      (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_json_lib_empty_s3^s3)))
+      (var [index i5] $0^i5)
+      (var [length i5] (s3_length value))
+      (builder_append_s3 builder $app_json_lib_quote_s3^s3)
+      (while (lt index length) in
+        {
+          (var [ch c3] (s3_get value index))
+          (if (eq ch (s3_get $app_json_lib_quote_s3^s3 $0^i5))
+            then (builder_append_s3 builder (escape_with_backslash $app_json_lib_quote_s3^s3))
+            else
+              (if (eq ch (s3_get $app_json_lib_backslash_s3^s3 $0^i5))
+                then (builder_append_s3 builder (escape_with_backslash $app_json_lib_backslash_s3^s3))
+                else
+                  (if (lt (val_to_i5 ch) $32^i5)
+                    then (builder_append_s3 builder (unicode_escape_byte ch))
+                    else (builder_append_s3 builder (char_to_s3 ch))
+                  )
+              )
+          )
+          (var_set index (add index $1^i5))
+        }
+      )
+      (builder_append_s3 builder $app_json_lib_quote_s3^s3)
+      (cm_get (builder.build) raw)
+    }
+  ))
+
+  (export (function json_pair_raw ([key s3] [raw_value s3]) to s3 in
+    (s3_concat_raw
+      (json_quote_s3 key)
+      (s3_concat_raw $app_json_lib_colon_s3^s3 raw_value)
+    )
+  ))
+
+  (export (function json_pair_s3 ([key s3] [value s3]) to s3 in
+    (json_pair_raw key (json_quote_s3 value))
+  ))
+
+  (export (function json_pair_i5 ([key s3] [value i5]) to s3 in
+    (json_pair_raw key (i5_to_s3 value))
+  ))
+
+  (export (function json_pair_bool ([key s3] [value bool]) to s3 in
+    (json_pair_raw key (json_bool value))
+  ))
+
+  (export (function json_pair_null ([key s3]) to s3 in
+    (json_pair_raw key (json_null))
+  ))
+
+  (export (function json_array0_raw () to s3 in
+    (s3_concat_raw $app_json_lib_lbracket_s3^s3 $app_json_lib_rbracket_s3^s3)
+  ))
+
+  (export (function json_object0_raw () to s3 in
+    (s3_concat_raw $app_json_lib_lbrace_s3^s3 $app_json_lib_rbrace_s3^s3)
+  ))
+
+  (export (function json_array_raw ([values <array s3>]) to s3 in
+    {
+      (var [count i5] (array_length values))
+      (if (eq count $0^i5)
+        then (json_array0_raw)
+        else
+          {
+            (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_json_lib_empty_s3^s3)))
+            (var [index i5] $0^i5)
+            (builder_append_s3 builder $app_json_lib_lbracket_s3^s3)
+            (while (lt index count) in
+              {
+                (if (gt index $0^i5)
+                  then (builder_append_s3 builder $app_json_lib_comma_s3^s3)
+                  else unit
+                )
+                (builder_append_s3 builder (array_get values index))
+                (var_set index (add index $1^i5))
+              }
+            )
+            (builder_append_s3 builder $app_json_lib_rbracket_s3^s3)
+            (cm_get (builder.build) raw)
+          }
+      )
+    }
+  ))
+
+  (export (function json_object_raw ([pairs <array s3>]) to s3 in
+    {
+      (var [count i5] (array_length pairs))
+      (if (eq count $0^i5)
+        then (json_object0_raw)
+        else
+          {
+            (var [builder StringBuilderS3] (string_builder_new (class_new StringS3 $app_json_lib_empty_s3^s3)))
+            (var [index i5] $0^i5)
+            (builder_append_s3 builder $app_json_lib_lbrace_s3^s3)
+            (while (lt index count) in
+              {
+                (if (gt index $0^i5)
+                  then (builder_append_s3 builder $app_json_lib_comma_s3^s3)
+                  else unit
+                )
+                (builder_append_s3 builder (array_get pairs index))
+                (var_set index (add index $1^i5))
+              }
+            )
+            (builder_append_s3 builder $app_json_lib_rbrace_s3^s3)
+            (cm_get (builder.build) raw)
+          }
+      )
+    }
+  ))
+
+  (export (function json_array4_raw ([value0 s3] [value1 s3] [value2 s3] [value3 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbracket_s3^s3
+      (s3_concat_raw
+        value0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            value1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                value2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw value3 $app_json_lib_rbracket_s3^s3)
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_array3_raw ([value0 s3] [value1 s3] [value2 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbracket_s3^s3
+      (s3_concat_raw
+        value0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            value1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw value2 $app_json_lib_rbracket_s3^s3)
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object2_raw ([pair0 s3] [pair1 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw pair1 $app_json_lib_rbrace_s3^s3)
+        )
+      )
+    )
+  ))
+
+  (export (function json_object3_raw ([pair0 s3] [pair1 s3] [pair2 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw pair2 $app_json_lib_rbrace_s3^s3)
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object4_raw ([pair0 s3] [pair1 s3] [pair2 s3] [pair3 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                pair2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw pair3 $app_json_lib_rbrace_s3^s3)
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object5_raw ([pair0 s3] [pair1 s3] [pair2 s3] [pair3 s3] [pair4 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                pair2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw
+                    pair3
+                    (s3_concat_raw
+                      $app_json_lib_comma_s3^s3
+                      (s3_concat_raw pair4 $app_json_lib_rbrace_s3^s3)
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object6_raw ([pair0 s3] [pair1 s3] [pair2 s3] [pair3 s3] [pair4 s3] [pair5 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                pair2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw
+                    pair3
+                    (s3_concat_raw
+                      $app_json_lib_comma_s3^s3
+                      (s3_concat_raw
+                        pair4
+                        (s3_concat_raw
+                          $app_json_lib_comma_s3^s3
+                          (s3_concat_raw pair5 $app_json_lib_rbrace_s3^s3)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object7_raw ([pair0 s3] [pair1 s3] [pair2 s3] [pair3 s3] [pair4 s3] [pair5 s3] [pair6 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                pair2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw
+                    pair3
+                    (s3_concat_raw
+                      $app_json_lib_comma_s3^s3
+                      (s3_concat_raw
+                        pair4
+                        (s3_concat_raw
+                          $app_json_lib_comma_s3^s3
+                          (s3_concat_raw
+                            pair5
+                            (s3_concat_raw
+                              $app_json_lib_comma_s3^s3
+                              (s3_concat_raw pair6 $app_json_lib_rbrace_s3^s3)
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object8_raw ([pair0 s3] [pair1 s3] [pair2 s3] [pair3 s3] [pair4 s3] [pair5 s3] [pair6 s3] [pair7 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                pair2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw
+                    pair3
+                    (s3_concat_raw
+                      $app_json_lib_comma_s3^s3
+                      (s3_concat_raw
+                        pair4
+                        (s3_concat_raw
+                          $app_json_lib_comma_s3^s3
+                          (s3_concat_raw
+                            pair5
+                            (s3_concat_raw
+                              $app_json_lib_comma_s3^s3
+                              (s3_concat_raw
+                                pair6
+                                (s3_concat_raw
+                                  $app_json_lib_comma_s3^s3
+                                  (s3_concat_raw pair7 $app_json_lib_rbrace_s3^s3)
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (function json_object9_raw ([pair0 s3] [pair1 s3] [pair2 s3] [pair3 s3] [pair4 s3] [pair5 s3] [pair6 s3] [pair7 s3] [pair8 s3]) to s3 in
+    (s3_concat_raw
+      $app_json_lib_lbrace_s3^s3
+      (s3_concat_raw
+        pair0
+        (s3_concat_raw
+          $app_json_lib_comma_s3^s3
+          (s3_concat_raw
+            pair1
+            (s3_concat_raw
+              $app_json_lib_comma_s3^s3
+              (s3_concat_raw
+                pair2
+                (s3_concat_raw
+                  $app_json_lib_comma_s3^s3
+                  (s3_concat_raw
+                    pair3
+                    (s3_concat_raw
+                      $app_json_lib_comma_s3^s3
+                      (s3_concat_raw
+                        pair4
+                        (s3_concat_raw
+                          $app_json_lib_comma_s3^s3
+                          (s3_concat_raw
+                            pair5
+                            (s3_concat_raw
+                              $app_json_lib_comma_s3^s3
+                              (s3_concat_raw
+                                pair6
+                                (s3_concat_raw
+                                  $app_json_lib_comma_s3^s3
+                                  (s3_concat_raw
+                                    pair7
+                                    (s3_concat_raw
+                                      $app_json_lib_comma_s3^s3
+                                      (s3_concat_raw pair8 $app_json_lib_rbrace_s3^s3)
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ))
+
+  (export (class JsonParseOptions
+    (public (property [max_depth i5]))
+    (public (property [max_string_length i5]))
+    (public (property [max_total_nodes i5]))
+    (public (property [accept_utf8_bom bool]))
+    (constructor () in
+      {
+        (cm_set self max_depth $512^i5)
+        (cm_set self max_string_length $268435456^i5)
+        (cm_set self max_total_nodes $0^i5)
+        (cm_set self accept_utf8_bom false)
+      }
+    )
+    (constructor ([max_depth0 i5] [max_string_length0 i5] [max_total_nodes0 i5] [accept_utf8_bom0 bool]) in
+      {
+        (cm_set self max_depth max_depth0)
+        (cm_set self max_string_length max_string_length0)
+        (cm_set self max_total_nodes max_total_nodes0)
+        (cm_set self accept_utf8_bom accept_utf8_bom0)
+      }
+    )
+  ))
+
+  (export (class JsonError
+    (public (property [code i5]))
+    (public (property [index i5]))
+    (public (property [line i5]))
+    (public (property [column i5]))
+    (constructor () in
+      {
+        (cm_set self code $0^i5)
+        (cm_set self index $0^i5)
+        (cm_set self line $1^i5)
+        (cm_set self column $1^i5)
+      }
+    )
+    (constructor ([code0 i5] [index0 i5] [line0 i5] [column0 i5]) in
+      {
+        (cm_set self code code0)
+        (cm_set self index index0)
+        (cm_set self line line0)
+        (cm_set self column column0)
+      }
+    )
+  ))
+
+  (export (class JsonParseResult
+    (public (property [ok bool]))
+    (public (property [root_kind i5]))
+    (public (property [value_text s3]))
+    (public (property [error JsonError]))
+    (constructor ([ok0 bool] [root_kind0 i5] [value_text0 s3] [error0 JsonError]) in
+      {
+        (cm_set self ok ok0)
+        (cm_set self root_kind root_kind0)
+        (cm_set self value_text value_text0)
+        (cm_set self error error0)
+      }
+    )
+  ))
+
+  (class JsonParseState
+    (public (property [source s3]))
+    (public (property [length i5]))
+    (public (property [index i5]))
+    (public (property [line i5]))
+    (public (property [column i5]))
+    (public (property [depth i5]))
+    (public (property [node_count i5]))
+    (public (property [max_depth i5]))
+    (public (property [max_total_nodes i5]))
+    (public (property [max_string_length i5]))
+    (public (property [accept_utf8_bom bool]))
+    (public (property [ok bool]))
+    (public (property [error_code i5]))
+    (public (property [error_index i5]))
+    (public (property [error_line i5]))
+    (public (property [error_column i5]))
+    (constructor
+      ([source0 s3]
+       [length0 i5]
+       [index0 i5]
+       [line0 i5]
+       [column0 i5]
+       [depth0 i5]
+       [node_count0 i5]
+       [max_depth0 i5]
+       [max_total_nodes0 i5]
+       [max_string_length0 i5]
+       [accept_utf8_bom0 bool]
+       [ok0 bool]
+       [error_code0 i5]
+       [error_index0 i5]
+       [error_line0 i5]
+       [error_column0 i5]) in
+      {
+        (cm_set self source source0)
+        (cm_set self length length0)
+        (cm_set self index index0)
+        (cm_set self line line0)
+        (cm_set self column column0)
+        (cm_set self depth depth0)
+        (cm_set self node_count node_count0)
+        (cm_set self max_depth max_depth0)
+        (cm_set self max_total_nodes max_total_nodes0)
+        (cm_set self max_string_length max_string_length0)
+        (cm_set self accept_utf8_bom accept_utf8_bom0)
+        (cm_set self ok ok0)
+        (cm_set self error_code error_code0)
+        (cm_set self error_index error_index0)
+        (cm_set self error_line error_line0)
+        (cm_set self error_column error_column0)
+      }
+    )
+  )
+
+  (function json_is_ws_code ([code i5]) to bool in
+    (or
+      (eq code $32^i5)
+      (or (eq code $9^i5) (or (eq code $10^i5) (eq code $13^i5)))
+    )
+  )
+
+  (function json_is_digit_code ([code i5]) to bool in
+    (and (ge code $48^i5) (le code $57^i5))
+  )
+
+  (function json_is_nonzero_digit_code ([code i5]) to bool in
+    (and (ge code $49^i5) (le code $57^i5))
+  )
+
+  (function json_is_hex_digit_code ([code i5]) to bool in
+    (or
+      (json_is_digit_code code)
+      (or
+        (and (ge code $65^i5) (le code $70^i5))
+        (and (ge code $97^i5) (le code $102^i5))
+      )
+    )
+  )
+
+  (function json_state_current_code ([state JsonParseState]) to i5 in
+    (if (lt (cm_get state index) (cm_get state length))
+      then (val_to_i5 (s3_get (cm_get state source) (cm_get state index)))
+      else (sub $0^i5 $1^i5)
+    )
+  )
+
+  (function json_state_advance_one ([state JsonParseState]) to unit in
+    {
+      (if (lt (cm_get state index) (cm_get state length))
+        then
+          {
+            (var [code i5] (json_state_current_code state))
+            (cm_set state index (add (cm_get state index) $1^i5))
+            (if (eq code $10^i5)
+              then
+                {
+                  (cm_set state line (add (cm_get state line) $1^i5))
+                  (cm_set state column $1^i5)
+                }
+              else (cm_set state column (add (cm_get state column) $1^i5))
+            )
+          }
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function json_fail ([state JsonParseState] [code i5]) to bool in
+    {
+      (if (cm_get state ok)
+        then
+          {
+            (cm_set state ok false)
+            (cm_set state error_code code)
+            (cm_set state error_index (cm_get state index))
+            (cm_set state error_line (cm_get state line))
+            (cm_set state error_column (cm_get state column))
+          }
+        else unit
+      )
+      false
+    }
+  )
+
+  (function json_require_progress ([state JsonParseState] [previous_index i5]) to bool in
+    (if (cm_get state ok)
+      then
+        (if (gt (cm_get state index) previous_index)
+          then true
+          else (json_fail state $16^i5)
+        )
+      else false
+    )
+  )
+
+  (function json_consume_code ([state JsonParseState] [expected i5]) to bool in
+    (if (eq (json_state_current_code state) expected)
+      then
+        {
+          (json_state_advance_one state)
+          true
+        }
+      else false
+    )
+  )
+
+  (function json_skip_ws ([state JsonParseState]) to unit in
+    {
+      (while (and (cm_get state ok) (json_is_ws_code (json_state_current_code state))) in
+        {
+          (json_state_advance_one state)
+        }
+      )
+      unit
+    }
+  )
+
+  (function json_note_node ([state JsonParseState]) to bool in
+    {
+      (cm_set state node_count (add (cm_get state node_count) $1^i5))
+      (if (gt (cm_get state node_count) (cm_get state max_total_nodes))
+        then (json_fail state $13^i5)
+        else true
+      )
+    }
+  )
+
+  (function json_push_depth ([state JsonParseState]) to bool in
+    {
+      (cm_set state depth (add (cm_get state depth) $1^i5))
+      (if (gt (cm_get state depth) (cm_get state max_depth))
+        then (json_fail state $12^i5)
+        else true
+      )
+    }
+  )
+
+  (function json_pop_depth ([state JsonParseState]) to unit in
+    {
+      (if (gt (cm_get state depth) $0^i5)
+        then (cm_set state depth (sub (cm_get state depth) $1^i5))
+        else unit
+      )
+      unit
+    }
+  )
+
+  (function json_parse_null ([state JsonParseState]) to bool in
+    (if (json_consume_code state $110^i5)
+      then
+        (if (json_consume_code state $117^i5)
+          then
+            (if (json_consume_code state $108^i5)
+              then
+                (if (json_consume_code state $108^i5)
+                  then true
+                  else (json_fail state $4^i5)
+                )
+              else (json_fail state $4^i5)
+            )
+          else (json_fail state $4^i5)
+        )
+      else (json_fail state $4^i5)
+    )
+  )
+
+  (function json_parse_true ([state JsonParseState]) to bool in
+    (if (json_consume_code state $116^i5)
+      then
+        (if (json_consume_code state $114^i5)
+          then
+            (if (json_consume_code state $117^i5)
+              then
+                (if (json_consume_code state $101^i5)
+                  then true
+                  else (json_fail state $4^i5)
+                )
+              else (json_fail state $4^i5)
+            )
+          else (json_fail state $4^i5)
+        )
+      else (json_fail state $4^i5)
+    )
+  )
+
+  (function json_parse_false ([state JsonParseState]) to bool in
+    (if (json_consume_code state $102^i5)
+      then
+        (if (json_consume_code state $97^i5)
+          then
+            (if (json_consume_code state $108^i5)
+              then
+                (if (json_consume_code state $115^i5)
+                  then
+                    (if (json_consume_code state $101^i5)
+                      then true
+                      else (json_fail state $4^i5)
+                    )
+                  else (json_fail state $4^i5)
+                )
+              else (json_fail state $4^i5)
+            )
+          else (json_fail state $4^i5)
+        )
+      else (json_fail state $4^i5)
+    )
+  )
+
+  (function json_parse_digits ([state JsonParseState]) to unit in
+    {
+      (while (json_is_digit_code (json_state_current_code state)) in
+        {
+          (json_state_advance_one state)
+        }
+      )
+      unit
+    }
+  )
+
+  (function json_parse_number ([state JsonParseState]) to bool in
+    {
+      (if (eq (json_state_current_code state) $45^i5)
+        then (json_state_advance_one state)
+        else unit
+      )
+      (var [code i5] (json_state_current_code state))
+      (if (eq code $48^i5)
+        then
+          {
+            (json_state_advance_one state)
+            (if (json_is_digit_code (json_state_current_code state))
+              then
+                {
+                  (json_fail state $5^i5)
+                  unit
+                }
+              else unit
+            )
+          }
+        else
+          (if (json_is_nonzero_digit_code code)
+            then
+              {
+                (json_state_advance_one state)
+                (json_parse_digits state)
+              }
+            else
+              {
+                (json_fail state $5^i5)
+                unit
+              }
+          )
+      )
+      (if (cm_get state ok)
+        then
+          {
+            (if (eq (json_state_current_code state) $46^i5)
+              then
+                {
+                  (json_state_advance_one state)
+                  (if (json_is_digit_code (json_state_current_code state))
+                    then
+                      {
+                        (json_state_advance_one state)
+                        (json_parse_digits state)
+                      }
+                    else
+                      {
+                        (json_fail state $5^i5)
+                        unit
+                      }
+                  )
+                }
+              else unit
+            )
+            (if (or (eq (json_state_current_code state) $101^i5) (eq (json_state_current_code state) $69^i5))
+              then
+                {
+                  (json_state_advance_one state)
+                  (if (or (eq (json_state_current_code state) $43^i5) (eq (json_state_current_code state) $45^i5))
+                    then (json_state_advance_one state)
+                    else unit
+                  )
+                  (if (json_is_digit_code (json_state_current_code state))
+                    then
+                      {
+                        (json_state_advance_one state)
+                        (json_parse_digits state)
+                      }
+                    else
+                      {
+                        (json_fail state $5^i5)
+                        unit
+                      }
+                  )
+                }
+              else unit
+            )
+          }
+        else unit
+      )
+      (cm_get state ok)
+    }
+  )
+
+  (function json_parse_string ([state JsonParseState]) to bool in
+    {
+      (if (json_consume_code state $34^i5)
+        then unit
+        else
+          {
+            (json_fail state $6^i5)
+            unit
+          }
+      )
+      (var [decoded_length i5] $0^i5)
+      (var [done bool] false)
+      (while (and (cm_get state ok) (not done)) in
+        {
+          (var [loop_start_index i5] (cm_get state index))
+          (var [code i5] (json_state_current_code state))
+          (if (eq code (sub $0^i5 $1^i5))
+            then
+              {
+                (json_fail state $1^i5)
+                unit
+              }
+            else
+              {
+                (if (eq code $34^i5)
+                  then
+                    {
+                      (json_state_advance_one state)
+                      (var_set done true)
+                    }
+                  else
+                    {
+                      (if (eq code $92^i5)
+                        then
+                          {
+                            (json_state_advance_one state)
+                            (var [escape i5] (json_state_current_code state))
+                            (if (or
+                                  (eq escape $34^i5)
+                                  (or
+                                    (eq escape $92^i5)
+                                    (or
+                                      (eq escape $47^i5)
+                                      (or
+                                        (eq escape $98^i5)
+                                        (or
+                                          (eq escape $102^i5)
+                                          (or
+                                            (eq escape $110^i5)
+                                            (or (eq escape $114^i5) (eq escape $116^i5))
+                                          )
+                                        )
+                                      )
+                                    )
+                                  ))
+                              then
+                                {
+                                  (json_state_advance_one state)
+                                  (var_set decoded_length (add decoded_length $1^i5))
+                                }
+                              else
+                                {
+                                  (if (eq escape $117^i5)
+                                    then
+                                      {
+                                        (json_state_advance_one state)
+                                        (if (json_is_hex_digit_code (json_state_current_code state))
+                                          then (json_state_advance_one state)
+                                          else
+                                            {
+                                              (json_fail state $8^i5)
+                                              unit
+                                            }
+                                        )
+                                        (if (cm_get state ok)
+                                          then
+                                            (if (json_is_hex_digit_code (json_state_current_code state))
+                                              then (json_state_advance_one state)
+                                              else
+                                                {
+                                                  (json_fail state $8^i5)
+                                                  unit
+                                                }
+                                            )
+                                          else unit
+                                        )
+                                        (if (cm_get state ok)
+                                          then
+                                            (if (json_is_hex_digit_code (json_state_current_code state))
+                                              then (json_state_advance_one state)
+                                              else
+                                                {
+                                                  (json_fail state $8^i5)
+                                                  unit
+                                                }
+                                            )
+                                          else unit
+                                        )
+                                        (if (cm_get state ok)
+                                          then
+                                            (if (json_is_hex_digit_code (json_state_current_code state))
+                                              then
+                                                {
+                                                  (json_state_advance_one state)
+                                                  (var_set decoded_length (add decoded_length $1^i5))
+                                                }
+                                              else
+                                                {
+                                                  (json_fail state $8^i5)
+                                                  unit
+                                                }
+                                            )
+                                          else unit
+                                        )
+                                      }
+                                    else
+                                      {
+                                        (json_fail state $7^i5)
+                                        unit
+                                      }
+                                  )
+                                }
+                            )
+                          }
+                        else
+                          {
+                            (if (lt code $32^i5)
+                              then
+                                {
+                                  (json_fail state $9^i5)
+                                  unit
+                                }
+                              else
+                                {
+                                  (json_state_advance_one state)
+                                  (var_set decoded_length (add decoded_length $1^i5))
+                                }
+                            )
+                          }
+                      )
+                    }
+                )
+              }
+          )
+          (if (gt decoded_length (cm_get state max_string_length))
+            then
+              {
+                (json_fail state $14^i5)
+                unit
+              }
+            else unit
+          )
+          (if (and (cm_get state ok) (not done))
+            then
+              (if (json_require_progress state loop_start_index)
+                then unit
+                else unit
+              )
+            else unit
+          )
+        }
+      )
+      (and (cm_get state ok) done)
+    }
+  )
+
+  (function json_parse_value ([state JsonParseState]) to i5 in
+    {
+      (var [start_index i5] (cm_get state index))
+      (if (json_note_node state)
+        then unit
+        else unit
+      )
+      (if (cm_get state ok)
+        then
+          {
+            (var [kind i5]
+              {
+            (var [code i5] (json_state_current_code state))
+            (if (eq code $110^i5)
+              then (if (json_parse_null state) then $1^i5 else $0^i5)
+              else
+                (if (eq code $116^i5)
+                  then (if (json_parse_true state) then $2^i5 else $0^i5)
+                  else
+                    (if (eq code $102^i5)
+                      then (if (json_parse_false state) then $2^i5 else $0^i5)
+                      else
+                        (if (or (eq code $45^i5) (json_is_digit_code code))
+                          then (if (json_parse_number state) then $3^i5 else $0^i5)
+                          else
+                            (if (eq code $34^i5)
+                              then
+                                (if (json_parse_string state)
+                                  then $4^i5
+                                  else $0^i5
+                                )
+                              else
+                                (if (eq code $91^i5)
+                                  then (json_parse_array state)
+                                  else
+                                    (if (eq code $123^i5)
+                                      then (json_parse_object state)
+                                      else
+                                        (if (eq code (sub $0^i5 $1^i5))
+                                          then
+                                            {
+                                              (json_fail state $1^i5)
+                                              $0^i5
+                                            }
+                                          else
+                                            {
+                                              (json_fail state $2^i5)
+                                              $0^i5
+                                            }
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+              }
+            )
+            (if (and (cm_get state ok) (neq kind $0^i5))
+              then
+                (if (json_require_progress state start_index)
+                  then kind
+                  else $0^i5
+                )
+              else kind
+            )
+          }
+        else $0^i5
+      )
+    }
+  )
+
+  (function json_parse_array ([state JsonParseState]) to i5 in
+    {
+      (json_state_advance_one state)
+      (if (json_push_depth state)
+        then unit
+        else unit
+      )
+      (json_skip_ws state)
+      (if (cm_get state ok)
+        then
+          (if (json_consume_code state $93^i5)
+            then
+              {
+                (json_pop_depth state)
+                $5^i5
+              }
+            else
+              {
+                (var [done bool] false)
+                (while (and (cm_get state ok) (not done)) in
+                  {
+                    (json_skip_ws state)
+                    (if (eq (json_parse_value state) $0^i5)
+                      then unit
+                      else unit
+                    )
+                    (json_skip_ws state)
+                    (if (json_consume_code state $93^i5)
+                      then (var_set done true)
+                      else
+                        (if (json_consume_code state $44^i5)
+                          then unit
+                          else
+                            {
+                              (json_fail state $11^i5)
+                              unit
+                            }
+                        )
+                    )
+                  }
+                )
+                (json_pop_depth state)
+                (if (cm_get state ok) then $5^i5 else $0^i5)
+              }
+          )
+        else $0^i5
+      )
+    }
+  )
+
+  (function json_parse_object ([state JsonParseState]) to i5 in
+    {
+      (json_state_advance_one state)
+      (if (json_push_depth state)
+        then unit
+        else unit
+      )
+      (json_skip_ws state)
+      (if (cm_get state ok)
+        then
+          (if (json_consume_code state $125^i5)
+            then
+              {
+                (json_pop_depth state)
+                $6^i5
+              }
+            else
+              {
+                (var [done bool] false)
+                (while (and (cm_get state ok) (not done)) in
+                  {
+                    (json_skip_ws state)
+                    (var [key_start_index i5] (cm_get state index))
+                    (if (json_parse_string state)
+                      then unit
+                      else unit
+                    )
+                    (if (cm_get state ok)
+                      then
+                        (if (json_require_progress state key_start_index)
+                          then unit
+                          else unit
+                        )
+                      else unit
+                    )
+                    (json_skip_ws state)
+                    (if (json_consume_code state $58^i5)
+                      then unit
+                      else
+                        {
+                          (json_fail state $10^i5)
+                          unit
+                        }
+                    )
+                    (json_skip_ws state)
+                    (if (eq (json_parse_value state) $0^i5)
+                      then unit
+                      else unit
+                    )
+                    (json_skip_ws state)
+                    (if (json_consume_code state $125^i5)
+                      then (var_set done true)
+                      else
+                        (if (json_consume_code state $44^i5)
+                          then unit
+                          else
+                            {
+                              (json_fail state $11^i5)
+                              unit
+                            }
+                        )
+                    )
+                  }
+                )
+                (json_pop_depth state)
+                (if (cm_get state ok) then $6^i5 else $0^i5)
+              }
+          )
+        else $0^i5
+      )
+    }
+  )
+
+  (function json_options_effective_max_depth ([options JsonParseOptions]) to i5 in
+    (if (gt (cm_get options max_depth) $0^i5)
+      then (cm_get options max_depth)
+      else $512^i5
+    )
+  )
+
+  (function json_options_effective_max_string_length ([options JsonParseOptions]) to i5 in
+    (if (gt (cm_get options max_string_length) $0^i5)
+      then (cm_get options max_string_length)
+      else $268435456^i5
+    )
+  )
+
+  (function json_options_effective_max_total_nodes ([source s3] [options JsonParseOptions]) to i5 in
+    (if (gt (cm_get options max_total_nodes) $0^i5)
+      then (cm_get options max_total_nodes)
+      else (add (mul (s3_length source) $2^i5) $1^i5)
+    )
+  )
+
+  (function json_has_utf8_bom ([source s3]) to bool in
+    (if (lt (s3_length source) $3^i5)
+      then false
+      else
+        (and
+          (eq (val_to_i5 (s3_get source $0^i5)) $239^i5)
+          (and
+            (eq (val_to_i5 (s3_get source $1^i5)) $187^i5)
+            (eq (val_to_i5 (s3_get source $2^i5)) $191^i5)
+          )
+        )
+    )
+  )
+
+  (export (function json_default_parse_options () to JsonParseOptions in
+    (class_new JsonParseOptions)
+  ))
+
+  (export (function json_parse ([source s3] [options JsonParseOptions]) to JsonParseResult in
+    {
+      (var [empty_text s3] (s3_empty_like source))
+      (var [state JsonParseState]
+        (class_new JsonParseState
+          source
+          (s3_length source)
+          $0^i5
+          $1^i5
+          $1^i5
+          $0^i5
+          $0^i5
+          (json_options_effective_max_depth options)
+          (json_options_effective_max_total_nodes source options)
+          (json_options_effective_max_string_length options)
+          (cm_get options accept_utf8_bom)
+          true
+          $0^i5
+          $0^i5
+          $1^i5
+          $1^i5
+        )
+      )
+      (var [root_start i5] $0^i5)
+      (var [root_kind i5] $0^i5)
+      (if (json_has_utf8_bom source)
+        then
+          (if (cm_get state accept_utf8_bom)
+            then
+              {
+                (json_state_advance_one state)
+                (json_state_advance_one state)
+                (json_state_advance_one state)
+              }
+            else
+              {
+                (json_fail state $15^i5)
+                unit
+              }
+          )
+        else unit
+      )
+      (json_skip_ws state)
+      (var_set root_start (cm_get state index))
+      (if (cm_get state ok)
+        then (var_set root_kind (json_parse_value state))
+        else unit
+      )
+      (json_skip_ws state)
+      (if (and (cm_get state ok) (lt (cm_get state index) (cm_get state length)))
+        then
+          {
+            (json_fail state $3^i5)
+            unit
+          }
+        else unit
+      )
+      (if (and (cm_get state ok) (neq root_kind $0^i5))
+        then
+          (class_new JsonParseResult
+            true
+            root_kind
+            (s3_slice_span_raw source root_start (cm_get state index))
+            (class_new JsonError $0^i5 (cm_get state index) (cm_get state line) (cm_get state column))
+          )
+        else
+          (class_new JsonParseResult
+            false
+            $0^i5
+            empty_text
+            (class_new JsonError
+              (cm_get state error_code)
+              (cm_get state error_index)
+              (cm_get state error_line)
+              (cm_get state error_column)
+            )
+          )
+      )
+    }
+  ))
+
+  (export (function json_validate ([source s3] [options JsonParseOptions]) to bool in
+    (cm_get (json_parse source options) ok)
+  ))
+
+  (export (function json_error_code_name ([code i5]) to s3 in
+    (if (eq code $1^i5)
+      then $app_json_lib_error_unexpected_eof_s3^s3
+      else
+        (if (eq code $2^i5)
+          then $app_json_lib_error_unexpected_token_s3^s3
+          else
+            (if (eq code $3^i5)
+              then $app_json_lib_error_trailing_garbage_s3^s3
+              else
+                (if (eq code $4^i5)
+                  then $app_json_lib_error_invalid_literal_s3^s3
+                  else
+                    (if (eq code $5^i5)
+                      then $app_json_lib_error_invalid_number_s3^s3
+                      else
+                        (if (eq code $6^i5)
+                          then $app_json_lib_error_invalid_string_s3^s3
+                          else
+                            (if (eq code $7^i5)
+                              then $app_json_lib_error_invalid_escape_s3^s3
+                              else
+                                (if (eq code $8^i5)
+                                  then $app_json_lib_error_invalid_unicode_escape_s3^s3
+                                  else
+                                    (if (eq code $9^i5)
+                                      then $app_json_lib_error_control_character_s3^s3
+                                      else
+                                        (if (eq code $10^i5)
+                                          then $app_json_lib_error_expected_colon_s3^s3
+                                          else
+                                            (if (eq code $11^i5)
+                                              then $app_json_lib_error_expected_comma_or_end_s3^s3
+                                              else
+                                                (if (eq code $12^i5)
+                                                  then $app_json_lib_error_nesting_limit_s3^s3
+                                                  else
+                                                    (if (eq code $13^i5)
+                                                      then $app_json_lib_error_node_limit_s3^s3
+                                                      else
+                                                        (if (eq code $14^i5)
+                                                          then $app_json_lib_error_string_limit_s3^s3
+                                                          else
+                                                            (if (eq code $15^i5)
+                                                              then $app_json_lib_error_utf8_bom_s3^s3
+                                                              else
+                                                                (if (eq code $16^i5)
+                                                                  then $app_json_lib_error_parse_progress_s3^s3
+                                                                  else $app_json_lib_error_unknown_s3^s3
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    )
+  ))
+}

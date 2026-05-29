@@ -1,6 +1,6 @@
 {program test~precompiled~lib@box
   (class <generic Box T>
-    (property [value T])
+    (public (property [value T]))
     (constructor ([initial T]) in {(cm_set self value initial)})
   )
   (function <generic make_box T> ([value T]) to <Box T> in (class_new <Box T> value))
